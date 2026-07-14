@@ -1,6 +1,6 @@
 use super::{KernelSession, RunningKernel, SshRemoteKernelSpecification, start_kernel_tasks};
 use anyhow::{Context as _, Result};
-use client::proto;
+// use client::proto;  // removed-crate: client
 
 use futures::{
     AsyncBufReadExt as _, StreamExt as _,

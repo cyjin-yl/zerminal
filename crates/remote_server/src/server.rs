@@ -10,7 +10,7 @@ pub use headless_project::{HeadlessAppState, HeadlessProject};
 
 use anyhow::{Context as _, Result, anyhow};
 use clap::Subcommand;
-use client::ProxySettings;
+// use client::ProxySettings;  // removed-crate: client
 use collections::HashMap;
 use extension::ExtensionHostProxy;
 use fs::{Fs, RealFs};

@@ -1,4 +1,4 @@
-use audio::{AudioSettings, CHANNEL_COUNT, RodioExt, SAMPLE_RATE};
+// use audio::{AudioSettings, CHANNEL_COUNT, RodioExt, SAMPLE_RATE};  // removed-crate: audio
 use cpal::DeviceId;
 use gpui::{
     App, Context, Entity, FocusHandle, Focusable, Render, Size, Tiling, Window, WindowBounds,

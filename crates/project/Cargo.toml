@@ -42,7 +42,6 @@ async-channel.workspace = true
 base64.workspace = true
 buffer_diff.workspace = true
 circular-buffer.workspace = true
-client.workspace = true
 clock.workspace = true
 collections.workspace = true
 context_server.workspace = true
@@ -107,7 +106,6 @@ ztracing.workspace = true
 tracing.workspace = true
 
 [dev-dependencies]
-client = { workspace = true, features = ["test-support"] }
 encoding_rs.workspace = true
 collections = { workspace = true, features = ["test-support"] }
 context_server = { workspace = true, features = ["test-support"] }

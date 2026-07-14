@@ -15,7 +15,7 @@ use crate::{
 // use agent_settings::{AgentSettings, UserAgentsMd};  // removed-crate: agent_settings
 use anyhow::Context as _;
 use askpass::AskPassDelegate;
-use client::zed_urls;
+// use client::zed_urls;  // removed-crate: client
 use collections::{BTreeMap, HashMap, HashSet};
 use db::kvp::KeyValueStore;
 use editor::{Editor, EditorElement, EditorMode, MultiBuffer, MultiBufferOffset, SizingBehavior};

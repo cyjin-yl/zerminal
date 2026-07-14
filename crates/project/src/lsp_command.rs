@@ -10,7 +10,7 @@ use crate::{
 };
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
-use client::proto::{self, PeerId};
+// use client::proto::{self, PeerId};  // removed-crate: client
 use clock::Global;
 use collections::HashMap;
 use futures::future;

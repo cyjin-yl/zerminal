@@ -19,7 +19,6 @@ zerminal_macros = { workspace = true }
 zerminal_macros_types = { workspace = true }
 inventory = "0.3"
 anyhow.workspace = true
-client.workspace = true
 collections.workspace = true
 component.workspace = true
 db.workspace = true

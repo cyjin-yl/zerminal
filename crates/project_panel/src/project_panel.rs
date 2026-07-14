@@ -3,7 +3,7 @@ mod undo;
 mod utils;
 
 use anyhow::{Context as _, Result};
-use client::{ErrorCode, ErrorExt};
+// use client::{ErrorCode, ErrorExt};  // removed-crate: client
 use collections::{BTreeSet, HashMap, hash_map};
 use command_palette_hooks::CommandPaletteFilter;
 use editor::{

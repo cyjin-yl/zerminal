@@ -18,8 +18,8 @@ const _: () = assert!(
 use anyhow::{Context as _, Result};
 use clap::Parser;
 use cli::FORCE_CLI_MODE_ENV_VAR_NAME;
-use client::{Client, ProxySettings, RefreshLlmTokenListener, UserStore, parse_zed_link};
-use collab_ui::channel_view::ChannelView;
+// use client::{Client, ProxySettings, RefreshLlmTokenListener, UserStore, parse_zed_link};  // removed-crate: client
+// use collab_ui::channel_view::ChannelView;  // removed-crate: collab_ui
 use collections::HashMap;
 use crashes::InitCrashHandler;
 use db::kvp::{GlobalKeyValueStore, KeyValueStore};

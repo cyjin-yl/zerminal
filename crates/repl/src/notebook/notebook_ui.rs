@@ -3,7 +3,7 @@ use std::future::Future;
 use std::{path::PathBuf, sync::Arc};
 
 use anyhow::{Context as _, Result};
-use client::proto::ViewId;
+// use client::proto::ViewId;  // removed-crate: client
 use collections::HashMap;
 use editor::DisplayPoint;
 use feature_flags::{FeatureFlagAppExt as _, NotebookFeatureFlag};

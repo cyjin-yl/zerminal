@@ -7,7 +7,7 @@ use std::{
     time::Duration,
 };
 
-use client::parse_zed_link;
+// use client::parse_zed_link;  // removed-crate: client
 use command_palette_hooks::{
     CommandInterceptItem, CommandInterceptResult, CommandPaletteFilter,
     GlobalCommandPaletteInterceptor,

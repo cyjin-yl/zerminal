@@ -1,4 +1,4 @@
-use client::ZED_URL_SCHEME;
+// use client::ZED_URL_SCHEME;  // removed-crate: client
 use gpui::{AsyncApp, actions};
 
 actions!(

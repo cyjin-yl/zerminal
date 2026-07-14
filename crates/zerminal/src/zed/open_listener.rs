@@ -4,7 +4,7 @@ use crate::restore_or_create_workspace;
 use anyhow::{Context as _, Result, anyhow};
 use cli::{CliRequest, CliResponse, CliResponseSink};
 use cli::{IpcHandshake, ipc};
-use client::{ZedLink, parse_zed_link};
+// use client::{ZedLink, parse_zed_link};  // removed-crate: client
 use db::kvp::KeyValueStore;
 use editor::Editor;
 use fs::Fs;

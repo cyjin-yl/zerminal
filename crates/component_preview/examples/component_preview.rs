@@ -5,7 +5,7 @@ use assets::Assets;
 use fs::RealFs;
 use gpui::{AppContext as _, Bounds, KeyBinding, WindowBounds, WindowOptions, actions, size};
 
-use client::{Client, UserStore};
+// use client::{Client, UserStore};  // removed-crate: client
 use language::LanguageRegistry;
 use node_runtime::NodeRuntime;
 use project::Project;

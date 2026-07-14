@@ -6,8 +6,8 @@ mod multi_select_tests;
 use futures::future::join_all;
 pub use open_path_prompt::OpenPathDelegate;
 
-use channel::ChannelStore;
-use client::ChannelId;
+// use channel::ChannelStore;  // removed-crate: channel
+// use client::ChannelId;  // removed-crate: client
 use collections::HashMap;
 use editor::Editor;
 use file_icons::FileIcons;

@@ -8,7 +8,7 @@ use crate::{
     workspace_settings::{AutosaveSetting, WorkspaceSettings},
 };
 use anyhow::Result;
-use client::{Client, proto};
+// use client::{Client, proto};  // removed-crate: client
 use futures::channel::mpsc;
 use gpui::{
     Action, AnyElement, AnyEntity, AnyView, App, AppContext, Context, Entity, EntityId,

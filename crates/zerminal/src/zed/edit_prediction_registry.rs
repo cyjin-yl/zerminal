@@ -1,4 +1,4 @@
-use client::{Client, UserStore};
+// use client::{Client, UserStore};  // removed-crate: client
 // use codestral::{CodestralEditPredictionDelegate, load_codestral_api_key};  // removed-crate: codestral
 use collections::HashMap;
 // use copilot::CopilotEditPredictionDelegate;  // removed-crate: copilot

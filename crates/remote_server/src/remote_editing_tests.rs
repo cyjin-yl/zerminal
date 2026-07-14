@@ -7,7 +7,7 @@ use crate::headless_project::HeadlessProject;
     SkillToolInput, SkillToolOutput, Templates, ThreadStore, ToolCallEventStream, ToolInput,
     skill_body_resolver_for_project, skills_resolver_for_project,
 };  // removed-crate: agent
-use client::{Client, UserStore};
+// use client::{Client, UserStore};  // removed-crate: client
 use clock::FakeSystemClock;
 use collections::{HashMap, HashSet};
 // use language_model::{LanguageModelRegistry, LanguageModelToolResultContent};  // removed-crate: language_model

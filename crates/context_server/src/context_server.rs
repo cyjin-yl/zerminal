@@ -15,7 +15,7 @@ use std::time::Duration;
 use std::{fmt::Display, path::PathBuf};
 
 use anyhow::Result;
-use client::Client;
+// use client::Client;  // removed-crate: client
 use gpui::AsyncApp;
 use parking_lot::RwLock;
 pub use settings::ContextServerCommand;

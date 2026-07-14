@@ -1,4 +1,4 @@
-use collab_ui::collab_panel;
+// use collab_ui::collab_panel;  // removed-crate: collab_ui
 use gpui::{App, Menu, MenuItem, OsAction};
 use release_channel::ReleaseChannel;
 use terminal_view::terminal_panel;

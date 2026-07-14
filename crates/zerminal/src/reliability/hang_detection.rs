@@ -2,7 +2,7 @@ use std::sync::Arc;
 use std::thread;
 use std::time::Duration;
 
-use client::Client;
+// use client::Client;  // removed-crate: client
 use gpui::{AppContext, TasksIncluded, profiler};
 use parking_lot::Mutex;
 use ui::App;

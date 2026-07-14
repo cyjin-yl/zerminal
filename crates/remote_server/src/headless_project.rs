@@ -1,5 +1,5 @@
 use anyhow::{Context as _, Result, anyhow};
-use client::ProjectId;
+// use client::ProjectId;  // removed-crate: client
 use collections::HashMap;
 use collections::HashSet;
 use gpui::TasksIncluded;
@@ -482,7 +482,7 @@ impl HeadlessProject {
         message: TypedEnvelope<proto::AddWorktree>,
         mut cx: AsyncApp,
     ) -> Result<proto::AddWorktreeResponse> {
-        use client::ErrorCodeExt;
+// use client::ErrorCodeExt;  // removed-crate: client
         let fs = this.read_with(&cx, |this, _| this.fs.clone());
         let path = PathBuf::from(shellexpand::tilde(&message.payload.path).to_string());
 

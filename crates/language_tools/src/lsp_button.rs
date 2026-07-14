@@ -10,7 +10,7 @@ use sysinfo::{Pid, ProcessRefreshKind, RefreshKind, System};
 
 use language::language_settings::{EditPredictionProvider, all_language_settings};
 
-use client::proto;
+// use client::proto;  // removed-crate: client
 use collections::HashSet;
 use editor::{Editor, EditorEvent};
 use gpui::{Action as _, Anchor, App, Entity, Subscription, Task, TaskExt, WeakEntity, actions};

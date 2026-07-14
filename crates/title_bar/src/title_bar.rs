@@ -22,8 +22,8 @@ use crate::application_menu::{
 };
 
 use auto_update::AutoUpdateStatus;
-use call::ActiveCall;
-use client::{Client, UserStore, zed_urls};
+// use call::ActiveCall;  // removed-crate: call
+// use client::{Client, UserStore, zed_urls};  // removed-crate: client
 use command_palette_hooks::CommandPaletteFilter;
 
 use gpui::{

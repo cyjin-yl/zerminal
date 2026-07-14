@@ -1,5 +1,5 @@
 use anyhow::{Context as _, Result};
-use client::Client;
+// use client::Client;  // removed-crate: client
 use db::kvp::KeyValueStore;
 use futures_lite::StreamExt;
 use gpui::{
@@ -1319,7 +1319,7 @@ pub async fn finalize_auto_update_on_quit() {
 
 #[cfg(test)]
 mod tests {
-    use client::Client;
+// use client::Client;  // removed-crate: client
     use clock::FakeSystemClock;
     use futures::channel::oneshot;
     use gpui::TestAppContext;

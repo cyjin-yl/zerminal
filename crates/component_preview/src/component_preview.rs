@@ -1,6 +1,6 @@
 mod persistence;
 
-use client::UserStore;
+// use client::UserStore;  // removed-crate: client
 use collections::HashMap;
 use component::{ComponentId, ComponentMetadata, ComponentStatus, components};
 use gpui::{

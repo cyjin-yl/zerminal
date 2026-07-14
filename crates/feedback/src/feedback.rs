@@ -1,4 +1,4 @@
-use client::telemetry;
+// use client::telemetry;  // removed-crate: client
 use extension_host::ExtensionStore;
 use gpui::{App, ClipboardItem, PromptLevel, actions};
 use system_specs::{CopySystemSpecsIntoClipboard, SystemSpecs};

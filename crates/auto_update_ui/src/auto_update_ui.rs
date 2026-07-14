@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 // use agent_skills::GLOBAL_SKILLS_DIR_DISPLAY;  // removed-crate: agent_skills
 use auto_update::{AutoUpdater, release_notes_url};
-use client::zed_urls;
+// use client::zed_urls;  // removed-crate: client
 use db::kvp::Dismissable;
 use editor::{Editor, MultiBuffer};
 use gpui::{

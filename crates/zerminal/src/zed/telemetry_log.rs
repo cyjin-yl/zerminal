@@ -3,7 +3,7 @@ use std::sync::Arc;
 
 use time::OffsetDateTime;
 
-use client::telemetry::Telemetry;
+// use client::telemetry::Telemetry;  // removed-crate: client
 use collections::{HashMap, HashSet};
 use fs::Fs;
 use futures::StreamExt;

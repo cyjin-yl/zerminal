@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::Duration;
 
-use client::{Client, TelemetrySettings, UserStore, zed_urls};
+// use client::{Client, TelemetrySettings, UserStore, zed_urls};  // removed-crate: client
 // use cloud_api_types::Plan;  // removed-crate: cloud_api_types
 use collections::HashMap;
 use fs::Fs;

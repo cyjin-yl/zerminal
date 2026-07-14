@@ -1,16 +1,16 @@
 use std::rc::Rc;
 use std::sync::Arc;
 
-use call::{ActiveCall, Room};
-use channel::ChannelStore;
-use client::{User, proto::PeerId};
+// use call::{ActiveCall, Room};  // removed-crate: call
+// use channel::ChannelStore;  // removed-crate: channel
+// use client::{User, proto::PeerId};  // removed-crate: client
 use gpui::{
     AnyElement, Empty, Hsla, IntoElement, MouseButton, Path, ScreenCaptureSource, Styled, TaskExt,
     WeakEntity, canvas, point,
 };
 use gpui::{App, Task, Window};
 use icons::IconName;
-use livekit_client::ConnectionQuality;
+// use livekit_client::ConnectionQuality;  // removed-crate: livekit_client
 use project::WorktreeSettings;
 use remote_connection::RemoteConnectionModal;
 use rpc::proto::{self};

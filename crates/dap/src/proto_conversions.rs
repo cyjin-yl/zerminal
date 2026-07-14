@@ -1,8 +1,8 @@
 use anyhow::{Context as _, Result};
-use client::proto::{
+// use client::proto::{
     self, DapChecksum, DapChecksumAlgorithm, DapEvaluateContext, DapModule, DapScope,
     DapScopePresentationHint, DapSource, DapSourcePresentationHint, DapStackFrame, DapVariable,
-};
+};  // removed-crate: client
 use dap_types::{OutputEventCategory, OutputEventGroup, ScopePresentationHint, Source};
 
 pub trait ProtoConversion {

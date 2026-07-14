@@ -1,6 +1,6 @@
 use anyhow::{Context as _, Result};
-use channel::ChannelStore;
-use client::{ChannelId, Client, UserStore};
+// use channel::ChannelStore;  // removed-crate: channel
+// use client::{ChannelId, Client, UserStore};  // removed-crate: client
 use futures_lite::stream::StreamExt;
 use gpui::{App, AppContext as _, AsyncApp, Context, Entity, EventEmitter, Global, Task};
 use rpc::{Notification, TypedEnvelope, proto};

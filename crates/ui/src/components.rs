@@ -47,7 +47,7 @@ pub use banner::*;
 pub use button::*;
 pub use callout::*;
 pub use chip::*;
-pub use collab::*;
+// pub use collab::*;  // removed-crate: collab
 pub use context_menu::*;
 pub use count_badge::*;
 pub use data_table::*;
