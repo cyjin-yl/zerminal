@@ -11,7 +11,7 @@ check_remaining_installations() {
         [ "$remaining" -eq 0 ]
     else
         # Check for any Zed variants in ~/.local
-        remaining=$(ls -d "$HOME/.local/zed"*.app 2>/dev/null | wc -l)
+        remaining=$(ls -d "$HOME/.local/zerminal"*.app 2>/dev/null | wc -l)
         [ "$remaining" -eq 0 ]
     fi
 }
@@ -21,7 +21,7 @@ prompt_remove_preferences() {
     read -r response
     case "$response" in
         [nN]|[nN][oO])
-            rm -rf "$HOME/.config/zed"
+            rm -rf "$HOME/.config/zerminal"
             echo "Preferences removed."
             ;;
         *)
@@ -58,71 +58,71 @@ linux() {
     db_suffix="stable"
     case "$channel" in
       stable)
-        appid="dev.zed.Zed"
+        appid="dev.zerminal.Zerminal"
         db_suffix="stable"
         ;;
       nightly)
-        appid="dev.zed.Zed-Nightly"
+        appid="dev.zerminal.Zerminal-Nightly"
         db_suffix="nightly"
         ;;
       preview)
-        appid="dev.zed.Zed-Preview"
+        appid="dev.zerminal.Zerminal-Preview"
         db_suffix="preview"
         ;;
       dev)
-        appid="dev.zed.Zed-Dev"
+        appid="dev.zerminal.Zerminal-Dev"
         db_suffix="dev"
         ;;
       *)
         echo "Unknown release channel: ${channel}. Using stable app ID."
-        appid="dev.zed.Zed"
+        appid="dev.zerminal.Zerminal"
         db_suffix="stable"
         ;;
     esac
 
     # Remove the app directory
-    rm -rf "$HOME/.local/zed$suffix.app"
+    rm -rf "$HOME/.local/zerminal$suffix.app"
 
     # Remove the binary symlink
-    rm -f "$HOME/.local/bin/zed"
+    rm -f "$HOME/.local/bin/zerminal"
 
     # Remove the .desktop file
     rm -f "$HOME/.local/share/applications/${appid}.desktop"
 
     # Remove the database directory for this channel
-    rm -rf "$HOME/.local/share/zed/db/0-$db_suffix"
+    rm -rf "$HOME/.local/share/zerminal/db/0-$db_suffix"
 
     # Remove socket file
-    rm -f "$HOME/.local/share/zed/zed-$db_suffix.sock"
+    rm -f "$HOME/.local/share/zerminal/zerminal-$db_suffix.sock"
 
     # Remove the entire Zed directory if no installations remain
     if check_remaining_installations; then
-        rm -rf "$HOME/.local/share/zed"
+        rm -rf "$HOME/.local/share/zerminal"
         prompt_remove_preferences
     fi
 
-    rm -rf $HOME/.zed_server
+    rm -rf $HOME/.zerminal_server
 }
 
 macos() {
-    app="Zed.app"
+    app="Zerminal.app"
     db_suffix="stable"
-    app_id="dev.zed.Zed"
+    app_id="dev.zerminal.Zerminal"
     case "$channel" in
       nightly)
-        app="Zed Nightly.app"
+        app="Zerminal Nightly.app"
         db_suffix="nightly"
-        app_id="dev.zed.Zed-Nightly"
+        app_id="dev.zerminal.Zerminal-Nightly"
         ;;
       preview)
-        app="Zed Preview.app"
+        app="Zerminal Preview.app"
         db_suffix="preview"
-        app_id="dev.zed.Zed-Preview"
+        app_id="dev.zerminal.Zerminal-Preview"
         ;;
       dev)
-        app="Zed Dev.app"
+        app="Zerminal Dev.app"
         db_suffix="dev"
-        app_id="dev.zed.Zed-Dev"
+        app_id="dev.zerminal.Zerminal-Dev"
         ;;
     esac
 
@@ -132,7 +132,7 @@ macos() {
     fi
 
     # Remove the binary symlink
-    rm -f "$HOME/.local/bin/zed"
+    rm -f "$HOME/.local/bin/zerminal"
 
     # Remove the database directory for this channel
     rm -rf "$HOME/Library/Application Support/Zed/db/0-$db_suffix"
@@ -152,7 +152,7 @@ macos() {
         prompt_remove_preferences
     fi
 
-    rm -rf $HOME/.zed_server
+    rm -rf $HOME/.zerminal_server
 }
 
 main "$@"

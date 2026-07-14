@@ -55,7 +55,7 @@ if ($Help) {
     exit 0
 }
 
-Push-Location -Path crates/zed
+Push-Location -Path crates/zerminal
 $channel = Get-Content "RELEASE_CHANNEL"
 $env:ZERMINAL_RELEASE_CHANNEL = $channel
 $env:RELEASE_CHANNEL = $channel
@@ -100,10 +100,10 @@ function GenerateLicenses {
 }
 
 function BuildZedAndItsFriends {
-    Write-Output "Building Zed and its friends, for channel: $channel"
-    # Build zed.exe, cli.exe and auto_update_helper.exe
-    cargo build --release --package zed --package cli --package auto_update_helper --target $target
-    Copy-Item -Path ".\$CargoOutDir\zed.exe" -Destination "$innoDir\Zed.exe" -Force
+    Write-Output "Building Zerminal and its friends, for channel: $channel"
+    # Build zerminal.exe, cli.exe and auto_update_helper.exe
+    cargo build --release --package zerminal --package cli --package auto_update_helper --target $target
+    Copy-Item -Path ".\$CargoOutDir\zerminal.exe" -Destination "$innoDir\zerminal.exe" -Force
     Copy-Item -Path ".\$CargoOutDir\cli.exe" -Destination "$innoDir\cli.exe" -Force
     Copy-Item -Path ".\$CargoOutDir\auto_update_helper.exe" -Destination "$innoDir\auto_update_helper.exe" -Force
     # Build explorer_command_injector.dll
@@ -118,7 +118,7 @@ function BuildZedAndItsFriends {
             cargo build --release --package explorer_command_injector --target $target
         }
     }
-    Copy-Item -Path ".\$CargoOutDir\explorer_command_injector.dll" -Destination "$innoDir\zed_explorer_command_injector.dll" -Force
+    Copy-Item -Path ".\$CargoOutDir\explorer_command_injector.dll" -Destination "$innoDir\zerminal_explorer_command_injector.dll" -Force
 }
 
 function BuildRemoteServer {
@@ -133,7 +133,7 @@ function BuildRemoteServer {
         & "$innoDir\sign.ps1" $remoteServerSrc
     }
 
-    $remoteServerDst = "$env:ZERMINAL_WORKSPACE\target\zed-remote-server-windows-$Architecture.zip"
+    $remoteServerDst = "$env:ZERMINAL_WORKSPACE\target\zerminal-remote-server-windows-$Architecture.zip"
     Write-Output "Compressing remote_server to $remoteServerDst"
     Compress-Archive -Path $remoteServerSrc -DestinationPath $remoteServerDst -Force
 
@@ -142,14 +142,14 @@ function BuildRemoteServer {
 
 function ZipZedAndItsFriendsDebug {
     $items = @(
-        ".\$CargoOutDir\zed.pdb",
+        ".\$CargoOutDir\zerminal.pdb",
         ".\$CargoOutDir\cli.pdb",
         ".\$CargoOutDir\auto_update_helper.pdb",
         ".\$CargoOutDir\explorer_command_injector.pdb",
         ".\$CargoOutDir\remote_server.pdb"
     )
 
-    Compress-Archive -Path $items -DestinationPath ".\$CargoOutDir\zed-$env:RELEASE_VERSION-$env:ZERMINAL_RELEASE_CHANNEL.dbg.zip" -Force
+    Compress-Archive -Path $items -DestinationPath ".\$CargoOutDir\zerminal-$env:RELEASE_VERSION-$env:ZERMINAL_RELEASE_CHANNEL.dbg.zip" -Force
 }
 
 
@@ -163,7 +163,7 @@ function UploadToSentry {
         Write-Output "missing SENTRY_AUTH_TOKEN. skipping sentry upload."
         return
     }
-    Write-Output "Uploading zed debug symbols to sentry..."
+    Write-Output "Uploading zerminal debug symbols to sentry..."
     for ($i = 1; $i -le 3; $i++) {
         try {
             sentry-cli debug-files upload --include-sources --wait -p zed -o zed-dev $CargoOutDir
@@ -196,7 +196,7 @@ function MakeAppx {
     # Add makeAppx.exe to Path
     $sdk = "C:\Program Files (x86)\Windows Kits\10\bin\10.0.26100.0\x64"
     $env:Path += ';' + $sdk
-    makeAppx.exe pack /d "$innoDir\make_appx" /p "$innoDir\zed_explorer_command_injector.appx" /nv
+    makeAppx.exe pack /d "$innoDir\make_appx" /p "$innoDir\zerminal_explorer_command_injector.appx" /nv
 }
 
 function SignZedAndItsFriends {
@@ -204,7 +204,7 @@ function SignZedAndItsFriends {
         return
     }
 
-    $files = "$innoDir\Zed.exe,$innoDir\cli.exe,$innoDir\auto_update_helper.exe,$innoDir\zed_explorer_command_injector.dll,$innoDir\zed_explorer_command_injector.appx"
+    $files = "$innoDir\zerminal.exe,$innoDir\cli.exe,$innoDir\auto_update_helper.exe,$innoDir\zerminal_explorer_command_injector.dll,$innoDir\zerminal_explorer_command_injector.appx"
     & "$innoDir\sign.ps1" $files
 }
 
@@ -226,10 +226,10 @@ function DownloadConpty {
 }
 
 function CollectFiles {
-    Move-Item -Path "$innoDir\zed_explorer_command_injector.appx" -Destination "$innoDir\appx\zed_explorer_command_injector.appx" -Force
-    Move-Item -Path "$innoDir\zed_explorer_command_injector.dll" -Destination "$innoDir\appx\zed_explorer_command_injector.dll" -Force
-    Move-Item -Path "$innoDir\cli.exe" -Destination "$innoDir\bin\zed.exe" -Force
-    Move-Item -Path "$innoDir\zed.sh" -Destination "$innoDir\bin\zed" -Force
+    Move-Item -Path "$innoDir\zerminal_explorer_command_injector.appx" -Destination "$innoDir\appx\zerminal_explorer_command_injector.appx" -Force
+    Move-Item -Path "$innoDir\zerminal_explorer_command_injector.dll" -Destination "$innoDir\appx\zerminal_explorer_command_injector.dll" -Force
+    Move-Item -Path "$innoDir\cli.exe" -Destination "$innoDir\bin\zerminal.exe" -Force
+    Move-Item -Path "$innoDir\zerminal.sh" -Destination "$innoDir\bin\zerminal" -Force
     Move-Item -Path "$innoDir\auto_update_helper.exe" -Destination "$innoDir\tools\auto_update_helper.exe" -Force
     if($Architecture -eq "aarch64") {
         New-Item -Type Directory -Path "$innoDir\arm64" -Force
@@ -247,63 +247,63 @@ function CollectFiles {
 }
 
 function BuildInstaller {
-    $issFilePath = "$innoDir\zed.iss"
+    $issFilePath = "$innoDir\zerminal.iss"
     switch ($channel) {
         "stable" {
             $appId = "{{2DB0DA96-CA55-49BB-AF4F-64AF36A86712}"
             $appIconName = "app-icon"
-            $appName = "Zed"
-            $appDisplayName = "Zed"
-            $appSetupName = "Zed-$Architecture"
-            # The mutex name here should match the mutex name in crates\zed\src\zed\windows_only_instance.rs
-            $appMutex = "Zed-Stable-Instance-Mutex"
-            $appExeName = "Zed"
-            $regValueName = "Zed"
-            $appUserId = "ZedIndustries.Zed"
-            $appShellNameShort = "Z&ed"
-            $appAppxFullName = "ZedIndustries.Zed_1.0.0.0_neutral__japxn1gcva8rg"
+            $appName = "Zerminal"
+            $appDisplayName = "Zerminal"
+            $appSetupName = "Zerminal-$Architecture"
+            # The mutex name here should match the mutex name in crates\zerminal\src\zed\windows_only_instance.rs
+            $appMutex = "Zerminal-Stable-Instance-Mutex"
+            $appExeName = "zerminal"
+            $regValueName = "Zerminal"
+            $appUserId = "Zerminal.Zerminal"
+            $appShellNameShort = "Z&erminal"
+            $appAppxFullName = "Zerminal.Zerminal_1.0.0.0_neutral__japxn1gcva8rg"
         }
         "preview" {
             $appId = "{{F70E4811-D0E2-4D88-AC99-D63752799F95}"
             $appIconName = "app-icon-preview"
-            $appName = "Zed Preview"
-            $appDisplayName = "Zed Preview"
-            $appSetupName = "Zed-$Architecture"
-            # The mutex name here should match the mutex name in crates\zed\src\zed\windows_only_instance.rs
-            $appMutex = "Zed-Preview-Instance-Mutex"
-            $appExeName = "Zed"
-            $regValueName = "ZedPreview"
-            $appUserId = "ZedIndustries.Zed.Preview"
-            $appShellNameShort = "Z&ed Preview"
-            $appAppxFullName = "ZedIndustries.Zed.Preview_1.0.0.0_neutral__japxn1gcva8rg"
+            $appName = "Zerminal Preview"
+            $appDisplayName = "Zerminal Preview"
+            $appSetupName = "Zerminal-$Architecture"
+            # The mutex name here should match the mutex name in crates\zerminal\src\zed\windows_only_instance.rs
+            $appMutex = "Zerminal-Preview-Instance-Mutex"
+            $appExeName = "zerminal"
+            $regValueName = "ZerminalPreview"
+            $appUserId = "Zerminal.Zerminal.Preview"
+            $appShellNameShort = "Z&erminal Preview"
+            $appAppxFullName = "Zerminal.Zerminal.Preview_1.0.0.0_neutral__japxn1gcva8rg"
         }
         "nightly" {
             $appId = "{{1BDB21D3-14E7-433C-843C-9C97382B2FE0}"
             $appIconName = "app-icon-nightly"
-            $appName = "Zed Nightly"
-            $appDisplayName = "Zed Nightly"
-            $appSetupName = "Zed-$Architecture"
-            # The mutex name here should match the mutex name in crates\zed\src\zed\windows_only_instance.rs
-            $appMutex = "Zed-Nightly-Instance-Mutex"
-            $appExeName = "Zed"
-            $regValueName = "ZedNightly"
-            $appUserId = "ZedIndustries.Zed.Nightly"
-            $appShellNameShort = "Z&ed Editor Nightly"
-            $appAppxFullName = "ZedIndustries.Zed.Nightly_1.0.0.0_neutral__japxn1gcva8rg"
+            $appName = "Zerminal Nightly"
+            $appDisplayName = "Zerminal Nightly"
+            $appSetupName = "Zerminal-$Architecture"
+            # The mutex name here should match the mutex name in crates\zerminal\src\zed\windows_only_instance.rs
+            $appMutex = "Zerminal-Nightly-Instance-Mutex"
+            $appExeName = "zerminal"
+            $regValueName = "ZerminalNightly"
+            $appUserId = "Zerminal.Zerminal.Nightly"
+            $appShellNameShort = "Z&erminal Nightly"
+            $appAppxFullName = "Zerminal.Zerminal.Nightly_1.0.0.0_neutral__japxn1gcva8rg"
         }
         "dev" {
             $appId = "{{8357632E-24A4-4F32-BA97-E575B4D1FE5D}"
             $appIconName = "app-icon-dev"
-            $appName = "Zed Dev"
-            $appDisplayName = "Zed Dev"
-            $appSetupName = "Zed-$Architecture"
-            # The mutex name here should match the mutex name in crates\zed\src\zed\windows_only_instance.rs
-            $appMutex = "Zed-Dev-Instance-Mutex"
-            $appExeName = "Zed"
-            $regValueName = "ZedDev"
-            $appUserId = "ZedIndustries.Zed.Dev"
-            $appShellNameShort = "Z&ed Dev"
-            $appAppxFullName = "ZedIndustries.Zed.Dev_1.0.0.0_neutral__japxn1gcva8rg"
+            $appName = "Zerminal Dev"
+            $appDisplayName = "Zerminal Dev"
+            $appSetupName = "Zerminal-$Architecture"
+            # The mutex name here should match the mutex name in crates\zerminal\src\zed\windows_only_instance.rs
+            $appMutex = "Zerminal-Dev-Instance-Mutex"
+            $appExeName = "zerminal"
+            $regValueName = "ZerminalDev"
+            $appUserId = "Zerminal.Zerminal.Dev"
+            $appShellNameShort = "Z&erminal Dev"
+            $appAppxFullName = "Zerminal.Zerminal.Dev_1.0.0.0_neutral__japxn1gcva8rg"
         }
         default {
             Write-Error "can't bundle installer for $channel."
@@ -362,8 +362,8 @@ function BuildInstaller {
 
 ParseZedWorkspace
 $innoDir = "$env:ZERMINAL_WORKSPACE\inno\$Architecture"
-$debugArchive = "$CargoOutDir\zed-$env:RELEASE_VERSION-$env:ZERMINAL_RELEASE_CHANNEL.dbg.zip"
-$debugStoreKey = "$env:ZERMINAL_RELEASE_CHANNEL/zed-$env:RELEASE_VERSION-$env:ZERMINAL_RELEASE_CHANNEL.dbg.zip"
+$debugArchive = "$CargoOutDir\zerminal-$env:RELEASE_VERSION-$env:ZERMINAL_RELEASE_CHANNEL.dbg.zip"
+$debugStoreKey = "$env:ZERMINAL_RELEASE_CHANNEL/zerminal-$env:RELEASE_VERSION-$env:ZERMINAL_RELEASE_CHANNEL.dbg.zip"
 
 CheckEnvironmentVariables
 PrepareForBundle
@@ -385,8 +385,8 @@ if($env:CI) {
 if ($buildSuccess) {
     Write-Output "Build successful"
     if ($Install) {
-        Write-Output "Installing Zed..."
-        Start-Process -FilePath "$env:ZERMINAL_WORKSPACE/target/ZedEditorUserSetup-x64-$env:RELEASE_VERSION.exe"
+        Write-Output "Installing Zerminal..."
+        Start-Process -FilePath "$env:ZERMINAL_WORKSPACE/target/ZerminalEditorUserSetup-x64-$env:RELEASE_VERSION.exe"
     }
     exit 0
 }

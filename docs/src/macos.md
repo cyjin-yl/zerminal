@@ -65,11 +65,11 @@ See the [CLI Reference](./reference/cli.md) for all available options.
 3. Optionally, remove your settings and extensions:
 
 ```sh
-rm -rf ~/.config/zed
-rm -rf ~/Library/Application\ Support/Zed
-rm -rf ~/Library/Caches/Zed
-rm -rf ~/Library/Logs/Zed
-rm -rf ~/Library/Saved\ Application\ State/dev.zed.Zed.savedState
+rm -rf ~/.config/zerminal
+rm -rf ~/Library/Application\ Support/Zerminal
+rm -rf ~/Library/Caches/Zerminal
+rm -rf ~/Library/Logs/Zerminal
+rm -rf ~/Library/Saved\ Application\ State/dev.zerminal.Zerminal.savedState
 ```
 
 If you installed the CLI, remove it with:

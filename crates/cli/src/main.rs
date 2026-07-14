@@ -31,7 +31,7 @@ use walkdir::WalkDir;
 
 use std::io::IsTerminal;
 
-const URL_PREFIX: [&'static str; 5] = ["zed://", "http://", "https://", "file://", "ssh://"];
+const URL_PREFIX: [&'static str; 5] = ["zerminal://", "http://", "https://", "file://", "ssh://"];
 
 struct Detect;
 
@@ -48,21 +48,21 @@ trait InstalledApp {
 
 #[derive(Parser, Debug)]
 #[command(
-    name = "zed",
+    name = "zerminal",
     disable_version_flag = true,
-    before_help = "The Zed CLI binary.
-This CLI is a separate binary that invokes Zed.
+    before_help = "The Zerminal CLI binary.
+This CLI is a separate binary that invokes Zerminal.
 
 Examples:
-    `zed`
-          Simply opens Zed
-    `zed --foreground`
+    `zerminal`
+          Simply opens Zerminal
+    `zerminal --foreground`
           Runs in foreground (shows all logs)
-    `zed path-to-your-project`
-          Open your project in Zed
-    `zed -n path-to-file `
+    `zerminal path-to-your-project`
+          Open your project in Zerminal
+    `zerminal -n path-to-file `
           Open file/folder in a new window",
-    after_help = "To read from stdin, append '-', e.g. 'ps axf | zed -'"
+    after_help = "To read from stdin, append '-', e.g. 'ps axf | zerminal -'"
 )]
 struct Args {
     /// Wait for all of the given paths to be opened/closed before exiting.
@@ -87,29 +87,29 @@ struct Args {
     classic: bool,
     /// Sets a custom directory for all user data (e.g., database, extensions, logs).
     /// This overrides the default platform-specific data directory location:
-    #[cfg_attr(target_os = "macos", doc = "`~/Library/Application Support/Zed`.")]
-    #[cfg_attr(target_os = "windows", doc = "`%LOCALAPPDATA%\\Zed`.")]
+    #[cfg_attr(target_os = "macos", doc = "`~/Library/Application Support/Zerminal`.")]
+    #[cfg_attr(target_os = "windows", doc = "`%LOCALAPPDATA%\\Zerminal`.")]
     #[cfg_attr(
         not(any(target_os = "windows", target_os = "macos")),
-        doc = "`$XDG_DATA_HOME/zed`."
+        doc = "`$XDG_DATA_HOME/zerminal`."
     )]
     #[arg(long, value_name = "DIR", value_hint = clap::ValueHint::DirPath)]
     user_data_dir: Option<String>,
-    /// The paths to open in Zed (space-separated).
+    /// The paths to open in Zerminal (space-separated).
     ///
     /// Use `path:line:column` syntax to open a file at the given line and column.
     #[arg(trailing_var_arg = true, value_hint = clap::ValueHint::AnyPath)]
     paths_with_position: Vec<String>,
-    /// Print Zed's version and the app path.
+    /// Print Zerminal's version and the app path.
     #[arg(short, long)]
     version: bool,
-    /// Run zed in the foreground (useful for debugging)
+    /// Run zerminal in the foreground (useful for debugging)
     #[arg(long)]
     foreground: bool,
-    /// Custom path to Zed.app or the zed binary
-    #[arg(long)]
+    /// Custom path to Zerminal.app or the zerminal binary
+    #[arg(long = "zerminal")]
     zed: Option<PathBuf>,
-    /// Run zed in dev-server mode
+    /// Run zerminal in dev-server mode
     #[arg(long)]
     dev_server_token: Option<String>,
     /// The username and WSL distribution to use when opening paths. If not specified,
@@ -124,7 +124,7 @@ struct Args {
     #[cfg(target_os = "windows")]
     #[arg(long, value_name = "USER@DISTRO")]
     wsl: Option<String>,
-    /// Not supported in Zed CLI, only supported on Zed binary
+    /// Not supported in Zerminal CLI, only supported on Zerminal binary
     /// Will attempt to give the correct command to run
     #[arg(long)]
     system_specs: bool,
@@ -505,7 +505,7 @@ fn run() -> Result<()> {
 
     let args = Args::parse();
 
-    // `zed --askpass` Makes zed operate in nc/netcat mode for use with askpass
+    // `zerminal --askpass` Makes zerminal operate in nc/netcat mode for use with askpass
     if let Some(socket) = &args.askpass {
         askpass::main(socket);
         return Ok(());
@@ -576,7 +576,7 @@ fn run() -> Result<()> {
 
     let (server, server_name) =
         IpcOneShotServer::<IpcHandshake>::new().context("Handshake before Zed spawn")?;
-    let url = format!("zed-cli://{server_name}");
+    let url = format!("zerminal-cli://{server_name}");
 
     let open_behavior = if args.new {
         cli::OpenBehavior::AlwaysNew
@@ -597,7 +597,7 @@ fn run() -> Result<()> {
         {
             use collections::HashMap;
 
-            // On Linux, the desktop entry uses `cli` to spawn `zed`.
+            // On Linux, the desktop entry uses `cli` to spawn `zerminal`.
             // We need to handle env vars correctly since std::env::vars() may not contain
             // project-specific vars (e.g. those set by direnv).
             // By setting env to None here, the LSP will use worktree env vars instead,
@@ -845,14 +845,14 @@ fn prompt_open_behavior() -> Option<cli::CliBehaviorSetting> {
     let items = [
         format!(
             "Add to existing Zed window ({})",
-            blue.apply_to("zed --existing")
+            blue.apply_to("zerminal --existing")
         ),
-        format!("Open a new window ({})", blue.apply_to("zed --classic")),
+        format!("Open a new window ({})", blue.apply_to("zerminal --classic")),
     ];
 
     let prompt = format!(
         "Configure default behavior for {}\n{}",
-        blue.apply_to("zed <path>"),
+        blue.apply_to("zerminal <path>"),
         console::style("You can change this later in Zed settings"),
     );
 
@@ -902,7 +902,7 @@ mod linux {
                 // libexec is the standard, lib/zed is for Arch (and other non-libexec distros),
                 // ./zed is for the target directory in development builds.
                 let possible_locations =
-                    ["../libexec/zed-editor", "../lib/zed/zed-editor", "./zed"];
+                    ["../libexec/zerminal", "../lib/zerminal/zerminal", "./zerminal"];
                 possible_locations
                     .iter()
                     .find_map(|p| dir.join(p).canonicalize().ok().filter(|path| path != &cli))
@@ -939,7 +939,7 @@ mod linux {
                 .unwrap_or_else(|| paths::data_dir().clone());
 
             let sock_path = data_dir.join(format!(
-                "zed-{}.sock",
+                "zerminal-{}.sock",
                 *release_channel::RELEASE_CHANNEL_NAME
             ));
             let sock = UnixDatagram::unbound()?;
@@ -1049,7 +1049,7 @@ mod flatpak {
         if let Some(flatpak_dir) = get_flatpak_dir() {
             let mut args = vec!["/usr/bin/flatpak-spawn".into(), "--host".into()];
             args.append(&mut get_xdg_env_args());
-            args.push("--env=ZERMINAL_UPDATE_EXPLANATION=Please use flatpak to update zed".into());
+            args.push("--env=ZERMINAL_UPDATE_EXPLANATION=Please use flatpak to update zerminal".into());
             args.push(
                 format!(
                     "--env={EXTRA_LIB_ENV_NAME}={}",
@@ -1057,17 +1057,17 @@ mod flatpak {
                 )
                 .into(),
             );
-            args.push(flatpak_dir.join("bin").join("zed").into());
+            args.push(flatpak_dir.join("bin").join("zerminal").into());
 
             let mut is_app_location_set = false;
             for arg in &env::args_os().collect::<Vec<_>>()[1..] {
                 args.push(arg.clone());
-                is_app_location_set |= arg == "--zed";
+                is_app_location_set |= arg == "--zerminal";
             }
 
             if !is_app_location_set {
-                args.push("--zed".into());
-                args.push(flatpak_dir.join("libexec").join("zed-editor").into());
+                args.push("--zerminal".into());
+                args.push(flatpak_dir.join("libexec").join("zerminal").into());
             }
 
             let error = exec::execvp("/usr/bin/flatpak-spawn", args);
@@ -1078,11 +1078,11 @@ mod flatpak {
 
     pub fn set_bin_if_no_escape(mut args: super::Args) -> super::Args {
         if env::var(NO_ESCAPE_ENV_NAME).is_ok()
-            && env::var("FLATPAK_ID").is_ok_and(|id| id.starts_with("dev.zed.Zed"))
+            && env::var("FLATPAK_ID").is_ok_and(|id| id.starts_with("dev.zerminal.Zerminal"))
             && args.zed.is_none()
         {
-            args.zed = Some("/app/libexec/zed-editor".into());
-            unsafe { env::set_var("ZERMINAL_UPDATE_EXPLANATION", "Please use flatpak to update zed") };
+            args.zed = Some("/app/libexec/zerminal".into());
+            unsafe { env::set_var("ZERMINAL_UPDATE_EXPLANATION", "Please use flatpak to update zerminal") };
         }
         args
     }
@@ -1093,7 +1093,7 @@ mod flatpak {
         }
 
         if let Ok(flatpak_id) = env::var("FLATPAK_ID") {
-            if !flatpak_id.starts_with("dev.zed.Zed") {
+            if !flatpak_id.starts_with("dev.zerminal.Zerminal") {
                 return None;
             }
 
@@ -1237,9 +1237,9 @@ mod windows {
                 let cli = std::env::current_exe()?;
                 let dir = cli.parent().context("no parent path for cli")?;
 
-                // ../Zed.exe is the standard, lib/zed is for MSYS2, ./zed.exe is for the target
+                // ../zerminal.exe is the standard, lib/zerminal is for MSYS2, ./zerminal.exe is for the target
                 // directory in development builds.
-                let possible_locations = ["../Zed.exe", "../lib/zed/zed-editor.exe", "./zed.exe"];
+                let possible_locations = ["../zerminal.exe", "../lib/zerminal/zerminal-editor.exe", "./zerminal.exe"];
                 possible_locations
                     .iter()
                     .find_map(|p| dir.join(p).canonicalize().ok().filter(|path| path != &cli))
@@ -1383,7 +1383,7 @@ mod mac_os {
                         .parent()
                         .with_context(|| format!("Executable {executable:?} path has no parent"))?;
                     let subprocess_stdout_file = fs::File::create(
-                        executable_parent.join("zed_dev.log"),
+                        executable_parent.join("zerminal_dev.log"),
                     )
                     .with_context(|| format!("Log file creation in {executable_parent:?}"))?;
                     let subprocess_stdin_file =
@@ -1415,7 +1415,7 @@ mod mac_os {
             user_data_dir: Option<&str>,
         ) -> io::Result<ExitStatus> {
             let path = match self {
-                Bundle::App { app_bundle, .. } => app_bundle.join("Contents/MacOS/zed"),
+                Bundle::App { app_bundle, .. } => app_bundle.join("Contents/MacOS/zerminal"),
                 Bundle::LocalPath { executable, .. } => executable.clone(),
             };
 
@@ -1429,7 +1429,7 @@ mod mac_os {
 
         fn path(&self) -> PathBuf {
             match self {
-                Bundle::App { app_bundle, .. } => app_bundle.join("Contents/MacOS/zed"),
+                Bundle::App { app_bundle, .. } => app_bundle.join("Contents/MacOS/zerminal"),
                 Bundle::LocalPath { executable, .. } => executable.clone(),
             }
         }

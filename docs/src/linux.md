@@ -1,9 +1,9 @@
 ---
-title: Zed on Linux
+title: Zerminal on Linux
 description: "The installation script on the download page is the fastest way to install Zed:"
 ---
 
-# Zed on Linux
+# Zerminal on Linux
 
 ## Standard Installation
 
@@ -34,7 +34,7 @@ You will need to build from source for:
 - Redhat Enterprise Linux 8.x, Rocky Linux 8, AlmaLinux 8, Amazon Linux 2 on all architectures
 - Redhat Enterprise Linux 9.x, Rocky Linux 9.3, AlmaLinux 8, Amazon Linux 2023 on aarch64 (x86_x64 OK)
 
-## Other ways to install Zed on Linux
+## Other ways to install Zerminal on Linux
 
 Zed is open source, and [you can install from source](./development/linux.md).
 
@@ -52,7 +52,7 @@ There are several third-party Zed packages for various Linux distributions and p
 - Parabola: [`zed`](https://www.parabola.nu/packages/extra/x86_64/zed/)
 - ALT Linux (Sisyphus): [`zed`](https://packages.altlinux.org/en/sisyphus/srpms/zed/)
 - AOSC OS: [`zed`](https://packages.aosc.io/packages/zed)
-- Flathub: [`dev.zed.Zed`](https://flathub.org/apps/dev.zed.Zed)
+- Flathub: [`dev.zerminal.Zerminal`](https://flathub.org/apps/dev.zerminal.Zerminal)
 
 See [Repology](https://repology.org/project/zed-editor/versions) for a current list of Zed packages in various repositories.
 
@@ -60,7 +60,7 @@ See [Repology](https://repology.org/project/zed-editor/versions) for a current l
 
 When installing a third-party package please be aware that it may not be completely up to date and may be slightly different from the Zed we package (a common change is to rename the binary to `zedit` or `zeditor` to avoid conflicting with other packages).
 
-We'd love your help making Zed available for everyone. If Zed is not yet available for your package manager, and you would like to fix that, we have some notes on [how to do it](./development/linux.md#notes-for-packaging-zed).
+We'd love your help making Zerminal available for everyone. If Zerminal is not yet available for your package manager, and you would like to fix that, we have some notes on [how to do it](./development/linux.md#notes-for-packaging-zed).
 
 The packages in this section provide binary installs for Zed but are not official packages within the associated distributions. These packages are maintained by community members and as such a higher level of caution should be taken when installing them.
 
@@ -86,63 +86,63 @@ Then ensure that the `zed` binary in the tarball is on your path. The easiest wa
 
 ```sh
 mkdir -p ~/.local
-# extract zed to ~/.local/zed.app/
+# extract zed to ~/.local/zerminal.app/
 tar -xvf <path/to/download>.tar.gz -C ~/.local
 # link the zed binary to ~/.local/bin (or another directory in your $PATH)
-ln -sf ~/.local/zed.app/bin/zed ~/.local/bin/zed
+ln -sf ~/.local/zerminal.app/bin/zerminal ~/.local/bin/zerminal
 ```
 
 If you'd like integration with an XDG-compatible desktop environment, you will also need to install the `.desktop` file:
 
 ```sh
-install -D ~/.local/zed.app/share/applications/dev.zed.Zed.desktop -t ~/.local/share/applications
-sed -i "s|Icon=zed|Icon=$HOME/.local/zed.app/share/icons/hicolor/512x512/apps/zed.png|g" ~/.local/share/applications/dev.zed.Zed.desktop
-sed -i "s|Exec=zed|Exec=$HOME/.local/zed.app/bin/zed|g" ~/.local/share/applications/dev.zed.Zed.desktop
+install -D ~/.local/zerminal.app/share/applications/dev.zerminal.Zerminal.desktop -t ~/.local/share/applications
+sed -i "s|Icon=zerminal|Icon=$HOME/.local/zed.app/share/icons/hicolor/512x512/apps/zerminal.png|g" ~/.local/share/applications/dev.zerminal.Zerminal.desktop
+sed -i "s|Exec=zerminal|Exec=$HOME/.local/zed.app/bin/zed|g" ~/.local/share/applications/dev.zerminal.Zerminal.desktop
 ```
 
-## Uninstalling Zed
+## Uninstalling Zerminal
 
 ### Standard Uninstall
 
-If Zed was installed using the default installation script, it can be uninstalled by supplying the `--uninstall` flag to the `zed` shell command
+If Zerminal was installed using the default installation script, it can be uninstalled by supplying the `--uninstall` flag to the `zerminal` shell command
 
 ```sh
-zed --uninstall
+zerminal --uninstall
 ```
 
-If there are no errors, the shell will then prompt you whether you'd like to keep your preferences or delete them. After making a choice, you should see a message that Zed was successfully uninstalled.
+If there are no errors, the shell will then prompt you whether you'd like to keep your preferences or delete them. After making a choice, you should see a message that Zerminal was successfully uninstalled.
 
-In the case that the `zed` shell command was not found in your PATH, you can try one of the following commands
+In the case that the `zerminal` shell command was not found in your PATH, you can try one of the following commands
 
 ```sh
-$HOME/.local/bin/zed --uninstall
+$HOME/.local/bin/zerminal --uninstall
 ```
 
 or
 
 ```sh
-$HOME/.local/zed.app/bin.zed --uninstall
+$HOME/.local/zed.app/bin/zerminal --uninstall
 ```
 
 The first case might fail if a symlink was not properly established between `$HOME/.local/bin/zed` and `$HOME/.local/zed.app/bin.zed`. But the second case should work as long as Zed was installed to its default location.
 
-If Zed was installed to a different location, you must invoke the `zed` binary stored in that installation directory and pass the `--uninstall` flag to it in the same format as the previous commands.
+If Zerminal was installed to a different location, you must invoke the `zed` binary stored in that installation directory and pass the `--uninstall` flag to it in the same format as the previous commands.
 
 ### Package Manager
 
-If Zed was installed using a package manager, please consult the documentation for that package manager on how to uninstall a package.
+If Zerminal was installed using a package manager, please consult the documentation for that package manager on how to uninstall a package.
 
 ## Troubleshooting
 
 Linux works on a large variety of systems configured in many different ways. We primarily test Zed on a vanilla Ubuntu setup, as it is the most common distribution our users use. That said, we do expect it to work on a wide variety of machines.
 
-### Zed fails to start
+### Zerminal fails to start
 
 If you see an error like "/lib64/libc.so.6: version 'GLIBC_2.29' not found" it means that your distribution's version of glibc is too old. You can either upgrade your system, or [install Zed from source](./development/linux.md).
 
 ### Graphics issues
 
-#### Zed fails to open windows
+#### Zerminal fails to open windows
 
 Zed requires a GPU to run effectively. Under the hood, we use [Vulkan](https://www.vulkan.org/) to communicate with your GPU. If you are seeing problems with performance, or Zed fails to load, it is possible that Vulkan is the culprit.
 
@@ -156,7 +156,7 @@ vkcube
 
 This should output a line describing your current graphics setup and show a rotating cube. If this does not work, you should be able to fix it by installing Vulkan compatible GPU drivers, however in some cases there is no Vulkan support yet.
 
-You can find out which graphics card Zed is using by looking in the Zed log (`~/.local/share/zed/logs/Zed.log`) for `Using GPU: ...`.
+You can find out which graphics card Zed is using by looking in the Zerminal log (`~/.local/share/zerminal/logs/Zerminal.log`) for `Using GPU: ...`.
 
 If you see errors like `ERROR_INITIALIZATION_FAILED` or `GPU Crashed` or `ERROR_SURFACE_LOST_KHR` then you may be able to work around this by installing different drivers for your GPU, or by selecting a different GPU to run on. (See [#14225](https://github.com/zed-industries/zed/issues/14225))
 
@@ -170,7 +170,7 @@ If you are using `amdvlk`, the default open-source AMD graphics driver, you may 
 
 For more information, the [Arch guide to Vulkan](https://wiki.archlinux.org/title/Vulkan) has some good steps that translate well to most distributions.
 
-#### Forcing Zed to use a specific GPU
+#### Forcing Zerminal to use a specific GPU
 
 There are a few different ways to force Zed to use a specific GPU:
 
@@ -214,19 +214,19 @@ zed --system-specs
 
 will print the system specs to the terminal like so. It is strongly recommended to copy the output verbatim into the issue on GitHub, as it uses markdown formatting to ensure the output is readable.
 
-Additionally, it is extremely beneficial to provide the contents of your Zed log when reporting such issues. The log is usually located at `~/.local/share/zed/logs/Zed.log`. The recommended process for producing a helpful log file is as follows:
+Additionally, it is extremely beneficial to provide the contents of your Zed log when reporting such issues. The log is usually located at `~/.local/share/zerminal/logs/Zerminal.log`. The recommended process for producing a helpful log file is as follows:
 
 ```sh
-truncate -s 0 ~/.local/share/zed/logs/Zed.log # Clear the log file
-ZERMINAL_LOG=wgpu=info zed .
-cat ~/.local/share/zed/logs/Zed.log
+truncate -s 0 ~/.local/share/zerminal/logs/Zerminal.log # Clear the log file
+ZERMINAL_LOG=wgpu=info zerminal .
+cat ~/.local/share/zerminal/logs/Zerminal.log
 # copy the output
 ```
 
 Or, if you have the Zed cli setup, you can do
 
 ```sh
-ZERMINAL_LOG=wgpu=info /path/to/zed/cli --foreground .
+ZERMINAL_LOG=wgpu=info /path/to/zerminal/cli --foreground .
 # copy the output
 ```
 
@@ -235,10 +235,10 @@ It is also highly recommended when pasting the log into a github issue, to do so
 > **_Note_**: The whitespace in the template is important, and will cause incorrect formatting if not preserved.
 
 ````
-<details><summary>Zed Log</summary>
+<details><summary>Zerminal Log</summary>
 
 ```
-{zed log contents}
+{zerminal log contents}
 ```
 
 </details>
@@ -257,9 +257,9 @@ These features are provided by XDG desktop portals, specifically:
 
 Some window managers, such as `Hyprland`, don't provide a file picker by default. See [this list](https://wiki.archlinux.org/title/XDG_Desktop_Portal#List_of_backends_and_interfaces) as a starting point for alternatives.
 
-### Zed isn't remembering my API keys
+### Zerminal isn't remembering my API keys
 
-### Zed isn't remembering my login
+### Zerminal isn't remembering my login
 
 This feature also requires XDG desktop portals, specifically:
 
@@ -270,18 +270,18 @@ Zed needs a place to securely store secrets such as your Zed login cookie or you
 
 ### Could not start inotify
 
-Zed relies on inotify to watch your filesystem for changes. If you cannot start inotify then Zed will not work reliably.
+Zerminal relies on inotify to watch your filesystem for changes. If you cannot start inotify then Zed will not work reliably.
 
 If you are seeing "too many open files" then first try `sysctl fs.inotify`.
 
-- You should see that max_user_instances is 128 or higher (you can change the limit with `sudo sysctl fs.inotify.max_user_instances=1024`). Zed needs only 1 inotify instance.
-- You should see that `max_user_watches` is 8000 or higher (you can change the limit with `sudo sysctl fs.inotify.max_user_watches=64000`). Zed needs one watch per directory in all your open projects + one per git repository + a handful more for settings, themes, keymaps, extensions.
+- You should see that max_user_instances is 128 or higher (you can change the limit with `sudo sysctl fs.inotify.max_user_instances=1024`). Zerminal needs only 1 inotify instance.
+- You should see that `max_user_watches` is 8000 or higher (you can change the limit with `sudo sysctl fs.inotify.max_user_watches=64000`). Zerminal needs one watch per directory in all your open projects + one per git repository + a handful more for settings, themes, keymaps, extensions.
 
 It is also possible that you are running out of file descriptors. You can check the limits with `ulimit` and update them by editing `/etc/security/limits.conf`.
 
 ### No sound or wrong output device
 
-If you're not hearing any sound in Zed or the audio is routed to the wrong device, it could be due to a mismatch between audio systems. Zed relies on ALSA, while your system may be using PipeWire or PulseAudio. To resolve this, you need to configure ALSA to route audio through PipeWire/PulseAudio.
+If you're not hearing any sound in Zerminal or the audio is routed to the wrong device, it could be due to a mismatch between audio systems. Zerminal relies on ALSA, while your system may be using PipeWire or PulseAudio. To resolve this, you need to configure ALSA to route audio through PipeWire/PulseAudio.
 
 If your system uses PipeWire:
 

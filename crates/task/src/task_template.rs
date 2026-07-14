@@ -1059,7 +1059,7 @@ mod tests {
 
     #[test]
     fn test_unknown_variables() {
-        // Variable names starting with `ZED_` that are not valid should be
+        // Variable names starting with `ZERMINAL_` that are not valid should be
         // reported.
         let label = "test unknown variables".to_string();
         let command = "$ZERMINAL_UNKNOWN".to_string();
@@ -1118,7 +1118,7 @@ mod tests {
         };
         let sha = "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef".to_string();
         let sha_short = "0123456".to_string();
-        let repo_name = "zed".to_string();
+        let repo_name = "zerminal".to_string();
         let repo_path = format!("/Users/example/{repo_name}");
 
         let context = TaskContext {

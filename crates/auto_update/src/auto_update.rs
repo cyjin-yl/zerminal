@@ -364,7 +364,7 @@ pub fn view_release_notes(_: &ViewReleaseNotes, cx: &mut App) -> Option<()> {
 }
 
 #[cfg(not(target_os = "windows"))]
-const INSTALLER_DIR_PREFIX: &str = "zed-auto-update";
+const INSTALLER_DIR_PREFIX: &str = "zerminal-auto-update";
 
 #[cfg(not(target_os = "windows"))]
 struct InstallerDir(tempfile::TempDir);
@@ -392,7 +392,7 @@ impl InstallerDir {
     async fn new() -> Result<Self> {
         let installer_dir = std::env::current_exe()?
             .parent()
-            .context("No parent dir for Zed.exe")?
+            .context("No parent dir for zerminal.exe")?
             .join("updates");
         if smol::fs::metadata(&installer_dir).await.is_ok() {
             smol::fs::remove_dir_all(&installer_dir).await?;
@@ -581,7 +581,7 @@ impl AutoUpdater {
             &this,
             release_channel,
             version,
-            "zed-remote-server",
+            "zerminal-remote-server",
             os,
             arch,
             cx,
@@ -598,7 +598,7 @@ impl AutoUpdater {
 
         if smol::fs::metadata(&version_path).await.is_err() {
             log::info!(
-                "downloading zed-remote-server {os} {arch} version {}",
+                "downloading zerminal-remote-server {os} {arch} version {}",
                 release.version
             );
             set_status("Downloading remote server", cx);
@@ -633,7 +633,7 @@ impl AutoUpdater {
         })?;
 
         let release =
-            Self::get_release_asset(&this, channel, version, "zed-remote-server", os, arch, cx)
+            Self::get_release_asset(&this, channel, version, "zerminal-remote-server", os, arch, cx)
                 .await?;
 
         Ok(Some(release.url))
@@ -722,7 +722,7 @@ impl AutoUpdater {
         });
 
         let fetched_release_data =
-            Self::get_release_asset(&this, release_channel, None, "zed", OS, ARCH, cx).await?;
+            Self::get_release_asset(&this, release_channel, None, "zerminal", OS, ARCH, cx).await?;
         let fetched_version = fetched_release_data.clone().version;
         let app_commit_sha = Ok(cx.update(|cx| AppCommitSha::try_global(cx).map(|sha| sha.full())));
         let newer_version = Self::check_if_fetched_version_is_newer(
@@ -884,8 +884,8 @@ impl AutoUpdater {
     async fn target_path(installer_dir: &InstallerDir) -> Result<PathBuf> {
         let filename = match OS {
             "macos" => anyhow::Ok("Zed.dmg"),
-            "linux" => Ok("zed.tar.gz"),
-            "windows" => Ok("Zed.exe"),
+            "linux" => Ok("zerminal.tar.gz"),
+            "windows" => Ok("zerminal.exe"),
             unsupported_os => anyhow::bail!("not supported: {unsupported_os}"),
         }?;
 
@@ -1095,7 +1095,7 @@ async fn install_release_linux(
 ) -> Result<Option<PathBuf>> {
     let home_dir = PathBuf::from(env::var("HOME").context("no HOME env var set")?);
 
-    let extracted = temp_dir.path().join("zed");
+    let extracted = temp_dir.path().join("zerminal");
     fs::create_dir_all(&extracted)
         .await
         .context("failed to create directory into which to extract update")?;
@@ -1123,12 +1123,12 @@ async fn install_release_linux(
     } else {
         String::default()
     };
-    let app_folder_name = format!("zed{}.app", suffix);
+    let app_folder_name = format!("zerminal{}.app", suffix);
 
     let from = extracted.join(&app_folder_name);
     let mut to = home_dir.join(".local");
 
-    let expected_suffix = format!("{}/libexec/zed-editor", app_folder_name);
+    let expected_suffix = format!("{}/libexec/zerminal", app_folder_name);
 
     if let Some(prefix) = running_app_path
         .to_str()
@@ -1260,7 +1260,7 @@ async fn cleanup_stale_installer_dirs() {
 async fn cleanup_windows() -> Result<()> {
     let parent = std::env::current_exe()?
         .parent()
-        .context("No parent dir for Zed.exe")?
+        .context("No parent dir for zerminal.exe")?
         .to_owned();
 
     // keep in sync with crates/auto_update_helper/src/updater.rs
@@ -1287,7 +1287,7 @@ async fn install_release_windows(downloaded_installer: &Path) -> Result<Option<P
     // deleting the old one, and launching the new binary.
     let helper_path = std::env::current_exe()?
         .parent()
-        .context("No parent dir for Zed.exe")?
+        .context("No parent dir for zerminal.exe")?
         .join("tools")
         .join("auto_update_helper.exe");
     Ok(Some(helper_path))
@@ -1433,7 +1433,7 @@ mod tests {
             }
         );
 
-        dmg_tx.send("<fake-zed-update>".to_owned()).unwrap();
+        dmg_tx.send("<fake-zerminal-update>".to_owned()).unwrap();
 
         let tmp_dir = Arc::new(tempdir().unwrap());
 
@@ -1441,7 +1441,7 @@ mod tests {
             let tmp_dir = tmp_dir.clone();
             cx.set_global(InstallOverride(Rc::new(move |target_path, _cx| {
                 let tmp_dir = tmp_dir.clone();
-                let dest_path = tmp_dir.path().join("zed");
+                let dest_path = tmp_dir.path().join("zerminal");
                 std::fs::copy(&target_path, &dest_path)?;
                 Ok(Some(dest_path))
             })));
@@ -1465,8 +1465,8 @@ mod tests {
         let will_restart = cx.expect_restart();
         cx.update(|cx| cx.restart());
         let path = will_restart.await.unwrap().unwrap();
-        assert_eq!(path, tmp_dir.path().join("zed"));
-        assert_eq!(std::fs::read_to_string(path).unwrap(), "<fake-zed-update>");
+        assert_eq!(path, tmp_dir.path().join("zerminal"));
+        assert_eq!(std::fs::read_to_string(path).unwrap(), "<fake-zerminal-update>");
     }
 
     #[gpui::test]
@@ -1491,7 +1491,7 @@ mod tests {
         });
 
         let temp_dir = tempdir().unwrap();
-        let target_path = temp_dir.path().join("zed-download");
+        let target_path = temp_dir.path().join("zerminal-download");
         let release = ReleaseAsset {
             version: "1.0.0".to_string(),
             url: "https://test.example/download".to_string(),
@@ -1551,7 +1551,7 @@ mod tests {
         });
 
         let temp_dir = tempdir().unwrap();
-        let target_path = temp_dir.path().join("zed-download");
+        let target_path = temp_dir.path().join("zerminal-download");
         let release = ReleaseAsset {
             version: "1.0.0".to_string(),
             url: "https://test.example/download".to_string(),

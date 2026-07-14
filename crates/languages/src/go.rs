@@ -1228,7 +1228,7 @@ mod tests {
             .await
             .expect("Go context provider returns associated tasks");
 
-        // `resolve_task` returns `None` for any `ZED_` variable a template
+        // `resolve_task` returns `None` for any `ZERMINAL_` variable a template
         // references but the context omits, so supply all of them.
         let context = TaskContext {
             cwd: None,

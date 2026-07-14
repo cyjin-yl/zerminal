@@ -40,12 +40,12 @@ To completely remove all Zed configuration files and data:
 2. Press `Cmd + Shift + G` to open "Go to Folder"
 3. Delete the following directories if they exist:
    - `~/Library/Application Support/Zed`
-   - `~/Library/Saved Application State/dev.zed.Zed.savedState`
-   - `~/Library/Logs/Zed`
-   - `~/Library/Caches/dev.zed.Zed`
-   - `~/Library/Caches/Zed`
-   - `~/.config/zed`
-   - `~/.local/state/Zed`
+   - `~/Library/Saved Application State/dev.zerminal.Zerminal.savedState`
+   - `~/Library/Logs/Zerminal`
+   - `~/Library/Caches/dev.zerminal.Zerminal`
+   - `~/Library/Caches/Zerminal`
+   - `~/.config/zerminal`
+   - `~/.local/state/Zerminal`
 
 ## Linux
 
@@ -81,7 +81,7 @@ If the uninstall command fails or Zed was installed to a custom location, you ca
 
 - Installation directory: `~/.local/zed.app` (or your custom installation path)
 - Binary symlink: `~/.local/bin/zed`
-- Configuration and data: `~/.config/zed`
+- Configuration and data: `~/.config/zerminal`
 
 ## Windows
 
