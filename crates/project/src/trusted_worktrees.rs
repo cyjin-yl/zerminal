@@ -53,7 +53,9 @@ use std::{
 };
 use util::debug_panic;
 
-use crate::{project_settings::ProjectSettings, worktree_store::WorktreeStore};
+use crate::{
+    git_store::ProjectId, project_settings::ProjectSettings, worktree_store::WorktreeStore,
+};
 
 pub fn init(db_trusted_paths: DbTrustedPaths, cx: &mut App) {
     if TrustedWorktrees::try_get_global(cx).is_none() {

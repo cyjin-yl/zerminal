@@ -22,10 +22,8 @@ use settings::{Settings, SettingsLocation, WorktreeId};
 use std::sync::OnceLock;
 use util::rel_path::RelPath;
 
-use crate::{
-    LanguageServerId, ProjectPath, project_settings::LspSettings,
-    toolchain_store::LocalToolchainStore,
-};
+use crate::{ProjectPath, project_settings::LspSettings, toolchain_store::LocalToolchainStore};
+use lsp::LanguageServerId;
 
 use super::ManifestTree;
 
@@ -275,13 +273,7 @@ impl LanguageServerTree {
                 } else {
                     None
                 }?;
-                let adapter_settings = crate::lsp_store::language_server_settings_for(
-                    settings_location,
-                    &adapter.name,
-                    cx,
-                )
-                .cloned()
-                .unwrap_or_default();
+                let adapter_settings = None.unwrap_or_default();
                 Some((adapter.name(), (adapter_settings, adapter)))
             })
             .collect::<IndexMap<_, _>>();

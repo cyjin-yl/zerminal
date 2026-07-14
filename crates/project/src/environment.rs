@@ -4,7 +4,7 @@ use language::Buffer;
 use remote::RemoteClient;
 use rpc::proto::{self, REMOTE_SERVER_PROJECT_ID};
 use std::{collections::VecDeque, path::Path, sync::Arc};
-// use task::{Shell, shell_to_proto};  // removed-crate: task
+use util::shell::Shell;
 use util::{ResultExt, command::new_command};
 use worktree::Worktree;
 
@@ -310,6 +310,21 @@ impl From<EnvironmentOrigin> for String {
     }
 }
 
+fn shell_to_proto(shell: Shell) -> proto::Shell {
+    proto::Shell {
+        shell_type: Some(match shell {
+            Shell::System => proto::shell::ShellType::System(proto::System {}),
+            Shell::Program(program) => proto::shell::ShellType::Program(program),
+            Shell::WithArguments { program, args, .. } => {
+                proto::shell::ShellType::WithArguments(proto::shell::WithArguments {
+                    program,
+                    args,
+                })
+            }
+        }),
+    }
+}
+
 async fn load_directory_shell_environment(
     shell: Shell,
     abs_path: Arc<Path>,
@@ -340,7 +355,7 @@ async fn load_directory_shell_environment(
     };
 
     let (shell, args) = shell.program_and_args();
-    let mut envs = util::shell_env::capture(shell.clone(), args, abs_path)
+    let mut envs = util::shell_env::capture(Path::new(&shell), args, abs_path)
         .await
         .with_context(|| {
             tx.unbounded_send("Failed to load environment variables".into())

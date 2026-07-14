@@ -18,6 +18,16 @@ use askpass::{AskPassDelegate, EncryptedPassword, IKnowWhatIAmDoingAndIHaveReadT
 use buffer_diff::{BufferDiff, DiffHunk, DiffHunkSecondaryStatus, PendingHunk, PendingSense};
 // use client::ProjectId;  // removed-crate: client
 use collections::HashMap;
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct ProjectId(pub u64);
+
+impl ProjectId {
+    pub fn to_proto(&self) -> u64 {
+        self.0
+    }
+}
+use crate::Shell;
 pub use conflict_set::{ConflictRegion, ConflictSet, ConflictSetSnapshot, ConflictSetUpdate};
 use fs::{Fs, RemoveOptions};
 use futures::{
@@ -81,7 +91,6 @@ use std::{
     time::{Duration, Instant, SystemTime},
 };
 use sum_tree::{Edit, SumTree, TreeMap};
-// use task::Shell;  // removed-crate: task
 use text::{Bias, BufferId, OffsetRangeExt, Rope, ToOffset};
 use util::{
     ResultExt, debug_panic,

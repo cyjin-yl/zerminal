@@ -1,6 +1,5 @@
 use crate::{
     ProjectPath,
-    lsp_store::OpenLspBufferHandle,
     worktree_store::{WorktreeStore, WorktreeStoreEvent},
 };
 use anyhow::{Context as _, Result, anyhow};
@@ -57,7 +56,6 @@ struct RemoteProjectSearchState {
 #[derive(Hash, Eq, PartialEq, Clone)]
 struct SharedBuffer {
     buffer: Entity<Buffer>,
-    lsp_handle: Option<OpenLspBufferHandle>,
 }
 
 enum BufferStoreState {
@@ -1209,109 +1207,6 @@ impl BufferStore {
         })
     }
 
-    pub fn register_shared_lsp_handle(
-        &mut self,
-        peer_id: proto::PeerId,
-        buffer_id: BufferId,
-        handle: OpenLspBufferHandle,
-    ) {
-        if let Some(shared_buffers) = self.shared_buffers.get_mut(&peer_id)
-            && let Some(buffer) = shared_buffers.get_mut(&buffer_id)
-        {
-            buffer.lsp_handle = Some(handle);
-            return;
-        }
-        debug_panic!("tried to register shared lsp handle, but buffer was not shared")
-    }
-
-    pub fn handle_synchronize_buffers(
-        &mut self,
-        envelope: TypedEnvelope<proto::SynchronizeBuffers>,
-        cx: &mut Context<Self>,
-        client: Arc<Client>,
-    ) -> Result<proto::SynchronizeBuffersResponse> {
-        let project_id = envelope.payload.project_id;
-        let mut response = proto::SynchronizeBuffersResponse {
-            buffers: Default::default(),
-        };
-        let Some(guest_id) = envelope.original_sender_id else {
-            anyhow::bail!("missing original_sender_id on SynchronizeBuffers request");
-        };
-
-        self.shared_buffers.entry(guest_id).or_default().clear();
-        for buffer in envelope.payload.buffers {
-            let buffer_id = BufferId::new(buffer.id)?;
-            let remote_version = language::proto::deserialize_version(&buffer.version);
-            if let Some(buffer) = self.get(buffer_id) {
-                self.shared_buffers
-                    .entry(guest_id)
-                    .or_default()
-                    .entry(buffer_id)
-                    .or_insert_with(|| SharedBuffer {
-                        buffer: buffer.clone(),
-                        lsp_handle: None,
-                    });
-
-                let buffer = buffer.read(cx);
-                response.buffers.push(proto::BufferVersion {
-                    id: buffer_id.into(),
-                    version: language::proto::serialize_version(&buffer.version),
-                });
-
-                let operations = buffer.serialize_ops(Some(remote_version), cx);
-                let client = client.clone();
-                if let Some(file) = buffer.file() {
-                    client
-                        .send(proto::UpdateBufferFile {
-                            project_id,
-                            buffer_id: buffer_id.into(),
-                            file: Some(file.to_proto(cx)),
-                        })
-                        .log_err();
-                }
-
-                // TODO(max): do something
-                // client
-                //     .send(proto::UpdateStagedText {
-                //         project_id,
-                //         buffer_id: buffer_id.into(),
-                //         diff_base: buffer.diff_base().map(ToString::to_string),
-                //     })
-                //     .log_err();
-
-                client
-                    .send(proto::BufferReloaded {
-                        project_id,
-                        buffer_id: buffer_id.into(),
-                        version: language::proto::serialize_version(buffer.saved_version()),
-                        mtime: buffer.saved_mtime().map(|time| time.into()),
-                        line_ending: language::proto::serialize_line_ending(buffer.line_ending())
-                            as i32,
-                    })
-                    .log_err();
-
-                cx.background_spawn(
-                    async move {
-                        let operations = operations.await;
-                        for chunk in split_operations(operations) {
-                            client
-                                .request(proto::UpdateBuffer {
-                                    project_id,
-                                    buffer_id: buffer_id.into(),
-                                    operations: chunk,
-                                })
-                                .await?;
-                        }
-                        anyhow::Ok(())
-                    }
-                    .log_err(),
-                )
-                .detach();
-            }
-        }
-        Ok(response)
-    }
-
     pub fn handle_create_buffer_for_peer(
         &mut self,
         envelope: TypedEnvelope<proto::CreateBufferForPeer>,
@@ -1563,7 +1458,6 @@ impl BufferStore {
             buffer_id,
             SharedBuffer {
                 buffer: buffer.clone(),
-                lsp_handle: None,
             },
         );
 
