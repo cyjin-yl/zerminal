@@ -13,9 +13,9 @@ const ZED_DOCS_URL: &str = "https://zed.dev/docs";
 pub static RELEASE_CHANNEL_NAME: LazyLock<String> = LazyLock::new(|| {
     if cfg!(debug_assertions) {
         env::var("ZERMINAL_RELEASE_CHANNEL")
-            .unwrap_or_else(|_| include_str!("../../zed/RELEASE_CHANNEL").trim().to_string())
+            .unwrap_or_else(|_| include_str!("../../zerminal/RELEASE_CHANNEL").trim().to_string())
     } else {
-        include_str!("../../zed/RELEASE_CHANNEL").trim().to_string()
+        include_str!("../../zerminal/RELEASE_CHANNEL").trim().to_string()
     }
 });
 
