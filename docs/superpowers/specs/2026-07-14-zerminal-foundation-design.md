@@ -189,12 +189,11 @@ All crates below must compile and be functional after the two-pass migration is 
 | `crates/shadow_snapshot` | Persistent-tree filesystem versioning (version tree, WAL, SQLite), runs on file's host machine (local or remote mux_server), per-project quota | Apache-2.0 |
 | `crates/quickjs_runtime` | QuickJS engine bundled via `rquickjs`, replaces `node_runtime`, resource limits (CPU fuel, memory, IO rate), dedicated OS thread | Apache-2.0 |
 | `crates/zerminal_macros` | `#[zerminal_todo]` macro + project-specific proc macros | Apache-2.0 |
+| `crates/transport_resilient` | UDP + per-packet AEAD + stateless roaming + RTT estimation (mosh-inspired transport layer) | Apache-2.0 |
 
-### 2.4 New Crates — Post-Foundation (Separate Specs)
+### 2.4 Post-Foundation
 
-| Crate | Responsibility | Spec Status |
-|---|---|---|
-| `crates/transport_resilient` | UDP + per-packet AEAD + stateless roaming + RTT estimation (mosh-inspired) | Awaits own spec |
+No new crates. All crates are Day 0 (§2.3). Post-foundation enhancements (marketplace, Kitty graphics, log viewer UI) are additions to existing Day 0 crates.
 
 ## 3. Mux Architecture
 
@@ -783,47 +782,67 @@ The retained terminal crate (alacritty-based) already has Sixel support. Kitty g
 
 GPUI's Linux backend (`gpui_linux`) supports both X11 and Wayland. Damage tracking is handled by GPUI's compositor integration. No additional work needed.
 
-## 12. Terminal Product Details (Post-Foundation)
+## 12. Terminal Product Details (Day 0)
 
-These are the details that make a terminal good to use. They are **explicitly out of scope for the foundation migration** but must be tracked:
+These terminal features are **Day 0**. Most already exist in the retained alacritty/terminal_view crates — they need integration into the server-canonical mux model, not new implementation from scratch.
 
-- Copy mode / text selection (mouse + keyboard)
-- Scrollback search (regex)
-- OSC 52 clipboard
-- Hyperlink detection (OSC 8)
-- Bracketed paste
-- Mouse reporting modes (SGR, UTF-8)
-- Font ligatures and fallback chains
-- Emoji width and CJK wide character handling
-- IME input (critical for the author's daily use — Chinese input)
-- Shell integration (OSC 7 cwd, OSC 133 prompt markers)
-- Title updates (OSC 0/1/2)
-- Pane zoom
-- Synchronized updates (DEC-2026 — already handled in mux_server)
-- Resize semantics (TIOCSWINSZ propagation)
-- Keybinding passthrough (prefix key vs application shortcuts)
-- Daemon version skew (client updated, old daemon alive → protocol version negotiation must handle gracefully)
+- **Copy mode / text selection** (mouse + keyboard) — selection coordinates in server grid space, synced via generation counter
+- **Scrollback search** (regex) — server-side search over scrollback, results returned to client
+- **OSC 52 clipboard** — server emulator parses, writes to server clipboard hub (§16.10)
+- **Hyperlink detection** (OSC 8) — alacritty already has this; grid diff carries hyperlink info
+- **Bracketed paste** — server emulator tracks mode; paste() RPC wraps content (§16.10)
+- **Mouse reporting modes** (SGR, UTF-8) — alacritty already handles; mouse events route through send_input
+- **Font ligatures and fallback chains** — GPUI already handles; no mux-specific work
+- **Emoji width and CJK wide character handling** — alacritty Unicode width tables; verify correctness in grid diff
+- **IME input** (critical — Chinese input) — GPUI input composition routed to server as synthetic PTY input via send_input
+- **Shell integration** (OSC 7 cwd, OSC 133 prompt markers) — server emulator parses; cwd used for session metadata
+- **Title updates** (OSC 0/1/2) — server emulator parses; TabTitleChanged notification (§3.4)
+- **Pane zoom** — layout operation; server tracks zoomed pane; layout push to clients
+- **Synchronized updates** (DEC-2026) — already in §3.3 (BSU/ESU timeout)
+- **Resize semantics** (TIOCSWINSZ propagation) — server sends resize to PTY on pane resize RPC
+- **Keybinding passthrough** (prefix key vs application shortcuts) — already in §16.5
+- **Daemon version skew** — protocol version negotiation (§3.9); graceful error on mismatch
 
-These items each need design work within the mux server-canonical model. For example, copy mode and selection require server-side state (selection coordinates in grid space) that is synced to clients via the generation counter protocol. CJK width requires the alacritty model's Unicode width tables to be correct. IME requires GPUI's input composition to be routed to mux_server as synthetic PTY input.
+The only image protocol that is post-foundation: Kitty graphics protocol and iTerm2 OSC 1337 (Sixel is already in alacritty). These are enhancements, not blocking for a usable terminal.
 
-## 13. Testing Strategy (Post-Foundation, Tracked)
+## 13. Testing Strategy (Day 0)
 
-The foundation itself is verified by: compilation (the migration milestone), manual smoke test (open zerminal → spawn shell → type → close window → reopen → reattach). Formal testing of complex subsystems is post-foundation:
+All testing is Day 0. No exceptions. No testing is deferred.
 
-- **Shadow snapshot:** property-based testing + model checking (crash recovery, WAL replay correctness, GC invariants)
-- **Mux protocol:** backward-compatibility tests (old client + new server and vice versa)
-- **Terminal emulation:** vttest / esctest conformance suite
-- **Transport:** network fault injection (packet loss, latency, partition) — when UDP resilient transport is implemented
-- **Extension sandbox:** fuzz testing the QuickJS↔Rust FFI boundary
+**Unit tests:**
+- **Shadow snapshot:** WAL replay, version tree CRUD, delta chain replay, GC invariants, crash-safe decline protocol
+- **Mux protocol:** serialization round-trip for all message types, version negotiation logic
+- **Grid sync:** generation counter logic, diff application, ring buffer overflow → full snapshot
+- **Layout engine:** split tree operations, resize math, serialization/deserialization
+
+**Integration test:**
+daemon spawn → create session → spawn pane → type input → fetch grid update → verify content → split pane → detach → reattach → verify all panes rendered from authoritative snapshot → close session → verify daemon idle behavior
+
+**Property-based testing:**
+- Shadow snapshot crash recovery, WAL replay correctness, GC invariants (model checking)
+
+**Protocol compatibility testing:**
+- Mux protocol backward-compatibility (version negotiation, unknown field handling)
+
+**Terminal emulation conformance:**
+- vttest / esctest conformance suite against the retained alacritty terminal engine
+
+**Extension sandbox testing:**
+- Fuzz testing the QuickJS↔Rust FFI boundary
+
+**Network fault injection:**
+- Packet loss, latency, partition simulation for SSH transport
 
 ## 14. Known Limitations and Scope
 
-**This is a foundation spec.** It covers: crate classification, migration strategy, mux server-canonical architecture, and branding. The following are explicitly deferred to separate specs (not Day-0 scaffold-and-stub):
+**Foundation scope is comprehensive.** Day 0 includes everything in this spec except the items listed below. No testing, no terminal feature, no core subsystem is deferred.
 
-- UDP Resilient Transport (needs its own spec; independent network protocol project)
-- Terminal product details (§12)
-- Testing strategy (§13)
+**Only these are post-foundation:**
+- Extension marketplace (local directory + CLI install is Day 0)
+- Kitty graphics protocol / iTerm2 OSC 1337 (Sixel already in alacritty)
+- Log viewer UI (file logs + status CLI + GPUI notifications are Day 0)
 
+Everything else — including UDP resilient transport, all terminal product details (§12), all testing (§13), shadow snapshot, QuickJS, remote connection, clipboard, input routing — is Day 0.
 **Editor crate pruning:** The editor crate's `read_only` mode is already battle-tested (Zed uses it for preview buffers). Pruning is surgical: delete editing-only and LSP-only modules (listed in §2.1), enforce `read_only = true` at construction, remove edit action handlers from `editor.rs`. This preserves the full tree-sitter highlighting, display map, folding, search, and diff rendering. The coupling with `project`/`buffer` is real but manageable: the file viewer constructs a `MultiBuffer` directly from a file path (the same path Zed's own file preview uses), without needing the project's LSP registry.
 
 **Cherry-pick reality check:** After deleting 90 crates and rewriting files, cherry-picking upstream GPUI updates will be labor-intensive. GPUI is not a stable API; it evolves with Zed. The layered naming strategy helps but does not guarantee easy merges. This cost is accepted as a consequence of the hard fork decision.
