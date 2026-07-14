@@ -289,7 +289,7 @@ mod tests {
     use crate::{ContextServerRegistry, Templates, ToolInputSender};
     use fs::Fs as _;
     use gpui::{AppContext as _, TestAppContext, UpdateGlobal};
-    use language_model::fake_provider::FakeLanguageModel;
+// use language_model::fake_provider::FakeLanguageModel;  // removed-crate: language_model
     use project::ProjectPath;
     use prompt_store::ProjectContext;
     use serde_json::json;

@@ -1,5 +1,5 @@
 use buffer_diff::BufferDiff;
-use cloud_llm_client::PredictEditsRequestTrigger;
+// use cloud_llm_client::PredictEditsRequestTrigger;  // removed-crate: cloud_llm_client
 use edit_prediction::{
     EditPrediction, EditPredictionInputs, EditPredictionRating, EditPredictionStore,
 };

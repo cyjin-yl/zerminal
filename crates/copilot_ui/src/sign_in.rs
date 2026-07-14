@@ -1,8 +1,8 @@
 use anyhow::Context as _;
-use copilot::{
+// use copilot::{
     Copilot, GlobalCopilotAuth, Status,
     request::{self, PromptUserDeviceFlow},
-};
+};  // removed-crate: copilot
 use gpui::{
     App, ClipboardItem, Context, DismissEvent, Element, Entity, EventEmitter, FocusHandle,
     Focusable, InteractiveElement, IntoElement, MouseDownEvent, ParentElement, Render, Styled,

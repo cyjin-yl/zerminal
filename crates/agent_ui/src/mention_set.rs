@@ -18,7 +18,7 @@ use gpui::{
 use http_client::{AsyncBody, HttpClientWithUrl};
 use itertools::Either;
 use language::Buffer;
-use language_model::{LanguageModelImage, LanguageModelImageExt};
+// use language_model::{LanguageModelImage, LanguageModelImageExt};  // removed-crate: language_model
 use multi_buffer::MultiBufferRow;
 use postage::stream::Stream as _;
 use project::{Project, ProjectItem, ProjectPath, Worktree};

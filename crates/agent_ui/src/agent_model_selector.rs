@@ -5,7 +5,7 @@ use crate::{
 };
 use fs::Fs;
 use gpui::{Entity, FocusHandle, SharedString};
-use language_model::IconOrSvg;
+// use language_model::IconOrSvg;  // removed-crate: language_model
 use picker::popover_menu::PickerPopoverMenu;
 use settings::update_settings_file;
 use std::sync::Arc;

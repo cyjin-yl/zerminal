@@ -34,7 +34,7 @@ use gpui::{
     linear_gradient, list, pulsating_between,
 };
 use language::{Buffer, Language, Rope};
-use language_model::LanguageModelCompletionError;
+// use language_model::LanguageModelCompletionError;  // removed-crate: language_model
 use markdown::{
     CodeBlockRenderer, CopyButtonVisibility, Markdown, MarkdownElement, MarkdownFont, MarkdownStyle,
 };

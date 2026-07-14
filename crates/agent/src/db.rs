@@ -8,7 +8,7 @@ use collections::{HashMap, IndexMap};
 use futures::{FutureExt, future::Shared};
 use gpui::{BackgroundExecutor, Global, Task};
 use indoc::indoc;
-use language_model::Speed;
+// use language_model::Speed;  // removed-crate: language_model
 use parking_lot::Mutex;
 use serde::{Deserialize, Serialize};
 use sqlez::{

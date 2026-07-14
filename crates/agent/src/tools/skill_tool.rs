@@ -2,7 +2,7 @@ use agent_client_protocol::schema::v1 as acp;
 use agent_skills::Skill;
 use anyhow::Result;
 use gpui::{App, AsyncApp, SharedString, Task};
-use language_model::LanguageModelToolResultContent;
+// use language_model::LanguageModelToolResultContent;  // removed-crate: language_model
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::fmt::Write as _;

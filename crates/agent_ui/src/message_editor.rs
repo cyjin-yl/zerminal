@@ -2257,7 +2257,7 @@ mod tests {
         AppContext, ClipboardEntry, ClipboardItem, Entity, EventEmitter, ExternalPaths,
         FocusHandle, Focusable, Task, TestAppContext, VisualTestContext,
     };
-    use language_model::LanguageModelRegistry;
+// use language_model::LanguageModelRegistry;  // removed-crate: language_model
     use lsp::{CompletionContext, CompletionTriggerKind};
     use parking_lot::RwLock;
     use project::{AgentId, CompletionIntent, Project, ProjectPath};

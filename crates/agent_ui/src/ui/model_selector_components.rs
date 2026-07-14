@@ -1,5 +1,5 @@
 use gpui::{Action, ClickEvent, FocusHandle, prelude::*};
-use language_model::DisabledReason;
+// use language_model::DisabledReason;  // removed-crate: language_model
 use ui::{Chip, ElevationIndex, KeyBinding, ListItem, ListItemSpacing, Tooltip, prelude::*};
 use zed_actions::agent::ToggleModelSelector;
 

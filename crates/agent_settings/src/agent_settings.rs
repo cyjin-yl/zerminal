@@ -11,7 +11,7 @@ use collections::{HashSet, IndexMap};
 use fs::Fs;
 use futures::channel::oneshot;
 use gpui::{App, Pixels, SharedString, px};
-use language_model::LanguageModel;
+// use language_model::LanguageModel;  // removed-crate: language_model
 use project::DisableAiSettings;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

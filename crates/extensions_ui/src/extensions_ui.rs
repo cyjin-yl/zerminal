@@ -7,7 +7,7 @@ use std::time::Duration;
 use std::{any::TypeId, ops::Range, sync::Arc};
 
 use anyhow::Context as _;
-use cloud_api_types::{ExtensionMetadata, ExtensionProvides};
+// use cloud_api_types::{ExtensionMetadata, ExtensionProvides};  // removed-crate: cloud_api_types
 use collections::{BTreeMap, BTreeSet};
 use command_palette_hooks::CommandPaletteFilter;
 use editor::{Editor, EditorElement, EditorStyle};

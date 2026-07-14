@@ -55,9 +55,9 @@ use language::{
     LanguageRegistry,
     language_settings::{AllLanguageSettings, EditPredictionProvider},
 };
-use language_model::{
+// use language_model::{
     ConfiguredModel, LanguageModelId, LanguageModelProviderId, LanguageModelRegistry,
-};
+};  // removed-crate: language_model
 use project::{AgentId, DisableAiSettings};
 use prompt_store::{self, PromptBuilder, rules_to_skills_migration};
 use rope::Point;

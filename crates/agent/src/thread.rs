@@ -24,7 +24,7 @@ use agent_settings::{
 use anyhow::{Context as _, Result, anyhow};
 use chrono::{DateTime, Local, Utc};
 use client::UserStore;
-use cloud_api_types::Plan;
+// use cloud_api_types::Plan;  // removed-crate: cloud_api_types
 use collections::{HashMap, HashSet, IndexMap};
 use fs::Fs;
 use futures::{
@@ -39,14 +39,14 @@ use gpui::{
     WeakEntity,
 };
 use heck::ToSnakeCase as _;
-use language_model::{
+// use language_model::{
     CompletionIntent, LanguageModel, LanguageModelCompletionError, LanguageModelCompletionEvent,
     LanguageModelId, LanguageModelImage, LanguageModelProviderId, LanguageModelRegistry,
     LanguageModelRequest, LanguageModelRequestMessage, LanguageModelRequestTool,
     LanguageModelToolResult, LanguageModelToolResultContent, LanguageModelToolSchemaFormat,
     LanguageModelToolUse, LanguageModelToolUseId, MessageContent, Role, SelectedModel, Speed,
     StopReason, TokenUsage, ZED_CLOUD_PROVIDER_ID,
-};
+};  // removed-crate: language_model
 use project::{Project, trusted_worktrees::TrustedWorktrees};
 use prompt_store::ProjectContext;
 use schemars::{JsonSchema, Schema};
@@ -6570,8 +6570,8 @@ fn convert_image(image_content: acp::ImageContent) -> LanguageModelImage {
 mod tests {
     use super::*;
     use gpui::TestAppContext;
-    use language_model::LanguageModelToolUseId;
-    use language_model::fake_provider::FakeLanguageModel;
+// use language_model::LanguageModelToolUseId;  // removed-crate: language_model
+// use language_model::fake_provider::FakeLanguageModel;  // removed-crate: language_model
     use serde_json::json;
     use std::sync::Arc;
 

@@ -2,7 +2,7 @@ mod cloud;
 
 use client::{Client, UserStore};
 use gpui::{App, Context, Entity};
-use language_model::LanguageModelRegistry;
+// use language_model::LanguageModelRegistry;  // removed-crate: language_model
 use std::sync::Arc;
 use web_search::{WebSearchProviderId, WebSearchRegistry};
 

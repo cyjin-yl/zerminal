@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use agent_settings::{AgentSettings, language_model_to_selection};
 use fs::Fs;
-use language_model::LanguageModel;
+// use language_model::LanguageModel;  // removed-crate: language_model
 use settings::{Settings as _, update_settings_file};
 use ui::App;
 

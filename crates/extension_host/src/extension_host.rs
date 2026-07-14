@@ -10,7 +10,7 @@ use anyhow::{Context as _, Result, anyhow, bail};
 use async_compression::futures::bufread::GzipDecoder;
 use async_tar::Archive;
 use client::{Client, proto, telemetry::Telemetry};
-use cloud_api_types::{ExtensionMetadata, ExtensionProvides, GetExtensionsResponse};
+// use cloud_api_types::{ExtensionMetadata, ExtensionProvides, GetExtensionsResponse};  // removed-crate: cloud_api_types
 use collections::{BTreeMap, BTreeSet, FxHashSet, HashMap, HashSet, btree_map};
 pub use extension::ExtensionManifest;
 use extension::extension_builder::{CompileExtensionOptions, ExtensionBuilder};

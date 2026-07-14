@@ -1,9 +1,9 @@
 use anyhow::{Context as _, Result};
-use cloud_llm_client::predict_edits_v3::{RawCompletionRequest, RawCompletionResponse};
+// use cloud_llm_client::predict_edits_v3::{RawCompletionRequest, RawCompletionResponse};  // removed-crate: cloud_llm_client
 use futures::AsyncReadExt as _;
 use gpui::{App, AppContext as _, Entity, Global, SharedString, Task, http_client};
 use language::language_settings::{OpenAiCompatibleEditPredictionSettings, all_language_settings};
-use language_model::{ApiKeyState, EnvVar, env_var};
+// use language_model::{ApiKeyState, EnvVar, env_var};  // removed-crate: language_model
 use std::sync::Arc;
 
 pub fn open_ai_compatible_api_url(cx: &App) -> SharedString {

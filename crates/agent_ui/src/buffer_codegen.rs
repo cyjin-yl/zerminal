@@ -15,15 +15,15 @@ use gpui::{App, AppContext as _, AsyncApp, Context, Entity, EventEmitter, Subscr
 use language::{
     Buffer, BufferEditSource, IndentKind, LanguageName, Point, TransactionId, line_diff,
 };
-use language_model::{
+// use language_model::{
     CompletionIntent, LanguageModel, LanguageModelCompletionError, LanguageModelCompletionEvent,
     LanguageModelRegistry, LanguageModelRequest, LanguageModelRequestMessage,
     LanguageModelRequestTool, LanguageModelTextStream, LanguageModelToolChoice,
     LanguageModelToolUse, LanguageModelToolUseId, Role, TokenUsage,
-};
-use language_models::provider::anthropic::telemetry::{
+};  // removed-crate: language_model
+// use language_models::provider::anthropic::telemetry::{
     AnthropicCompletionType, AnthropicEventData, AnthropicEventReporter, AnthropicEventType,
-};
+};  // removed-crate: language_models
 use multi_buffer::MultiBufferRow;
 use parking_lot::Mutex;
 use prompt_store::PromptBuilder;
@@ -1505,11 +1505,11 @@ mod tests {
     use gpui::TestAppContext;
     use indoc::indoc;
     use language::{Buffer, Point};
-    use language_model::fake_provider::FakeLanguageModel;
-    use language_model::{
+// use language_model::fake_provider::FakeLanguageModel;  // removed-crate: language_model
+// use language_model::{
         LanguageModelCompletionError, LanguageModelCompletionEvent, LanguageModelRegistry,
         LanguageModelToolUse, StopReason, TokenUsage,
-    };
+    };  // removed-crate: language_model
     use languages::rust_lang;
     use rand::prelude::*;
     use settings::SettingsStore;

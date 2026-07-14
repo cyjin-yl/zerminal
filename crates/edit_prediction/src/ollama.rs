@@ -5,7 +5,7 @@ use gpui::{
     http_client::{self, HttpClient},
 };
 use language::language_settings::OpenAiCompatibleEditPredictionSettings;
-use language_model::{LanguageModelProviderId, LanguageModelRegistry};
+// use language_model::{LanguageModelProviderId, LanguageModelRegistry};  // removed-crate: language_model
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 

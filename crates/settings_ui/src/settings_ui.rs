@@ -4,7 +4,7 @@ pub mod pages;
 
 use agent_skills::SkillIndex;
 use anyhow::{Context as _, Result};
-use cloud_api_types::OrganizationConfiguration;
+// use cloud_api_types::OrganizationConfiguration;  // removed-crate: cloud_api_types
 use editor::{Editor, EditorEvent};
 use futures::{StreamExt, channel::mpsc};
 use fuzzy::StringMatchCandidate;

@@ -14,13 +14,13 @@ use editor::{MultiBuffer, actions::SelectAll};
 use fs::Fs;
 use gpui::{App, Entity, Focusable, Global, Subscription, Task, UpdateGlobal, WeakEntity};
 use language::Buffer;
-use language_model::{
+// use language_model::{
     CompletionIntent, ConfiguredModel, LanguageModelRegistry, LanguageModelRequest,
     LanguageModelRequestMessage, Role,
-};
-use language_models::provider::anthropic::telemetry::{
+};  // removed-crate: language_model
+// use language_models::provider::anthropic::telemetry::{
     AnthropicCompletionType, AnthropicEventData, AnthropicEventType, report_anthropic_event,
-};
+};  // removed-crate: language_models
 use project::Project;
 use prompt_store::PromptBuilder;
 use std::sync::Arc;

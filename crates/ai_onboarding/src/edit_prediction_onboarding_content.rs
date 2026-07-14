@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use client::{Client, UserStore};
-use cloud_api_types::Plan;
+// use cloud_api_types::Plan;  // removed-crate: cloud_api_types
 use gpui::{Entity, IntoElement, ParentElement};
 use ui::prelude::*;
 

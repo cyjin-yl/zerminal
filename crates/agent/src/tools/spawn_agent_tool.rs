@@ -2,7 +2,7 @@ use acp_thread::{SUBAGENT_SESSION_INFO_META_KEY, SubagentSessionInfo};
 use agent_client_protocol::schema::v1 as acp;
 use anyhow::Result;
 use gpui::{App, SharedString, Task};
-use language_model::LanguageModelToolResultContent;
+// use language_model::LanguageModelToolResultContent;  // removed-crate: language_model
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use std::rc::Rc;

@@ -10,7 +10,7 @@ use agent::{
 use client::{Client, UserStore};
 use clock::FakeSystemClock;
 use collections::{HashMap, HashSet};
-use language_model::{LanguageModelRegistry, LanguageModelToolResultContent};
+// use language_model::{LanguageModelRegistry, LanguageModelToolResultContent};  // removed-crate: language_model
 use languages::rust_lang;
 
 use editor::{

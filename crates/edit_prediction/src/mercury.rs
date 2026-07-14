@@ -6,7 +6,7 @@ use crate::{
     zeta::compute_edits,
 };
 use anyhow::{Context as _, Result};
-use cloud_llm_client::EditPredictionRejectReason;
+// use cloud_llm_client::EditPredictionRejectReason;  // removed-crate: cloud_llm_client
 use credentials_provider::CredentialsProvider;
 use futures::AsyncReadExt as _;
 use gpui::{
@@ -14,7 +14,7 @@ use gpui::{
     http_client::{self, AsyncBody, HttpClient, Method, StatusCode},
 };
 use language::{ToOffset, ToPoint as _};
-use language_model::{ApiKeyState, EnvVar, env_var};
+// use language_model::{ApiKeyState, EnvVar, env_var};  // removed-crate: language_model
 use release_channel::AppVersion;
 use serde::{Deserialize, Serialize};
 use std::{mem, ops::Range, path::Path, sync::Arc};

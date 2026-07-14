@@ -1,7 +1,7 @@
 use std::str::FromStr;
 use std::sync::Arc;
 
-use cloud_api_types::ExtensionMetadata;
+// use cloud_api_types::ExtensionMetadata;  // removed-crate: cloud_api_types
 use extension_host::ExtensionStore;
 use fs::Fs;
 use fuzzy::{StringMatch, StringMatchCandidate, match_strings};

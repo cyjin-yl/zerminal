@@ -2,9 +2,9 @@ use std::sync::Arc;
 
 use anyhow::{Result, anyhow};
 use client::{Client, UserStore, global_llm_token};
-use cloud_api_client::LlmApiToken;
-use cloud_api_types::OrganizationId;
-use cloud_llm_client::{WebSearchBody, WebSearchResponse};
+// use cloud_api_client::LlmApiToken;  // removed-crate: cloud_api_client
+// use cloud_api_types::OrganizationId;  // removed-crate: cloud_api_types
+// use cloud_llm_client::{WebSearchBody, WebSearchResponse};  // removed-crate: cloud_llm_client
 use futures::AsyncReadExt as _;
 use gpui::{App, AppContext, Context, Entity, Task};
 use http_client::Method;

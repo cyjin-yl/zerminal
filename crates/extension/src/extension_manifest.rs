@@ -4,7 +4,7 @@ use std::path::{Path, PathBuf};
 use std::sync::Arc;
 
 use anyhow::{Context as _, Result, anyhow, bail};
-use cloud_api_types::ExtensionProvides;
+// use cloud_api_types::ExtensionProvides;  // removed-crate: cloud_api_types
 use collections::{BTreeMap, BTreeSet, HashMap};
 use fs::Fs;
 use language::LanguageName;

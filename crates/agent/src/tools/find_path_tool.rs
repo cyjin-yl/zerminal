@@ -4,7 +4,7 @@ use agent_client_protocol::schema::v1 as acp;
 use anyhow::{Result, anyhow};
 use futures::FutureExt as _;
 use gpui::{App, AppContext, Entity, SharedString, Task};
-use language_model::LanguageModelToolResultContent;
+// use language_model::LanguageModelToolResultContent;  // removed-crate: language_model
 use project::Project;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};

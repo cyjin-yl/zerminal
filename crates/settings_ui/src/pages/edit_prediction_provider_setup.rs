@@ -1,4 +1,4 @@
-use codestral::{CODESTRAL_API_URL, codestral_api_key_state, codestral_api_url};
+// use codestral::{CODESTRAL_API_URL, codestral_api_key_state, codestral_api_url};  // removed-crate: codestral
 use edit_prediction::{
     ApiKeyState,
     mercury::{MERCURY_CREDENTIALS_URL, mercury_api_token},

@@ -33,7 +33,7 @@ use feature_flags::{
     CreateThreadToolFeatureFlag, FeatureFlagAppExt as _, LspToolFeatureFlag, RenameToolFeatureFlag,
 };
 use gpui::App;
-use language_model::{LanguageModelRequestTool, LanguageModelToolSchemaFormat};
+// use language_model::{LanguageModelRequestTool, LanguageModelToolSchemaFormat};  // removed-crate: language_model
 use serde::{
     Deserialize, Deserializer,
     de::{DeserializeOwned, Error as _},

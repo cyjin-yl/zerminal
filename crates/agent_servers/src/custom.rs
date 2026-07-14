@@ -5,7 +5,7 @@ use anyhow::{Context as _, Result};
 use collections::HashSet;
 use fs::Fs;
 use gpui::{App, AppContext as _, Entity, Task};
-use language_model::{ApiKey, EnvVar};
+// use language_model::{ApiKey, EnvVar};  // removed-crate: language_model
 use project::{
     Project,
     agent_server_store::{AgentId, AllAgentServersSettings},

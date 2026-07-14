@@ -1,7 +1,7 @@
 use std::{cmp, sync::Arc};
 
 use client::{Client, UserStore};
-use cloud_llm_client::EditPredictionRejectReason;
+// use cloud_llm_client::EditPredictionRejectReason;  // removed-crate: cloud_llm_client
 use edit_prediction_types::{
     DataCollectionState, EditPredictionDelegate, EditPredictionDiscardReason,
     EditPredictionIconSet, EditPredictionRequestTrigger, SuggestionDisplayType,

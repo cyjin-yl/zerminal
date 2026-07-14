@@ -3,7 +3,7 @@ use agent_settings::AgentProfileId;
 use anyhow::Result;
 use chrono::{DateTime, Utc};
 use gpui::SharedString;
-use language_model::{LanguageModelToolResultContent, LanguageModelToolUseId, Role, TokenUsage};
+// use language_model::{LanguageModelToolResultContent, LanguageModelToolUseId, Role, TokenUsage};  // removed-crate: language_model
 use serde::{Deserialize, Serialize};
 use std::sync::Arc;
 
@@ -228,7 +228,7 @@ pub struct SerializedCrease {
 mod tests {
     use super::*;
     use chrono::Utc;
-    use language_model::{Role, TokenUsage};
+// use language_model::{Role, TokenUsage};  // removed-crate: language_model
     use pretty_assertions::assert_eq;
 
     #[test]

@@ -5,11 +5,11 @@ use client::{Client, RefreshLlmTokenListener, UserStore};
 use futures::{FutureExt as _, StreamExt};
 use gpui::{AppContext as _, AsyncApp, TestAppContext};
 use http_client::StatusCode;
-use language_model::{
+// use language_model::{
     LanguageModel, LanguageModelCompletionError, LanguageModelCompletionEvent,
     LanguageModelRegistry, LanguageModelRequest, LanguageModelRequestMessage, MessageContent, Role,
     SelectedModel,
-};
+};  // removed-crate: language_model
 use prompt_store::{ProjectContext, WorktreeContext};
 use rand::prelude::*;
 use reqwest_client::ReqwestClient;

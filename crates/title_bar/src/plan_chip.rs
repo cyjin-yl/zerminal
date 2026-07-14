@@ -1,4 +1,4 @@
-use cloud_api_types::Plan;
+// use cloud_api_types::Plan;  // removed-crate: cloud_api_types
 use ui::{Chip, prelude::*};
 
 /// A [`Chip`] that displays a [`Plan`].

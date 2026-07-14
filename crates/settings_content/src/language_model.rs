@@ -1,6 +1,6 @@
 use crate::merge_from::MergeFrom;
 use collections::HashMap;
-use language_model_core::ReasoningEffort;
+// use language_model_core::ReasoningEffort;  // removed-crate: language_model_core
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use settings_macros::{MergeFrom, with_fallible_options};
@@ -397,7 +397,7 @@ pub struct OpenAiAvailableModel {
     pub capabilities: OpenAiModelCapabilities,
 }
 
-pub use language_model_core::ReasoningEffort as OpenAiReasoningEffort;
+// pub use language_model_core::ReasoningEffort as OpenAiReasoningEffort;  // removed-crate: language_model_core
 
 impl MergeFrom for OpenAiReasoningEffort {
     fn merge_from(&mut self, other: &Self) {
@@ -633,7 +633,7 @@ pub struct LanguageModelCacheConfiguration {
     pub min_total_token: u64,
 }
 
-pub use language_model_core::ModelMode;
+// pub use language_model_core::ModelMode;  // removed-crate: language_model_core
 
 impl MergeFrom for ModelMode {
     fn merge_from(&mut self, other: &Self) {

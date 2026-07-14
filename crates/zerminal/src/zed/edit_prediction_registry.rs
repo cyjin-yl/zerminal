@@ -1,7 +1,7 @@
 use client::{Client, UserStore};
-use codestral::{CodestralEditPredictionDelegate, load_codestral_api_key};
+// use codestral::{CodestralEditPredictionDelegate, load_codestral_api_key};  // removed-crate: codestral
 use collections::HashMap;
-use copilot::CopilotEditPredictionDelegate;
+// use copilot::CopilotEditPredictionDelegate;  // removed-crate: copilot
 use edit_prediction::{EditPredictionModel, ZedEditPredictionDelegate};
 use editor::Editor;
 use gpui::{AnyWindowHandle, App, AppContext as _, Context, Entity, WeakEntity};

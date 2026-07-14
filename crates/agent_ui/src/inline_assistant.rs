@@ -1,6 +1,6 @@
-use language_models::provider::anthropic::telemetry::{
+// use language_models::provider::anthropic::telemetry::{
     AnthropicCompletionType, AnthropicEventData, AnthropicEventType, report_anthropic_event,
-};
+};  // removed-crate: language_models
 use std::mem;
 use std::ops::Range;
 use std::sync::Arc;
@@ -39,7 +39,7 @@ use gpui::{
     UpdateGlobal, WeakEntity, Window, point,
 };
 use language::{Buffer, Point, Selection, TransactionId};
-use language_model::{ConfigurationError, ConfiguredModel, LanguageModelRegistry};
+// use language_model::{ConfigurationError, ConfiguredModel, LanguageModelRegistry};  // removed-crate: language_model
 use multi_buffer::MultiBufferRow;
 use parking_lot::Mutex;
 use project::{DisableAiSettings, Project};
@@ -1807,7 +1807,7 @@ pub mod evals {
     use futures::stream::StreamExt as _;
     use gpui::{AppContext, TestAppContext, UpdateGlobal as _};
     use language::Buffer;
-    use language_model::{LanguageModelRegistry, SelectedModel};
+// use language_model::{LanguageModelRegistry, SelectedModel};  // removed-crate: language_model
     use project::Project;
     use prompt_store::PromptBuilder;
     use std::str::FromStr;

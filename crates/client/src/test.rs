@@ -2,10 +2,10 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 
 use anyhow::{Context as _, Result, anyhow};
-use cloud_api_client::{
+// use cloud_api_client::{
     AuthenticatedUser, GetAuthenticatedUserResponse, KnownOrUnknown, Plan, PlanInfo,
-};
-use cloud_llm_client::{CurrentUsage, UsageData, UsageLimit};
+};  // removed-crate: cloud_api_client
+// use cloud_llm_client::{CurrentUsage, UsageData, UsageLimit};  // removed-crate: cloud_llm_client
 use futures::{StreamExt, stream::BoxStream};
 use gpui::{AppContext as _, TestAppContext};
 use http_client::{AsyncBody, Method, Request, http};

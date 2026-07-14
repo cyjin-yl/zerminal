@@ -9,7 +9,7 @@ use std::sync::Arc;
 use ::fs::{CopyOptions, Fs, RealFs, RemoveOptions, copy_recursive};
 use anyhow::{Context as _, Result, anyhow, bail};
 use clap::Parser;
-use cloud_api_types::ExtensionProvides;
+// use cloud_api_types::ExtensionProvides;  // removed-crate: cloud_api_types
 use extension::build_debug_adapter_schema_path;
 use extension::extension_builder::CompilationConcurrency;
 use extension::extension_builder::{CompileExtensionOptions, ExtensionBuilder};
@@ -606,7 +606,7 @@ async fn test_debug_adapter_schemas(
 
 #[cfg(test)]
 mod tests {
-    use cloud_api_types::ExtensionProvides;
+// use cloud_api_types::ExtensionProvides;  // removed-crate: cloud_api_types
 
     use super::*;
 

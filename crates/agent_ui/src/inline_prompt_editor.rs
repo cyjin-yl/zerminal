@@ -13,7 +13,7 @@ use gpui::{
     AnyElement, App, ClipboardItem, Context, Entity, EventEmitter, FocusHandle, Focusable,
     Subscription, TextStyle, TextStyleRefinement, WeakEntity, Window, actions,
 };
-use language_model::{LanguageModel, LanguageModelRegistry};
+// use language_model::{LanguageModel, LanguageModelRegistry};  // removed-crate: language_model
 use markdown::{HeadingLevelStyles, Markdown, MarkdownElement, MarkdownStyle};
 use parking_lot::Mutex;
 use project::Project;

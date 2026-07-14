@@ -274,7 +274,7 @@ mod tests {
     use futures::StreamExt as _;
     use gpui::{AppContext as _, Entity, TestAppContext, UpdateGlobal};
     use language::language_settings::FormatOnSave;
-    use language_model::fake_provider::FakeLanguageModel;
+// use language_model::fake_provider::FakeLanguageModel;  // removed-crate: language_model
     use project::{Project, ProjectPath};
     use prompt_store::ProjectContext;
     use serde_json::json;

@@ -1,27 +1,27 @@
 use anyhow::{Context as _, Result, anyhow};
 use buffer_diff::BufferDiff;
 use client::{Client, EditPredictionUsage, UserStore, global_llm_token};
-use cloud_api_client::LlmApiToken;
-use cloud_api_types::{
+// use cloud_api_client::LlmApiToken;  // removed-crate: cloud_api_client
+// use cloud_api_types::{
     EditPredictionRecentFile, EditPredictionSettledKeptChars,
     MAX_EDIT_PREDICTION_SETTLED_PER_REQUEST, OrganizationId, SettledEditPrediction,
     SettledEditPredictionSampleData, SubmitEditPredictionFeedbackBody,
     SubmitEditPredictionSettledBatchBody, SubmitEditPredictionSettledResponse,
-};
-use cloud_llm_client::predict_edits_v3::{
+};  // removed-crate: cloud_api_types
+// use cloud_llm_client::predict_edits_v3::{
     PREDICT_EDITS_MODE_HEADER_NAME, PREDICT_EDITS_REQUEST_ID_HEADER_NAME,
     PREDICT_EDITS_TRIGGER_HEADER_NAME, PredictEditsMode, PredictEditsV3Request,
     PredictEditsV3Response, RawCompletionRequest, RawCompletionResponse,
-};
-use cloud_llm_client::predict_edits_v4::{PredictEditsV4Request, PredictEditsV4Response};
-use cloud_llm_client::{
+};  // removed-crate: cloud_llm_client
+// use cloud_llm_client::predict_edits_v4::{PredictEditsV4Request, PredictEditsV4Response};  // removed-crate: cloud_llm_client
+// use cloud_llm_client::{
     EditPredictionRejectReason, EditPredictionRejection,
     MAX_EDIT_PREDICTION_REJECTIONS_PER_REQUEST, MINIMUM_REQUIRED_VERSION_HEADER_NAME,
     PREFERRED_EXPERIMENT_HEADER_NAME, PredictEditsRequestTrigger, RejectEditPredictionsBodyRef,
     ZED_VERSION_HEADER_NAME,
-};
+};  // removed-crate: cloud_llm_client
 use collections::{HashMap, HashSet};
-use copilot::{Copilot, Reinstall, SignIn, SignOut};
+// use copilot::{Copilot, Reinstall, SignIn, SignOut};  // removed-crate: copilot
 use credentials_provider::CredentialsProvider;
 use db::kvp::{Dismissable, KeyValueStore};
 use edit_prediction_context::{RelatedExcerptStore, RelatedExcerptStoreEvent, RelatedFile};
@@ -102,7 +102,7 @@ pub use crate::metrics::{KeptRateResult, compute_kept_rate};
 use crate::onboarding_modal::ZedPredictModal;
 use crate::prediction::EditPredictionResult;
 pub use crate::prediction::{EditPrediction, EditPredictionId, EditPredictionInputs};
-pub use language_model::ApiKeyState;
+// pub use language_model::ApiKeyState;  // removed-crate: language_model
 pub use telemetry_events::EditPredictionRating;
 pub use zed_edit_prediction_delegate::ZedEditPredictionDelegate;
 

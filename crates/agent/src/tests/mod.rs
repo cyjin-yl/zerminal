@@ -24,14 +24,14 @@ use gpui::{
     http_client::FakeHttpClient,
 };
 use indoc::indoc;
-use language_model::{
+// use language_model::{
     CompletionIntent, LanguageModel, LanguageModelCompletionError, LanguageModelCompletionEvent,
     LanguageModelId, LanguageModelImageExt, LanguageModelProviderId, LanguageModelProviderName,
     LanguageModelRegistry, LanguageModelRequest, LanguageModelRequestMessage,
     LanguageModelToolResult, LanguageModelToolSchemaFormat, LanguageModelToolUse, MessageContent,
     Role, StopReason, TokenUsage,
     fake_provider::{FakeLanguageModel, FakeLanguageModelProvider},
-};
+};  // removed-crate: language_model
 use pretty_assertions::assert_eq;
 use project::{
     Project, context_server_store::ContextServerStore, project_settings::ProjectSettings,

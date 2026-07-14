@@ -7,7 +7,7 @@ use agent_settings::{AgentProfile, AgentProfileId, AgentSettings, builtin_profil
 use editor::Editor;
 use fs::Fs;
 use gpui::{DismissEvent, Entity, EventEmitter, FocusHandle, Focusable, Subscription, prelude::*};
-use language_model::{LanguageModel, LanguageModelRegistry};
+// use language_model::{LanguageModel, LanguageModelRegistry};  // removed-crate: language_model
 use settings::SettingsStore;
 use settings::{
     LanguageModelProviderSetting, LanguageModelSelection, Settings as _, update_settings_file,

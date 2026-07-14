@@ -64,7 +64,7 @@ use anyhow::{Context as _, Result, anyhow};
 use audio::{Audio, Sound};
 use chrono::{DateTime, Utc};
 use client::UserStore;
-use cloud_api_types::Plan;
+// use cloud_api_types::Plan;  // removed-crate: cloud_api_types
 use collections::HashMap;
 use editor::{Editor, MultiBuffer};
 use extension_host::ExtensionStore;
@@ -79,7 +79,7 @@ use gpui::{
     pulsating_between,
 };
 use language::LanguageRegistry;
-use language_model::LanguageModelRegistry;
+// use language_model::LanguageModelRegistry;  // removed-crate: language_model
 use notifications::status_toast::StatusToast;
 use project::{Project, ProjectPath, Worktree};
 use settings::TerminalDockPosition;

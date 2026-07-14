@@ -11,12 +11,12 @@ use futures::{FutureExt, StreamExt, future::LocalBoxFuture};
 use gpui::{AppContext as _, AsyncApp, Entity, TestAppContext, UpdateGlobal as _};
 use http_client::StatusCode;
 use language::language_settings::FormatOnSave;
-use language_model::{
+// use language_model::{
     LanguageModel, LanguageModelCompletionError, LanguageModelCompletionEvent,
     LanguageModelRegistry, LanguageModelRequest, LanguageModelRequestMessage,
     LanguageModelToolResult, LanguageModelToolResultContent, LanguageModelToolUse,
     LanguageModelToolUseId, MessageContent, Role, SelectedModel,
-};
+};  // removed-crate: language_model
 use project::Project;
 use prompt_store::{ProjectContext, WorktreeContext};
 use rand::prelude::*;

@@ -7,10 +7,10 @@ use gpui::{
     Action, AnyElement, App, BackgroundExecutor, DismissEvent, FocusHandle, ForegroundExecutor,
     Subscription, Task,
 };
-use language_model::{
+// use language_model::{
     ConfiguredModel, IconOrSvg, LanguageModel, LanguageModelId, LanguageModelProvider,
     LanguageModelProviderId, LanguageModelRegistry,
-};
+};  // removed-crate: language_model
 use ordered_float::OrderedFloat;
 use picker::{Picker, PickerDelegate};
 use settings::Settings;
@@ -573,11 +573,11 @@ mod tests {
     use super::*;
     use futures::{future::BoxFuture, stream::BoxStream};
     use gpui::{AsyncApp, TestAppContext};
-    use language_model::{
+// use language_model::{
         LanguageModelCompletionError, LanguageModelCompletionEvent, LanguageModelId,
         LanguageModelName, LanguageModelProviderId, LanguageModelProviderName,
         LanguageModelRequest, LanguageModelToolChoice,
-    };
+    };  // removed-crate: language_model
     use ui::IconName;
 
     #[derive(Clone)]

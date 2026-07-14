@@ -1,5 +1,5 @@
 use gpui::{Action, IntoElement, ParentElement, RenderOnce};
-use language_model::{IconOrSvg, LanguageModelRegistry, ZED_CLOUD_PROVIDER_ID};
+// use language_model::{IconOrSvg, LanguageModelRegistry, ZED_CLOUD_PROVIDER_ID};  // removed-crate: language_model
 use ui::{Divider, List, ListBulletItem, prelude::*};
 
 pub struct ApiKeysWithProviders {

@@ -18,7 +18,7 @@ use agent::{
 };
 use agent_settings::UserAgentsMd;
 use agent_skills::MAX_SKILL_DESCRIPTION_LEN;
-use cloud_api_types::{SubmitAgentThreadFeedbackBody, SubmitAgentThreadFeedbackCommentsBody};
+// use cloud_api_types::{SubmitAgentThreadFeedbackBody, SubmitAgentThreadFeedbackCommentsBody};  // removed-crate: cloud_api_types
 use editor::actions::OpenExcerpts;
 use sandbox::{SandboxFsPolicy, SandboxNetPolicy, SandboxPolicy};
 
@@ -32,10 +32,10 @@ use gpui::List;
 use gpui::Stateful;
 use gpui::TaskExt;
 use heapless::Vec as ArrayVec;
-use language_model::{
+// use language_model::{
     FastModeConfirmation, LanguageModel, LanguageModelEffortLevel, LanguageModelId,
     LanguageModelProvider, LanguageModelProviderId, LanguageModelRegistry, Speed,
-};
+};  // removed-crate: language_model
 use notifications::status_toast::StatusToast;
 use settings::{update_settings_file, update_settings_file_with_completion};
 use ui::{

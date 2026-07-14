@@ -19,7 +19,7 @@ pub use editor::*;
 pub use extension::*;
 pub use fallible_options::*;
 pub use language::*;
-pub use language_model::*;
+// pub use language_model::*;  // removed-crate: language_model
 pub use merge_from::MergeFrom as MergeFromTrait;
 pub use project::*;
 use serde::de::DeserializeOwned;

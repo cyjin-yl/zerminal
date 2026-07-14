@@ -31,7 +31,6 @@ git.workspace = true
 git_ui.workspace = true
 gpui.workspace = true
 itertools.workspace = true
-language_model.workspace = true
 log.workspace = true
 menu.workspace = true
 notifications.workspace = true
@@ -59,7 +58,6 @@ agent_ui = { workspace = true, features = ["test-support"] }
 editor.workspace = true
 extension.workspace = true
 language = { workspace = true, features = ["test-support"] }
-language_model = { workspace = true, features = ["test-support"] }
 release_channel.workspace = true
 semver.workspace = true
 pretty_assertions.workspace = true

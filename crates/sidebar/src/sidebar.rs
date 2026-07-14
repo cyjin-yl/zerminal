@@ -34,7 +34,7 @@ use gpui::{
     linear_gradient, list, prelude::*, px,
 };
 use itertools::Itertools;
-use language_model::LanguageModelRegistry;
+// use language_model::LanguageModelRegistry;  // removed-crate: language_model
 use menu::{
     Cancel, Confirm, SelectChild, SelectFirst, SelectLast, SelectNext, SelectParent, SelectPrevious,
 };

@@ -2,7 +2,7 @@ mod sign_in;
 
 use std::sync::Arc;
 
-use copilot::GlobalCopilotAuth;
+// use copilot::GlobalCopilotAuth;  // removed-crate: copilot
 use gpui::AppContext;
 use language::language_settings::AllLanguageSettings;
 use project::DisableAiSettings;

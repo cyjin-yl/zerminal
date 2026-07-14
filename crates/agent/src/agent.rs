@@ -51,10 +51,10 @@ use gpui::{
     App, AppContext, AsyncApp, Context, Entity, EntityId, SharedString, Subscription, Task,
     TaskExt, WeakEntity,
 };
-use language_model::{
+// use language_model::{
     IconOrSvg, LanguageModel, LanguageModelId, LanguageModelProvider, LanguageModelProviderId,
     LanguageModelRegistry,
-};
+};  // removed-crate: language_model
 use project::{
     AgentId, Project, ProjectItem, ProjectPath, Worktree, WorktreeId,
     trusted_worktrees::TrustedWorktrees,
@@ -3708,11 +3708,11 @@ mod internal_tests {
     use fs::FakeFs;
     use gpui::TestAppContext;
     use indoc::formatdoc;
-    use language_model::fake_provider::{FakeLanguageModel, FakeLanguageModelProvider};
-    use language_model::{
+// use language_model::fake_provider::{FakeLanguageModel, FakeLanguageModelProvider};  // removed-crate: language_model
+// use language_model::{
         CompletionIntent, LanguageModelCompletionEvent, LanguageModelProviderId,
         LanguageModelProviderName,
-    };
+    };  // removed-crate: language_model
     use serde_json::json;
     use settings::SettingsStore;
     use util::{path, rel_path::rel_path};

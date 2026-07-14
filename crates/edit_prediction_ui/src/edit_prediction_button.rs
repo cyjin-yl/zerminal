@@ -1,8 +1,8 @@
 use anyhow::Result;
 use client::{Client, UserStore, zed_urls};
-use cloud_llm_client::UsageLimit;
-use codestral::{self, CodestralEditPredictionDelegate};
-use copilot::Status;
+// use cloud_llm_client::UsageLimit;  // removed-crate: cloud_llm_client
+// use codestral::{self, CodestralEditPredictionDelegate};  // removed-crate: codestral
+// use copilot::Status;  // removed-crate: copilot
 use edit_prediction::EditPredictionStore;
 use edit_prediction_types::EditPredictionDelegateHandle;
 use editor::{

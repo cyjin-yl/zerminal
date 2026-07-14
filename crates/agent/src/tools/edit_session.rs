@@ -13,7 +13,7 @@ use futures::{FutureExt, channel::oneshot};
 use gpui::{App, AppContext, AsyncApp, Entity, Task, WeakEntity};
 use language::language_settings::{self, FormatOnSave};
 use language::{Buffer, BufferEditSource, BufferEvent, LanguageRegistry};
-use language_model::LanguageModelToolResultContent;
+// use language_model::LanguageModelToolResultContent;  // removed-crate: language_model
 use project::lsp_store::{FormatTrigger, LspFormatTarget};
 use project::{AgentLocation, Project, ProjectPath};
 use reindent::{Reindenter, compute_indent_delta, compute_rest_indent_delta};

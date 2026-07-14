@@ -3,12 +3,12 @@ use std::sync::Arc;
 use crate::{AgentTool, ToolCallEventStream, ToolInput};
 use agent_client_protocol::schema::v1 as acp;
 use anyhow::Result;
-use cloud_llm_client::WebSearchResponse;
+// use cloud_llm_client::WebSearchResponse;  // removed-crate: cloud_llm_client
 use futures::FutureExt as _;
 use gpui::{App, Task};
-use language_model::{
+// use language_model::{
     LanguageModelProviderId, LanguageModelToolResultContent, ZED_CLOUD_PROVIDER_ID,
-};
+};  // removed-crate: language_model
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use ui::prelude::*;

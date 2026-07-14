@@ -4,7 +4,7 @@ use anyhow::Result;
 use chrono::{DateTime, Utc};
 use collections::{HashMap, HashSet, IndexMap};
 use gpui::{Entity, SharedString, Task};
-use language_model::DisabledReason;
+// use language_model::DisabledReason;  // removed-crate: language_model
 use project::{AgentId, Project};
 use serde::{Deserialize, Serialize};
 use std::{any::Any, error::Error, fmt, path::PathBuf, rc::Rc};

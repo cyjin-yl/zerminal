@@ -1,17 +1,17 @@
 use client::{RefreshLlmTokenListener, UserStore, test::FakeServer};
 use clock::FakeSystemClock;
 use clock::ReplicaId;
-use cloud_api_types::{
+// use cloud_api_types::{
     CreateLlmTokenResponse, LlmToken, Organization, OrganizationConfiguration,
     OrganizationEditPredictionConfiguration, OrganizationId, SettledEditPrediction,
     SubmitEditPredictionSettledBatchBody, SubmitEditPredictionSettledResponse,
-};
-use cloud_llm_client::{
+};  // removed-crate: cloud_api_types
+// use cloud_llm_client::{
     EditPredictionRejectReason, EditPredictionRejection, PredictEditsRequestTrigger,
     RejectEditPredictionsBody,
     predict_edits_v3::{PredictEditsV3Request, PredictEditsV3Response},
     predict_edits_v4::{PredictEditsV4Request, PredictEditsV4Response},
-};
+};  // removed-crate: cloud_llm_client
 use db::AppDatabase;
 use edit_prediction_types::EditPredictionRequestTrigger;
 use feature_flags::{FeatureFlag as _, FeatureFlagAppExt as _, FeatureFlagsSettings};

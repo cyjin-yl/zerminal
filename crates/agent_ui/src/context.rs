@@ -1,6 +1,6 @@
 use crate::mention_set::Mention;
 use gpui::{AppContext as _, Entity, Task};
-use language_model::{LanguageModelImage, LanguageModelRequestMessage, MessageContent};
+// use language_model::{LanguageModelImage, LanguageModelRequestMessage, MessageContent};  // removed-crate: language_model
 use ui::App;
 use util::ResultExt as _;
 
