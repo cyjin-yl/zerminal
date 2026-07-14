@@ -15,6 +15,23 @@ use util::rel_path::{PathExt, RelPathBuf};
 
 use crate::ExtensionCapability;
 
+/// Extension 提供的功能类别 (stub: replaced deleted cloud_api_types::ExtensionProvides)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ExtensionProvides {
+    Themes,
+    IconThemes,
+    Languages,
+    Grammars,
+    LanguageServers,
+    ContextServers,
+    Snippets,
+    DebugAdapters,
+    SlashCommands,
+    AgentServers,
+    IndexedDocsProviders,
+}
+
 /// This is the old version of the extension manifest, from when it was `extension.json`.
 #[derive(Debug, PartialEq, Eq, Clone, Serialize, Deserialize)]
 pub struct OldExtensionManifest {

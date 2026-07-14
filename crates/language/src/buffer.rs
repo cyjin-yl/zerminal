@@ -2,7 +2,7 @@ pub mod row_chunk;
 
 use crate::{
     ByteContent, DebuggerTextObject, LanguageScope, ModelineSettings, Outline, OutlineConfig,
-    PLAIN_TEXT, RunnableTag, TextObject, TreeSitterOptions, analyze_byte_content,
+    PLAIN_TEXT, TextObject, TreeSitterOptions, analyze_byte_content,
     diagnostic_set::{DiagnosticEntry, DiagnosticEntryRef, DiagnosticGroup},
     language_settings::{AutoIndentMode, LanguageSettings},
     outline::OutlineItem,
@@ -19,6 +19,8 @@ pub use crate::{
     Grammar, HighlightId, HighlightMap, Language, LanguageRegistry, diagnostic_set::DiagnosticSet,
     proto,
 };
+
+use postage::{prelude::Stream, watch};
 
 use anyhow::{Context as _, Result};
 use clock::Lamport;
@@ -607,7 +609,7 @@ pub enum CharScopeContext {
 
 /// A runnable is a set of data about a region that could be resolved into a task
 pub struct Runnable {
-    pub tags: SmallVec<[RunnableTag; 1]>,
+    pub tags: SmallVec<[String; 1]>,
     pub language: Arc<Language>,
     pub buffer: BufferId,
 }
@@ -1143,7 +1145,7 @@ impl Buffer {
             } else {
                 Some(Duration::from_millis(1))
             },
-            parse_status: watch::channel(ParseStatus::Idle),
+            parse_status: watch::channel_with(ParseStatus::Idle),
             autoindent_requests: Default::default(),
             wait_for_autoindent_txs: Default::default(),
             pending_autoindent: Default::default(),
@@ -1872,7 +1874,7 @@ impl Buffer {
         let mut syntax_snapshot = syntax_map.snapshot();
         drop(syntax_map);
 
-        self.parse_status.0.send(ParseStatus::Parsing).unwrap();
+        *self.parse_status.0.borrow_mut() = ParseStatus::Parsing;
         if may_block && let Some(sync_parse_timeout) = self.sync_parse_timeout {
             if let Ok(()) = syntax_snapshot.reparse_with_timeout(
                 &text,
@@ -1932,7 +1934,7 @@ impl Buffer {
         self.syntax_map.lock().did_parse(syntax_snapshot);
         self.was_changed();
         self.request_autoindent(cx, block_budget);
-        self.parse_status.0.send(ParseStatus::Idle).unwrap();
+        *self.parse_status.0.borrow_mut() = ParseStatus::Idle;
         Self::invalidate_tree_sitter_data(&mut self.tree_sitter_data, &self.text.snapshot());
         cx.emit(BufferEvent::Reparsed);
         cx.notify();
@@ -1947,7 +1949,7 @@ impl Buffer {
         let mut parse_status = self.parse_status();
         async move {
             while *parse_status.borrow() != ParseStatus::Idle {
-                if parse_status.changed().await.is_err() {
+                if parse_status.recv().await.is_none() {
                     break;
                 }
             }

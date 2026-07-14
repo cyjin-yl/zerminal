@@ -27,11 +27,33 @@ use futures::StreamExt;
 use pty_info::{ProcessIdGetter, PtyProcessInfo};
 use serde::{Deserialize, Serialize};
 use settings::Settings;
-// use task::{HideStrategy, Shell, ShellKind, SpawnInTerminal};  // removed-crate: task
+use util::shell::{Shell, ShellKind};
 use terminal_settings::{AlternateScroll, CursorShape as SettingsCursorShape, TerminalSettings};
 use theme::{ActiveTheme, Theme};
 use urlencoding;
 use util::{ResultExt as _, paths::PathStyle, truncate_and_trailoff};
+
+/// 终端任务隐藏策略 (stub: replaced deleted task::HideStrategy)
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, serde::Deserialize, serde::Serialize)]
+pub enum HideStrategy {
+    #[default]
+    Never,
+    Always,
+    OnSuccess,
+}
+
+/// 终端中要启动的任务 (stub: replaced deleted task::SpawnInTerminal)
+#[derive(Debug, Clone, Default, Deserialize, Serialize)]
+pub struct SpawnInTerminal {
+    pub command: Option<String>,
+    pub args: Vec<String>,
+    pub label: String,
+    pub full_label: String,
+    pub command_label: String,
+    pub hide: HideStrategy,
+    pub show_summary: bool,
+    pub show_command: bool,
+}
 
 #[cfg(unix)]
 use std::os::unix::process::ExitStatusExt;

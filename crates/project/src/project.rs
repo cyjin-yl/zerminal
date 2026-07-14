@@ -57,9 +57,9 @@ pub use worktree_store::WorktreePaths;
 
 use anyhow::{Context as _, Result, anyhow};
 use buffer_store::{BufferStore, BufferStoreEvent};
-// use client::{
-    Client, Collaborator, PendingEntitySubscription, ProjectId, TypedEnvelope, UserStore, proto,
-};  // removed-crate: client
+// use client::{  // removed-crate: client
+//     Client, Collaborator, PendingEntitySubscription, ProjectId, TypedEnvelope, UserStore, proto,
+// };
 use clock::ReplicaId;
 
 // use dap::client::DebugAdapterClient;  // removed-crate: dap

@@ -19,7 +19,6 @@ mod outline;
 pub mod proto;
 mod runnable;
 mod syntax_map;
-mod task_context;
 mod text_diff;
 mod toolchain;
 
@@ -78,8 +77,6 @@ use std::{
     sync::{Arc, LazyLock},
 };
 use syntax_map::{QueryCursorHandle, SyntaxSnapshot};
-// use task::RunnableTag;  // removed-crate: task
-pub use task_context::{ContextLocation, ContextProvider};
 pub use text_diff::{
     DiffOptions, apply_diff_patch, apply_reversed_diff_patch, char_diff, line_diff, text_diff,
     text_diff_with_options, unified_diff, unified_diff_with_context, unified_diff_with_offsets,
@@ -103,7 +100,7 @@ pub use language_registry::{
     QUERY_FILENAME_PREFIXES,
 };
 pub use lsp::{LanguageServerId, LanguageServerName};
-// pub use outline::*;  // removed-crate: outline
+pub use outline::*;
 pub use syntax_map::{
     OwnedSyntaxLayer, SyntaxLayer, SyntaxMapMatches, ToTreeSitterPoint, TreeSitterOptions,
 };
@@ -223,8 +220,6 @@ pub static PLAIN_TEXT: LazyLock<Arc<Language>> = LazyLock::new(|| {
 pub enum ClientCommand {
     /// Open a location list (references panel / peek view).
     ShowLocations,
-    /// Schedule a task from an LSP command's arguments.
-    ScheduleTask(task::TaskTemplate),
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Hash)]
@@ -853,7 +848,6 @@ pub struct Language {
     pub(crate) id: LanguageId,
     pub(crate) config: LanguageConfig,
     pub(crate) grammar: Option<Arc<Grammar>>,
-    pub(crate) context_provider: Option<Arc<dyn ContextProvider>>,
     pub(crate) toolchain: Option<Arc<dyn ToolchainLister>>,
     pub(crate) manifest_name: Option<ManifestName>,
 }
@@ -876,16 +870,11 @@ impl Language {
             id,
             config,
             grammar: ts_language.map(|ts_language| Arc::new(Grammar::new(ts_language))),
-            context_provider: None,
             toolchain: None,
             manifest_name: None,
         }
     }
 
-    pub fn with_context_provider(mut self, provider: Option<Arc<dyn ContextProvider>>) -> Self {
-        self.context_provider = provider;
-        self
-    }
 
     pub fn with_toolchain_lister(mut self, provider: Option<Arc<dyn ToolchainLister>>) -> Self {
         self.toolchain = provider;
@@ -1016,10 +1005,6 @@ impl Language {
             .kernel_language_names
             .iter()
             .any(|name| name.to_lowercase() == kernel_language_lower)
-    }
-
-    pub fn context_provider(&self) -> Option<Arc<dyn ContextProvider>> {
-        self.context_provider.clone()
     }
 
     pub fn toolchain_lister(&self) -> Option<Arc<dyn ToolchainLister>> {

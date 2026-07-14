@@ -1,5 +1,5 @@
 mod context_server;
-mod dap;
+// mod dap;  // removed-crate: dap
 mod lsp;
 mod slash_command;
 
@@ -7,7 +7,7 @@ use std::{ops::Range, path::PathBuf};
 
 use util::redact::should_redact;
 
-// pub use context_server::*;  // removed-crate: context_server
+pub use context_server::*;
 // pub use dap::*;  // removed-crate: dap
 pub use lsp::*;
 pub use slash_command::*;

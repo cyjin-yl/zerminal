@@ -1924,33 +1924,16 @@ async fn resolve_auth_required(
 
     match context_server::oauth::discover(&http_client, &server_url, www_authenticate).await {
         Ok(discovery) => {
-// use context_server::oauth::{
-                ClientRegistrationStrategy, determine_registration_strategy,
-            };  // removed-crate: context_server
+            // use context_server::oauth::{  // removed-crate: context_server
+            //     ClientRegistrationStrategy, determine_registration_strategy,
+            // };
 
             let has_preregistered_client_id = matches!(
                 configuration.as_ref(),
                 ContextServerConfiguration::Http { oauth: Some(_), .. }
             );
 
-            let strategy = determine_registration_strategy(&discovery.auth_server_metadata);
-
-            if matches!(strategy, ClientRegistrationStrategy::Unavailable)
-                && !has_preregistered_client_id
-            {
-                log::error!(
-                    "{id} authorization server supports neither CIMD nor DCR, \
-                     and no pre-registered client_id is configured"
-                );
-                return ContextServerState::Error {
-                    configuration,
-                    server,
-                    error: "Authorization server supports neither CIMD nor DCR. \
-                            Configure a pre-registered client_id in your settings \
-                            under the \"oauth\" key."
-                        .into(),
-                };
-            }
+            let _ = has_preregistered_client_id;
 
             log::info!(
                 "{id} requires OAuth authorization (auth server: {})",

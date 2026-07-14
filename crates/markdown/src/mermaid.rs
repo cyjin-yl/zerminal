@@ -16,6 +16,57 @@ use theme_settings::ThemeSettings;
 
 use super::{CopyButtonVisibility, Markdown, MarkdownStyle, ParsedMarkdown};
 
+// removed-crate: mermaid_render — 本地 stub 仅用于编译 (spec §8.2 M2)
+mod mermaid_render {
+    use gpui::Hsla;
+
+    #[derive(Clone, Debug)]
+    #[allow(dead_code)]
+    pub struct AccentColor {
+        pub foreground: Hsla,
+        pub background: Hsla,
+    }
+
+    #[derive(Clone, Debug)]
+    #[allow(dead_code)]
+    pub struct MermaidTheme {
+        pub dark_mode: bool,
+        pub font_family: String,
+        pub background: Hsla,
+        pub primary_color: Hsla,
+        pub primary_text_color: Hsla,
+        pub primary_border_color: Hsla,
+        pub secondary_color: Hsla,
+        pub tertiary_color: Hsla,
+        pub line_color: Hsla,
+        pub text_color: Hsla,
+        pub edge_label_background: Hsla,
+        pub cluster_background: Hsla,
+        pub cluster_border: Hsla,
+        pub note_background: Hsla,
+        pub note_border: Hsla,
+        pub actor_background: Hsla,
+        pub actor_border: Hsla,
+        pub activation_background: Hsla,
+        pub activation_border: Hsla,
+        pub git_branch_colors: [Hsla; 8],
+        pub git_branch_label_colors: [Hsla; 8],
+        pub er_attr_bg_odd: Hsla,
+        pub er_attr_bg_even: Hsla,
+        pub error_color: Hsla,
+        pub warning_color: Hsla,
+        pub accent_colors: Vec<AccentColor>,
+    }
+
+    pub fn text_color_for_background(color: Hsla) -> Hsla {
+        color
+    }
+
+    pub fn render_to_svg(_contents: &str, _theme: &MermaidTheme) -> anyhow::Result<String> {
+        Err(anyhow::anyhow!("mermaid rendering disabled"))
+    }
+}
+
 type MermaidDiagramCache = HashMap<ParsedMarkdownMermaidDiagramContents, Arc<CachedMermaidDiagram>>;
 
 #[derive(Clone, Debug)]

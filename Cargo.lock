@@ -6437,6 +6437,7 @@ dependencies = [
  "unicase",
  "unindent",
  "util",
+ "watch",
  "zlog",
  "ztracing",
 ]
@@ -14695,6 +14696,12 @@ checksum = "2ef140f1b49946586078353a453a1d28ba90adfc54dde75710bc1931de204d68"
 dependencies = [
  "leb128",
 ]
+
+[[package]]
+name = "watch"
+version = "0.2.3"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ed390fa2f6c6036b4dad0a2695711971998ac185f629e4b5d3d5cb3e4ff5c65"
 
 [[package]]
 name = "wax"

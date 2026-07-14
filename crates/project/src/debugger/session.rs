@@ -20,17 +20,17 @@ use collections::{HashMap, HashSet, IndexMap, TypeIdHashMap};
 // use dap::messages::Response;  // removed-crate: dap
 // use dap::requests::{Request, RunInTerminal, StartDebugging};  // removed-crate: dap
 // use dap::transport::TcpTransport;  // removed-crate: dap
-// use dap::{
-    Capabilities, ContinueArguments, EvaluateArgumentsContext, Module, Source, StackFrameId,
-    SteppingGranularity, StoppedEvent, VariableReference,
-    client::{DebugAdapterClient, SessionId},
-    messages::{Events, Message},
-};  // removed-crate: dap
-// use dap::{
-    ExceptionBreakpointsFilter, ExceptionFilterOptions, OutputEvent, OutputEventCategory,
-    RunInTerminalRequestArguments, StackFramePresentationHint, StartDebuggingRequestArguments,
-    StartDebuggingRequestArgumentsRequest, VariablePresentationHint, WriteMemoryArguments,
-};  // removed-crate: dap
+// use dap::{  // removed-crate: dap
+//     Capabilities, ContinueArguments, EvaluateArgumentsContext, Module, Source, StackFrameId,
+//     SteppingGranularity, StoppedEvent, VariableReference,
+//     client::{DebugAdapterClient, SessionId},
+//     messages::{Events, Message},
+// };
+// use dap::{  // removed-crate: dap
+//     ExceptionBreakpointsFilter, ExceptionFilterOptions, OutputEvent, OutputEventCategory,
+//     RunInTerminalRequestArguments, StackFramePresentationHint, StartDebuggingRequestArguments,
+//     StartDebuggingRequestArgumentsRequest, VariablePresentationHint, WriteMemoryArguments,
+// };
 use futures::channel::mpsc::UnboundedSender;
 use futures::channel::{mpsc, oneshot};
 use futures::io::BufReader;

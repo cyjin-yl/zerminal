@@ -15,15 +15,15 @@ use crate::{
 use anyhow::{Context as _, Result, anyhow};
 use async_trait::async_trait;
 use collections::HashMap;
-// use dap::{
-    Capabilities, DapRegistry, DebugRequest, EvaluateArgumentsContext, StackFrameId,
-    adapters::{
-        DapDelegate, DebugAdapterBinary, DebugAdapterName, DebugTaskDefinition, TcpArguments,
-    },
-    client::SessionId,
-    inline_value::VariableLookupKind,
-    messages::Message,
-};  // removed-crate: dap
+// use dap::{  // removed-crate: dap
+//     Capabilities, DapRegistry, DebugRequest, EvaluateArgumentsContext, StackFrameId,
+//     adapters::{
+//         DapDelegate, DebugAdapterBinary, DebugAdapterName, DebugTaskDefinition, TcpArguments,
+//     },
+//     client::SessionId,
+//     inline_value::VariableLookupKind,
+//     messages::Message,
+// };
 use fs::{Fs, RemoveOptions};
 use futures::{
     StreamExt, TryStreamExt as _,
