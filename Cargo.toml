@@ -238,6 +238,8 @@ members = [
     "crates/zlog_settings",
     "crates/ztracing",
     "crates/ztracing_macro",
+    "crates/zerminal_macros",
+    "crates/zerminal_macros_types",
 
     #
     # Extensions
@@ -499,6 +501,8 @@ zlog = { path = "crates/zlog" }
 zlog_settings = { path = "crates/zlog_settings" }
 ztracing = { path = "crates/ztracing" }
 ztracing_macro = { path = "crates/ztracing_macro" }
+zerminal_macros = { path = "crates/zerminal_macros" }
+zerminal_macros_types = { path = "crates/zerminal_macros_types" }
 
 #
 # External crates

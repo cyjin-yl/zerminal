@@ -1,0 +1,17 @@
+[package]
+name = "zerminal_macros"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "Apache-2.0"
+
+[lib]
+path = "src/zerminal_macros.rs"
+proc-macro = true
+
+[dependencies]
+proc-macro2 = { workspace = true }
+quote = { workspace = true }
+syn = { workspace = true, features = ["full"] }
+inventory = "0.3"
+zerminal_macros_types = { path = "../zerminal_macros_types" }
