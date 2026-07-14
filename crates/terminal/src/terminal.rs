@@ -27,7 +27,7 @@ use futures::StreamExt;
 use pty_info::{ProcessIdGetter, PtyProcessInfo};
 use serde::{Deserialize, Serialize};
 use settings::Settings;
-use task::{HideStrategy, Shell, ShellKind, SpawnInTerminal};
+// use task::{HideStrategy, Shell, ShellKind, SpawnInTerminal};  // removed-crate: task
 use terminal_settings::{AlternateScroll, CursorShape as SettingsCursorShape, TerminalSettings};
 use theme::{ActiveTheme, Theme};
 use urlencoding;
@@ -3319,7 +3319,7 @@ mod tests {
     };
     use parking_lot::Mutex;
     use rand::{Rng, distr, rngs::StdRng};
-    use task::{Shell, ShellBuilder};
+// use task::{Shell, ShellBuilder};  // removed-crate: task
 
     #[test]
     fn test_init_command_startup_marker_commands_do_not_contain_marker() {

@@ -19,7 +19,7 @@ use itertools::Itertools;
 use project::{Fs, Project};
 
 use settings::{Settings, TerminalDockPosition};
-use task::{RevealStrategy, RevealTarget, Shell, ShellBuilder, SpawnInTerminal, TaskId};
+// use task::{RevealStrategy, RevealTarget, Shell, ShellBuilder, SpawnInTerminal, TaskId};  // removed-crate: task
 use terminal::{Terminal, terminal_settings::TerminalSettings};
 use ui::{
     ButtonLike, Clickable, ContextMenu, FluentBuilder, PopoverMenu, SplitButton, Toggleable,

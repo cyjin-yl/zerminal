@@ -23,7 +23,7 @@ use std::{
     str::FromStr,
     sync::{Arc, OnceLock},
 };
-use task::{SpawnInTerminal, ZedDebugConfig};
+// use task::{SpawnInTerminal, ZedDebugConfig};  // removed-crate: task
 use url::Url;
 use util::{
     archive::extract_zip, fs::make_file_executable, maybe, paths::PathStyle, rel_path::RelPath,

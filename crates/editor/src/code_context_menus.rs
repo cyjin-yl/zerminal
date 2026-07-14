@@ -15,8 +15,8 @@ use ordered_float::OrderedFloat;
 use project::lsp_store::CompletionDocumentation;
 use project::{CodeAction, Completion, CompletionGroup, TaskSourceKind};
 use project::{CompletionDisplayOptions, CompletionSource};
-use task::DebugScenario;
-use task::TaskContext;
+// use task::DebugScenario;  // removed-crate: task
+// use task::TaskContext;  // removed-crate: task
 
 use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -27,7 +27,7 @@ use std::{
     ops::Range,
     rc::Rc,
 };
-use task::ResolvedTask;
+// use task::ResolvedTask;  // removed-crate: task
 use ui::{
     Divider, ListItem, ListSubHeader, Popover, ScrollAxes, Scrollbars, Tooltip, WithScrollbar,
     prelude::*,

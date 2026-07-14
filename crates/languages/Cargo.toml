@@ -56,7 +56,6 @@ smallvec.workspace = true
 semver.workspace = true
 smol.workspace = true
 snippet.workspace = true
-task.workspace = true
 terminal.workspace = true
 theme.workspace = true
 tree-sitter = { workspace = true, optional = true }

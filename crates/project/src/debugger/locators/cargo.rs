@@ -1,11 +1,11 @@
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
-use dap::{DapLocator, DebugRequest, adapters::DebugAdapterName};
+// use dap::{DapLocator, DebugRequest, adapters::DebugAdapterName};  // removed-crate: dap
 use gpui::{BackgroundExecutor, SharedString};
 use serde_json::{Value, json};
 use smol::{io::AsyncReadExt, process::Stdio as SmolStdio};
 use std::time::Duration;
-use task::{BuildTaskDefinition, DebugScenario, ShellBuilder, SpawnInTerminal, TaskTemplate};
+// use task::{BuildTaskDefinition, DebugScenario, ShellBuilder, SpawnInTerminal, TaskTemplate};  // removed-crate: task
 use util::command::{Stdio, new_command};
 
 pub(crate) struct CargoLocator;

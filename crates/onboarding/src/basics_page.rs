@@ -19,7 +19,7 @@ use ui::{
     ToggleButtonGroup, ToggleButtonGroupSize, ToggleButtonSimple, ToggleButtonWithIcon, Tooltip,
     prelude::*,
 };
-use vim_mode_setting::VimModeSetting;
+// use vim_mode_setting::VimModeSetting;  // removed-crate: vim_mode_setting
 
 use crate::{
     ImportCursorSettings, ImportVsCodeSettings, SettingsImportState,

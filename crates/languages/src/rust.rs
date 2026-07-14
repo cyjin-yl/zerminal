@@ -26,7 +26,7 @@ use std::{
     path::{Path, PathBuf},
     sync::{Arc, LazyLock},
 };
-use task::{TaskTemplate, TaskTemplates, TaskVariables, VariableName};
+// use task::{TaskTemplate, TaskTemplates, TaskVariables, VariableName};  // removed-crate: task
 use util::command::{Stdio, new_command};
 use util::fs::{make_file_executable, remove_matching};
 use util::merge_json_value_into;

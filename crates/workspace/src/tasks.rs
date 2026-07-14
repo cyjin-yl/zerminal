@@ -6,10 +6,10 @@ use gpui::{AppContext, AsyncWindowContext, Context, Entity, Task, TaskExt, WeakE
 use language::Buffer;
 use project::{TaskSourceKind, WorktreeId};
 use remote::ConnectionState;
-use task::{
+// use task::{
     DebugScenario, ResolvedTask, SaveStrategy, SharedTaskContext, SpawnInTerminal, TaskContext,
     TaskHook, TaskTemplate, TaskVariables, VariableName,
-};
+};  // removed-crate: task
 use ui::Window;
 use util::TryFutureExt;
 
@@ -292,7 +292,7 @@ mod tests {
     use project::{FakeFs, Project, TaskSourceKind};
     use serde_json::json;
     use std::sync::Arc;
-    use task::TaskTemplate;
+// use task::TaskTemplate;  // removed-crate: task
 
     struct Fixture {
         workspace: Entity<Workspace>,

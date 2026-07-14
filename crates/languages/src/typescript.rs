@@ -22,7 +22,7 @@ use std::{
     path::{Path, PathBuf},
     sync::{Arc, LazyLock},
 };
-use task::{TaskTemplate, TaskTemplates, VariableName};
+// use task::{TaskTemplate, TaskTemplates, VariableName};  // removed-crate: task
 use util::rel_path::RelPath;
 use util::{ResultExt, maybe};
 
@@ -891,7 +891,7 @@ mod tests {
     use gpui::{AppContext as _, BackgroundExecutor, TestAppContext};
     use project::FakeFs;
     use serde_json::json;
-    use task::TaskTemplates;
+// use task::TaskTemplates;  // removed-crate: task
     use unindent::Unindent;
     use util::{path, rel_path::rel_path};
 

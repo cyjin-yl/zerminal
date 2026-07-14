@@ -7,7 +7,7 @@ use node_runtime::{NodeRuntime, VersionStrategy};
 use project::ContextProviderWithTasks;
 use semver::Version;
 use std::{future::Future, path::PathBuf, sync::Arc, vec};
-use task::{TaskTemplate, TaskTemplates, VariableName};
+// use task::{TaskTemplate, TaskTemplates, VariableName};  // removed-crate: task
 use util::{ResultExt, maybe};
 
 pub(super) fn bash_task_context() -> ContextProviderWithTasks {

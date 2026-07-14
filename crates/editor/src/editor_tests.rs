@@ -61,7 +61,7 @@ use std::{
 };
 use std::{cell::RefCell, future::Future, rc::Rc, sync::atomic::AtomicBool, time::Instant};
 use std::{iter, sync::atomic::AtomicUsize};
-use task::TaskVariables;
+// use task::TaskVariables;  // removed-crate: task
 use test::build_editor_with_project;
 use unindent::Unindent;
 use util::{

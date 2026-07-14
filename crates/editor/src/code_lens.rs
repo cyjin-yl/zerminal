@@ -7,7 +7,7 @@ use itertools::Itertools;
 use language::{BufferId, ClientCommand};
 use multi_buffer::{Anchor, MultiBufferRow, MultiBufferSnapshot, ToPoint as _};
 use project::{CodeAction, TaskSourceKind, lsp_store::code_lens::CodeLensActions};
-use task::TaskContext;
+// use task::TaskContext;  // removed-crate: task
 use text::ToOffset as _;
 
 use ui::{Context, Window, div, prelude::*};

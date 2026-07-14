@@ -15,7 +15,7 @@ use crate::{
 use anyhow::{Context as _, Result, anyhow};
 use async_trait::async_trait;
 use collections::HashMap;
-use dap::{
+// use dap::{
     Capabilities, DapRegistry, DebugRequest, EvaluateArgumentsContext, StackFrameId,
     adapters::{
         DapDelegate, DebugAdapterBinary, DebugAdapterName, DebugTaskDefinition, TcpArguments,
@@ -23,7 +23,7 @@ use dap::{
     client::SessionId,
     inline_value::VariableLookupKind,
     messages::Message,
-};
+};  // removed-crate: dap
 use fs::{Fs, RemoveOptions};
 use futures::{
     StreamExt, TryStreamExt as _,
@@ -51,7 +51,7 @@ use std::{
     path::{Path, PathBuf},
     sync::{Arc, Once},
 };
-use task::{DebugScenario, SharedTaskContext, SpawnInTerminal, TaskTemplate};
+// use task::{DebugScenario, SharedTaskContext, SpawnInTerminal, TaskTemplate};  // removed-crate: task
 use util::{ResultExt as _, rel_path::RelPath};
 use worktree::Worktree;
 

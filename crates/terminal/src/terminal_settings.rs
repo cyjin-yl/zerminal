@@ -10,7 +10,7 @@ use settings::{
     TerminalDockPosition, TerminalLineHeight, VenvSettings, WorkingDirectory,
     merge_from::MergeFrom,
 };
-use task::Shell;
+// use task::Shell;  // removed-crate: task
 use theme_settings::FontFamilyName;
 
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]

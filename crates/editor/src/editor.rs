@@ -144,7 +144,7 @@ use code_context_menus::{
 use code_lens::CodeLensState;
 use collections::{BTreeMap, HashMap, HashSet, VecDeque};
 use convert_case::{Case, Casing};
-use dap::TelemetrySpawnLocation;
+// use dap::TelemetrySpawnLocation;  // removed-crate: dap
 use display_map::*;
 use document_colors::LspColorData;
 use document_links::LspDocumentLinks;
@@ -250,7 +250,7 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
-use task::TaskVariables;
+// use task::TaskVariables;  // removed-crate: task
 use text::{BufferId, FromAnchor, OffsetUtf16, Rope, ToOffset as _, ToPoint as _};
 use theme::{
     AccentColors, ActiveTheme, GlobalTheme, PlayerColor, StatusColors, SyntaxTheme, Theme,

@@ -13,7 +13,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
-use task::{Shell, ShellBuilder, ShellKind, SpawnInTerminal};
+// use task::{Shell, ShellBuilder, ShellKind, SpawnInTerminal};  // removed-crate: task
 use terminal::{
     TaskState, TaskStatus, Terminal, TerminalBuilder, insert_zed_terminal_env,
     terminal_settings::TerminalSettings,

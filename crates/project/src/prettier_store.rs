@@ -21,7 +21,7 @@ use language::{
 use lsp::{LanguageServer, LanguageServerId, LanguageServerName};
 use node_runtime::NodeRuntime;
 use paths::default_prettier_dir;
-use prettier::Prettier;
+// use prettier::Prettier;  // removed-crate: prettier
 use settings::Settings;
 use smol::stream::StreamExt;
 use util::{ResultExt, TryFutureExt, rel_path::RelPath};

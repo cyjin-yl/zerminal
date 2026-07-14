@@ -1,9 +1,9 @@
 mod go_locator {
     use collections::HashMap;
-    use dap::{DapLocator, adapters::DebugAdapterName};
+// use dap::{DapLocator, adapters::DebugAdapterName};  // removed-crate: dap
     use gpui::TestAppContext;
     use project::debugger::locators::go::{DelveLaunchRequest, GoLocator};
-    use task::{HideStrategy, RevealStrategy, RevealTarget, SaveStrategy, Shell, TaskTemplate};
+// use task::{HideStrategy, RevealStrategy, RevealTarget, SaveStrategy, Shell, TaskTemplate};  // removed-crate: task
     #[gpui::test]
     async fn test_create_scenario_for_go_build(_: &mut TestAppContext) {
         let locator = GoLocator;
@@ -241,11 +241,11 @@ mod go_locator {
 }
 
 mod python_locator {
-    use dap::{DapLocator, adapters::DebugAdapterName};
+// use dap::{DapLocator, adapters::DebugAdapterName};  // removed-crate: dap
     use serde_json::json;
 
     use project::debugger::locators::python::*;
-    use task::{DebugScenario, TaskTemplate};
+// use task::{DebugScenario, TaskTemplate};  // removed-crate: task
 
     #[gpui::test]
     async fn test_python_locator() {

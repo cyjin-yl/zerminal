@@ -1,7 +1,7 @@
 use anyhow::Context as _;
 use collections::HashMap;
 use context_server::ContextServerCommand;
-use dap::adapters::DebugAdapterName;
+// use dap::adapters::DebugAdapterName;  // removed-crate: dap
 use fs::Fs;
 use futures::StreamExt as _;
 use git::repository::DEFAULT_WORKTREE_DIRECTORY;
@@ -27,7 +27,7 @@ use settings::{
     SettingsStore, parse_json_with_comments, watch_config_file,
 };
 use std::{cell::OnceCell, collections::BTreeMap, path::PathBuf, sync::Arc, time::Duration};
-use task::{DebugTaskFile, TaskTemplates, VsCodeDebugTaskFile, VsCodeTaskFile};
+// use task::{DebugTaskFile, TaskTemplates, VsCodeDebugTaskFile, VsCodeTaskFile};  // removed-crate: task
 use util::{ResultExt, rel_path::RelPath, serde::default_true};
 use worktree::{PathChange, UpdatedEntriesSet, Worktree, WorktreeId};
 

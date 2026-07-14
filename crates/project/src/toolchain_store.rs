@@ -20,7 +20,7 @@ use rpc::{
     },
 };
 use settings::WorktreeId;
-use task::Shell;
+// use task::Shell;  // removed-crate: task
 use util::{ResultExt as _, rel_path::RelPath};
 
 use crate::{

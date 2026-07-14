@@ -16,7 +16,7 @@ use test_inventory::*;
 mod test_inventory {
     use gpui::{AppContext as _, Entity, Task, TestAppContext};
     use itertools::Itertools;
-    use task::TaskContext;
+// use task::TaskContext;  // removed-crate: task
     use worktree::WorktreeId;
 
     use crate::Inventory;

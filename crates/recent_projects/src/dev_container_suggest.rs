@@ -1,5 +1,5 @@
 use db::kvp::KeyValueStore;
-use dev_container::find_configs_in_snapshot;
+// use dev_container::find_configs_in_snapshot;  // removed-crate: dev_container
 use gpui::{App, SharedString, Window};
 use project::{Project, WorktreeId};
 use std::path::Path;

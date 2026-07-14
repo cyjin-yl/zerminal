@@ -29,7 +29,7 @@ use std::{
     str::FromStr,
     sync::Arc,
 };
-use task::{TaskTemplate, TaskTemplates, VariableName};
+// use task::{TaskTemplate, TaskTemplates, VariableName};  // removed-crate: task
 use util::{
     ResultExt, archive::extract_zip, fs::remove_matching, maybe, merge_json_value_into,
     paths::PathStyle, rel_path::RelPath,

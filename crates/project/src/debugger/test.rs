@@ -1,7 +1,7 @@
 #![expect(clippy::result_large_err)]
 use std::{path::Path, sync::Arc};
 
-use dap::client::DebugAdapterClient;
+// use dap::client::DebugAdapterClient;  // removed-crate: dap
 use gpui::{App, Subscription};
 
 use super::session::{Session, SessionStateEvent};

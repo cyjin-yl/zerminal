@@ -33,7 +33,7 @@ use git_store::{Repository, RepositoryId};
 pub mod search_history;
 pub mod yarn;
 
-use dap::inline_value::{InlineValueLocation, VariableLookupKind, VariableScope};
+// use dap::inline_value::{InlineValueLocation, VariableLookupKind, VariableScope};  // removed-crate: dap
 use itertools::{Either, Itertools};
 
 use crate::{
@@ -62,7 +62,7 @@ use buffer_store::{BufferStore, BufferStoreEvent};
 };  // removed-crate: client
 use clock::ReplicaId;
 
-use dap::client::DebugAdapterClient;
+// use dap::client::DebugAdapterClient;  // removed-crate: dap
 
 use collections::{BTreeSet, HashMap, HashSet, IndexSet};
 use debounced_delay::DebouncedDelay;
@@ -153,9 +153,9 @@ use worktree_store::{WorktreeStore, WorktreeStoreEvent};
 pub use fs::*;
 pub use language::Location;
 #[cfg(any(test, feature = "test-support"))]
-pub use prettier::FORMAT_SUFFIX as TEST_PRETTIER_FORMAT_SUFFIX;
+// pub use prettier::FORMAT_SUFFIX as TEST_PRETTIER_FORMAT_SUFFIX;  // removed-crate: prettier
 #[cfg(any(test, feature = "test-support"))]
-pub use prettier::RANGE_FORMAT_SUFFIX as TEST_PRETTIER_RANGE_FORMAT_SUFFIX;
+// pub use prettier::RANGE_FORMAT_SUFFIX as TEST_PRETTIER_RANGE_FORMAT_SUFFIX;  // removed-crate: prettier
 pub use task_inventory::{
     BasicContextProvider, ContextProviderWithTasks, DebugScenarioContext, GIT_COMMAND_TASK_TAG,
     Inventory, TaskContexts, TaskSourceKind,

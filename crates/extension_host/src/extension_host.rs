@@ -55,7 +55,7 @@ use std::{
     sync::Arc,
     time::{Duration, Instant},
 };
-use task::TaskTemplates;
+// use task::TaskTemplates;  // removed-crate: task
 use url::Url;
 use util::{ResultExt, paths::RemotePathBuf, rel_path::PathExt};
 use wasm_host::{

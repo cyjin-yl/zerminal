@@ -16,21 +16,21 @@ use crate::debugger::memory::{self, Memory, MemoryIterator, MemoryPageBuilder, P
 use anyhow::{Context as _, Result, anyhow, bail};
 use base64::Engine;
 use collections::{HashMap, HashSet, IndexMap, TypeIdHashMap};
-use dap::adapters::{DebugAdapterBinary, DebugAdapterName};
-use dap::messages::Response;
-use dap::requests::{Request, RunInTerminal, StartDebugging};
-use dap::transport::TcpTransport;
-use dap::{
+// use dap::adapters::{DebugAdapterBinary, DebugAdapterName};  // removed-crate: dap
+// use dap::messages::Response;  // removed-crate: dap
+// use dap::requests::{Request, RunInTerminal, StartDebugging};  // removed-crate: dap
+// use dap::transport::TcpTransport;  // removed-crate: dap
+// use dap::{
     Capabilities, ContinueArguments, EvaluateArgumentsContext, Module, Source, StackFrameId,
     SteppingGranularity, StoppedEvent, VariableReference,
     client::{DebugAdapterClient, SessionId},
     messages::{Events, Message},
-};
-use dap::{
+};  // removed-crate: dap
+// use dap::{
     ExceptionBreakpointsFilter, ExceptionFilterOptions, OutputEvent, OutputEventCategory,
     RunInTerminalRequestArguments, StackFramePresentationHint, StartDebuggingRequestArguments,
     StartDebuggingRequestArgumentsRequest, VariablePresentationHint, WriteMemoryArguments,
-};
+};  // removed-crate: dap
 use futures::channel::mpsc::UnboundedSender;
 use futures::channel::{mpsc, oneshot};
 use futures::io::BufReader;
@@ -60,7 +60,7 @@ use std::{
     path::Path,
     sync::Arc,
 };
-use task::SharedTaskContext;
+// use task::SharedTaskContext;  // removed-crate: task
 use text::{PointUtf16, ToPointUtf16};
 use url::Url;
 use util::command::Stdio;

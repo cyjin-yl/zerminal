@@ -78,7 +78,7 @@ use std::{
     sync::{Arc, LazyLock},
 };
 use syntax_map::{QueryCursorHandle, SyntaxSnapshot};
-use task::RunnableTag;
+// use task::RunnableTag;  // removed-crate: task
 pub use task_context::{ContextLocation, ContextProvider};
 pub use text_diff::{
     DiffOptions, apply_diff_patch, apply_reversed_diff_patch, char_diff, line_diff, text_diff,

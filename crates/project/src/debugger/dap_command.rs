@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use anyhow::{Context as _, Ok, Result};
 use base64::Engine;
-use dap::{
+// use dap::{
     Capabilities, ContinueArguments, ExceptionFilterOptions, InitializeRequestArguments,
     InitializeRequestArgumentsPathFormat, NextArguments, SetVariableResponse, SourceBreakpoint,
     StepInArguments, StepOutArguments, SteppingGranularity, ValueFormat, Variable,
@@ -10,7 +10,7 @@ use dap::{
     client::SessionId,
     proto_conversions::ProtoConversion,
     requests::{Continue, Next},
-};
+};  // removed-crate: dap
 
 use rpc::proto;
 use serde_json::Value;

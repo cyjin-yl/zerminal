@@ -1,10 +1,10 @@
 use anyhow::Result;
 use async_trait::async_trait;
 use collections::HashMap;
-use dap::{DapLocator, DebugRequest, adapters::DebugAdapterName};
+// use dap::{DapLocator, DebugRequest, adapters::DebugAdapterName};  // removed-crate: dap
 use gpui::{BackgroundExecutor, SharedString};
 use serde::{Deserialize, Serialize};
-use task::{DebugScenario, SpawnInTerminal, TaskTemplate};
+// use task::{DebugScenario, SpawnInTerminal, TaskTemplate};  // removed-crate: task
 
 pub struct GoLocator;
 

@@ -85,7 +85,7 @@ use std::{
     time::Duration,
 };
 use sum_tree::SumTree;
-use task::{ResolvedTask, ShellKind, TaskContext};
+// use task::{ResolvedTask, ShellKind, TaskContext};  // removed-crate: task
 use text::{Anchor, PointUtf16, ReplicaId, ToOffset, Unclipped};
 use unindent::Unindent as _;
 use util::{

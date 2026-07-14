@@ -1391,7 +1391,7 @@ mod tests {
     use std::path::{Path, PathBuf};
     use std::process::ExitStatus;
     use std::sync::Mutex;
-    use task::SpawnInTerminal;
+// use task::SpawnInTerminal;  // removed-crate: task
     use theme::LoadThemes;
     use util::path;
     use util::rel_path::rel_path;

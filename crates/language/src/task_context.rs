@@ -7,7 +7,7 @@ use collections::HashMap;
 use fs::Fs;
 use gpui::{App, Entity, Task};
 use lsp::LanguageServerName;
-use task::{TaskTemplates, TaskVariables};
+// use task::{TaskTemplates, TaskVariables};  // removed-crate: task
 
 /// Language Contexts are used by Zed tasks to extract information about the source file where the tasks are supposed to be scheduled from.
 /// Multiple context providers may be used together: by default, Zed provides a base [`BasicContextProvider`] context that fills all non-custom [`VariableName`] variants.

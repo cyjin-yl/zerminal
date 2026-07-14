@@ -29,7 +29,7 @@ use std::{
         atomic::{AtomicBool, Ordering::SeqCst},
     },
 };
-use task::{TaskTemplate, TaskTemplates, TaskVariables, VariableName};
+// use task::{TaskTemplate, TaskTemplates, TaskVariables, VariableName};  // removed-crate: task
 use util::{ResultExt, fs::remove_matching, maybe, merge_json_value_into};
 
 pub(crate) fn semantic_token_rules() -> SemanticTokenRules {
@@ -943,7 +943,7 @@ mod tests {
     use super::*;
     use crate::language;
     use gpui::{AppContext, Hsla, TestAppContext};
-    use task::TaskContext;
+// use task::TaskContext;  // removed-crate: task
     use theme::SyntaxTheme;
     use unindent::Unindent as _;
 

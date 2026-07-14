@@ -33,7 +33,7 @@ use ui::{
     Tooltip, WithScrollbar, prelude::*,
 };
 use util::ResultExt;
-use vim_mode_setting::VimModeSetting;
+// use vim_mode_setting::VimModeSetting;  // removed-crate: vim_mode_setting
 use workspace::{
     Workspace,
     item::{Item, ItemEvent},

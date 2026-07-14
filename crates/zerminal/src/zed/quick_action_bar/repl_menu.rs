@@ -2,12 +2,12 @@ use gpui::ElementId;
 use gpui::TaskExt;
 use gpui::{AnyElement, Entity};
 use picker::Picker;
-use repl::{
+// use repl::{
     ExecutionState, JupyterSettings, Kernel, KernelSpecification, KernelStatus, Session,
     SessionSupport,
     components::{KernelPickerDelegate, KernelSelector},
     worktree_id_for_editor,
-};
+};  // removed-crate: repl
 use ui::{
     ButtonLike, CommonAnimationExt, ContextMenu, IconWithIndicator, Indicator, IntoElement,
     PopoverMenu, PopoverMenuHandle, Tooltip, prelude::*,

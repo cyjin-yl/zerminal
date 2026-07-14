@@ -2,10 +2,10 @@ use std::borrow::Cow;
 
 use anyhow::{Result, bail};
 use async_trait::async_trait;
-use dap::{DapLocator, DebugRequest, adapters::DebugAdapterName};
+// use dap::{DapLocator, DebugRequest, adapters::DebugAdapterName};  // removed-crate: dap
 use gpui::{BackgroundExecutor, SharedString};
 
-use task::{DebugScenario, SpawnInTerminal, TaskTemplate, VariableName};
+// use task::{DebugScenario, SpawnInTerminal, TaskTemplate, VariableName};  // removed-crate: task
 
 pub(crate) struct NodeLocator;
 

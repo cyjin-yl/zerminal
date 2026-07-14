@@ -24,7 +24,7 @@ use assets::Assets;
 use breadcrumbs::Breadcrumbs;
 // use client::zed_urls;  // removed-crate: client
 use collections::VecDeque;
-use debugger_ui::debugger_panel::DebugPanel;
+// use debugger_ui::debugger_panel::DebugPanel;  // removed-crate: debugger_ui
 use editor::{Editor, MultiBuffer};
 use extension_host::ExtensionStore;
 use feature_flags::{FeatureFlagAppExt as _, PanicFeatureFlag};
@@ -45,7 +45,7 @@ use gpui::{
     UpdateGlobal, WeakEntity, Window, WindowBounds, WindowHandle, WindowKind, WindowOptions,
     actions, image_cache, img, point, px, retain_all,
 };
-use image_viewer::ImageInfo;
+// use image_viewer::ImageInfo;  // removed-crate: image_viewer
 use language::Capability;
 use language_onboarding::BasedPyrightBanner;
 use language_tools::lsp_button::{self, LspButton};
@@ -91,7 +91,7 @@ use util::markdown::MarkdownString;
 use util::rel_path::RelPath;
 use util::{ResultExt, asset_str, maybe};
 use uuid::Uuid;
-use vim_mode_setting::VimModeSetting;
+// use vim_mode_setting::VimModeSetting;  // removed-crate: vim_mode_setting
 use workspace::notifications::{NotificationId, dismiss_app_notification, show_app_notification};
 
 use workspace::{

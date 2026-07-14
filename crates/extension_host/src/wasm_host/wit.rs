@@ -8,13 +8,13 @@ mod since_v0_4_0;
 mod since_v0_5_0;
 mod since_v0_6_0;
 mod since_v0_8_0;
-use dap::DebugRequest;
+// use dap::DebugRequest;  // removed-crate: dap
 use extension::{DebugTaskDefinition, KeyValueStoreDelegate, WorktreeDelegate};
 use gpui::BackgroundExecutor;
 use language::LanguageName;
 use lsp::LanguageServerName;
 use release_channel::ReleaseChannel;
-use task::{DebugScenario, SpawnInTerminal, TaskTemplate, ZedDebugConfig};
+// use task::{DebugScenario, SpawnInTerminal, TaskTemplate, ZedDebugConfig};  // removed-crate: task
 
 use latest::dap::StartDebuggingRequestArgumentsRequest;
 

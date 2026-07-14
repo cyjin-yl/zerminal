@@ -12,7 +12,7 @@ use multi_buffer::{Anchor, BufferOffset, MultiBufferRow, MultiBufferSnapshot, To
 use project::{Location, Project, TaskSourceKind, project_settings::ProjectSettings};
 use settings::Settings as _;
 use smallvec::SmallVec;
-use task::{ResolvedTask, RunnableTag, TaskContext, TaskTemplate, TaskVariables, VariableName};
+// use task::{ResolvedTask, RunnableTag, TaskContext, TaskTemplate, TaskVariables, VariableName};  // removed-crate: task
 use text::{BufferId, OffsetRangeExt as _, ToOffset as _, ToPoint as _};
 use ui::{Clickable as _, Color, IconButton, IconSize, Toggleable as _};
 
@@ -722,7 +722,7 @@ mod tests {
         },
     };
     use serde_json::json;
-    use task::{TaskTemplate, TaskTemplates};
+// use task::{TaskTemplate, TaskTemplates};  // removed-crate: task
     use text::Point;
     use util::path;
     use util::rel_path::rel_path;

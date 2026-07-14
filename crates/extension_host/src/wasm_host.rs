@@ -4,7 +4,7 @@ use crate::capability_granter::CapabilityGranter;
 use crate::{ExtensionManifest, ExtensionSettings};
 use anyhow::{Context as _, Result, anyhow, bail};
 use async_trait::async_trait;
-use dap::{DebugRequest, StartDebuggingRequestArgumentsRequest};
+// use dap::{DebugRequest, StartDebuggingRequestArgumentsRequest};  // removed-crate: dap
 use extension::{
     CodeLabel, Command, Completion, ContextServerConfiguration, DebugAdapterBinary,
     DebugTaskDefinition, ExtensionCapability, ExtensionHostProxy, KeyValueStoreDelegate,
@@ -36,7 +36,7 @@ use std::{
     sync::{Arc, LazyLock, OnceLock},
     time::Duration,
 };
-use task::{DebugScenario, SpawnInTerminal, TaskTemplate, ZedDebugConfig};
+// use task::{DebugScenario, SpawnInTerminal, TaskTemplate, ZedDebugConfig};  // removed-crate: task
 use util::paths::SanitizedPath;
 use wasmtime::{
     CacheStore, Engine, Store,

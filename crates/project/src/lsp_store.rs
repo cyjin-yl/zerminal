@@ -157,9 +157,9 @@ pub use fs::*;
 pub use language::Location;
 pub use lsp_store::inlay_hints::{CacheInlayHints, InvalidationStrategy};
 #[cfg(any(test, feature = "test-support"))]
-pub use prettier::FORMAT_SUFFIX as TEST_PRETTIER_FORMAT_SUFFIX;
+// pub use prettier::FORMAT_SUFFIX as TEST_PRETTIER_FORMAT_SUFFIX;  // removed-crate: prettier
 #[cfg(any(test, feature = "test-support"))]
-pub use prettier::RANGE_FORMAT_SUFFIX as TEST_PRETTIER_RANGE_FORMAT_SUFFIX;
+// pub use prettier::RANGE_FORMAT_SUFFIX as TEST_PRETTIER_RANGE_FORMAT_SUFFIX;  // removed-crate: prettier
 pub use semantic_tokens::{
     BufferSemanticToken, BufferSemanticTokens, RefreshForServer, SemanticTokenStylizer, TokenType,
 };

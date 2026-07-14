@@ -47,7 +47,7 @@ use std::{
     sync::{Arc, OnceLock},
     time::{Duration, Instant},
 };
-use task::{ResolvedTask, TaskContext, TaskVariables, VariableName};
+// use task::{ResolvedTask, TaskContext, TaskVariables, VariableName};  // removed-crate: task
 use theme::AccentColors;
 use time::{OffsetDateTime, UtcOffset, format_description::BorrowedFormatItem};
 use ui::{

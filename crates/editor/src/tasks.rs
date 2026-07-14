@@ -5,7 +5,7 @@ use gpui::{App, Task, Window};
 use lsp::LanguageServerName;
 use project::{Location, project_settings::ProjectSettings};
 use settings::Settings as _;
-use task::{TaskContext, TaskVariables, VariableName};
+// use task::{TaskContext, TaskVariables, VariableName};  // removed-crate: task
 use text::{BufferId, ToOffset, ToPoint};
 
 impl Editor {

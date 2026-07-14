@@ -13,7 +13,7 @@ use language::{
 };
 use rpc::{AnyProtoClient, TypedEnvelope, proto};
 use settings::{InvalidSettingsError, SettingsLocation};
-use task::{TaskContext, TaskVariables, VariableName};
+// use task::{TaskContext, TaskVariables, VariableName};  // removed-crate: task
 use text::{BufferId, OffsetRangeExt};
 use util::ResultExt;
 

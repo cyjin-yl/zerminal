@@ -15,8 +15,8 @@ use project::LocationLink;
 use project::Project;
 use project::TaskSourceKind;
 use project::lsp_store::lsp_ext_command::GetLspRunnables;
-use task::ResolvedTask;
-use task::TaskContext;
+// use task::ResolvedTask;  // removed-crate: task
+// use task::TaskContext;  // removed-crate: task
 use text::BufferId;
 use ui::SharedString;
 use util::ResultExt as _;

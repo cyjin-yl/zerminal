@@ -38,7 +38,7 @@ pub use remote_servers::RemoteServerProjects;
 use settings::{DefaultOpenBehavior, Settings, WorktreeId};
 use workspace::ProjectGroupKey;
 
-use dev_container::{DevContainerContext, find_devcontainer_configs};
+// use dev_container::{DevContainerContext, find_devcontainer_configs};  // removed-crate: dev_container
 use ui::{
     ButtonLike, ContextMenu, Divider, HighlightedLabel, KeyBinding, ListItem, ListItemSpacing,
     ListSubHeader, PopoverMenu, PopoverMenuHandle, TintColor, Tooltip, prelude::*,

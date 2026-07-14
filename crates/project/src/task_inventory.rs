@@ -10,7 +10,7 @@ use std::{
 
 use anyhow::Result;
 use collections::{HashMap, HashSet, VecDeque};
-use dap::DapRegistry;
+// use dap::DapRegistry;  // removed-crate: dap
 use gpui::{App, AppContext as _, Context, Entity, SharedString, Task, WeakEntity};
 use itertools::Itertools;
 use language::{
@@ -20,10 +20,10 @@ use language::{
 use lsp::{LanguageServerId, LanguageServerName};
 use paths::{debug_task_file_name, task_file_name};
 use settings::{InvalidSettingsError, parse_json_with_comments};
-use task::{
+// use task::{
     DebugScenario, ResolvedTask, SharedTaskContext, TaskContext, TaskHook, TaskId, TaskTemplate,
     TaskTemplates, TaskVariables, VariableName,
-};
+};  // removed-crate: task
 use text::{BufferId, Point, ToPoint};
 use util::{NumericPrefixWithSuffix, ResultExt as _, post_inc, rel_path::RelPath};
 use worktree::WorktreeId;

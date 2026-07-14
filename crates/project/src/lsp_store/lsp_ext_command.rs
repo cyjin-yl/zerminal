@@ -23,7 +23,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
-use task::TaskTemplate;
+// use task::TaskTemplate;  // removed-crate: task
 use text::{BufferId, PointUtf16, ToPointUtf16};
 
 pub enum LspExtExpandMacro {}

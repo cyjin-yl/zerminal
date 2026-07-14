@@ -22,7 +22,7 @@ use ui::{
     ButtonStyle, ContextMenu, ContextMenuEntry, DocumentationSide, IconButton, IconName, IconSize,
     PopoverMenu, PopoverMenuHandle, Tooltip, prelude::*,
 };
-use vim_mode_setting::{HelixModeSetting, VimModeSetting};
+// use vim_mode_setting::{HelixModeSetting, VimModeSetting};  // removed-crate: vim_mode_setting
 use workspace::item::ItemBufferKind;
 use workspace::{
     ToolbarItemEvent, ToolbarItemLocation, ToolbarItemView, Workspace, item::ItemHandle,

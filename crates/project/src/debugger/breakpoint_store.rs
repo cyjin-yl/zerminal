@@ -5,7 +5,7 @@ use anyhow::{Context as _, Result};
 pub use breakpoints_in_file::{BreakpointSessionState, BreakpointWithPosition};
 use breakpoints_in_file::{BreakpointsInFile, StatefulBreakpoint};
 use collections::{BTreeMap, HashMap};
-use dap::{StackFrameId, client::SessionId};
+// use dap::{StackFrameId, client::SessionId};  // removed-crate: dap
 use gpui::{
     App, AppContext, AsyncApp, Context, Entity, EntityId, EventEmitter, Subscription, Task,
 };

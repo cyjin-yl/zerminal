@@ -49,7 +49,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
-use task::{ShellKind, TaskTemplate, TaskTemplates, VariableName};
+// use task::{ShellKind, TaskTemplate, TaskTemplates, VariableName};  // removed-crate: task
 use util::{ResultExt, maybe};
 
 pub(crate) fn semantic_token_rules() -> SemanticTokenRules {
@@ -2726,7 +2726,7 @@ mod tests {
     async fn test_conda_activation_script_injection(cx: &mut TestAppContext) {
         use language::{LanguageName, Toolchain, ToolchainLister};
         use settings::{CondaManager, VenvSettings};
-        use task::ShellKind;
+// use task::ShellKind;  // removed-crate: task
 
         use crate::python::PythonToolchainProvider;
 
@@ -2797,7 +2797,7 @@ mod tests {
     async fn test_conda_activation_skips_when_name_missing(cx: &mut TestAppContext) {
         use language::{LanguageName, Toolchain, ToolchainLister};
         use settings::{CondaManager, VenvSettings};
-        use task::ShellKind;
+// use task::ShellKind;  // removed-crate: task
 
         use crate::python::PythonToolchainProvider;
 
@@ -2864,7 +2864,7 @@ mod tests {
     async fn test_conda_activation_skips_unquotable_name(cx: &mut TestAppContext) {
         use language::{LanguageName, Toolchain, ToolchainLister};
         use settings::{CondaManager, VenvSettings};
-        use task::ShellKind;
+// use task::ShellKind;  // removed-crate: task
 
         use crate::python::PythonToolchainProvider;
 

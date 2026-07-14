@@ -4,7 +4,7 @@ use language::Buffer;
 use remote::RemoteClient;
 use rpc::proto::{self, REMOTE_SERVER_PROJECT_ID};
 use std::{collections::VecDeque, path::Path, sync::Arc};
-use task::{Shell, shell_to_proto};
+// use task::{Shell, shell_to_proto};  // removed-crate: task
 use util::{ResultExt, command::new_command};
 use worktree::Worktree;
 
