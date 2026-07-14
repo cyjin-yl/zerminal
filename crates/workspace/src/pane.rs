@@ -6,8 +6,8 @@ use crate::{
     invalid_item_view::InvalidItemView,
     item::{
         ActivateOnClose, ClosePosition, Item, ItemBufferKind, ItemHandle, ItemSettings,
-        PreviewTabsSettings, ProjectItemKind, SaveOptions, ShowCloseButton, ShowDiagnostics,
-        TabContentParams, TabTooltipContent, WeakItemHandle,
+        PreviewTabsSettings, ProjectItemKind, SaveOptions, ShowCloseButton, TabContentParams,
+        TabTooltipContent, WeakItemHandle,
     },
     move_item,
     notifications::NotifyResultExt,
@@ -25,9 +25,10 @@ use gpui::{
     anchored, deferred, prelude::*,
 };
 use itertools::Itertools;
-use language::{Capability, DiagnosticSeverity};
+use language::Capability;
 use parking_lot::Mutex;
-use project::{DirectoryLister, Project, ProjectEntryId, ProjectPath, WorktreeId};
+// §2.1 仅保留 pane 核心所需的项目类型；DirectoryLister 已在裁剪中移除。
+use project::{Project, ProjectEntryId, ProjectPath, WorktreeId};
 use schemars::JsonSchema;
 use serde::Deserialize;
 use settings::{Settings, SettingsStore};
@@ -41,13 +42,11 @@ use std::{
         Arc,
         atomic::{AtomicUsize, Ordering},
     },
-    time::Duration,
 };
 use theme_settings::ThemeSettings;
 use ui::{
-    ContextMenu, ContextMenuEntry, ContextMenuItem, DecoratedIcon, IconButtonShape, IconDecoration,
-    IconDecorationKind, Indicator, PopoverMenu, PopoverMenuHandle, Tab, TabBar, TabPosition,
-    Tooltip, prelude::*, right_click_menu,
+    ContextMenu, ContextMenuEntry, ContextMenuItem, IconButtonShape, Indicator, PopoverMenu,
+    PopoverMenuHandle, Tab, TabBar, TabPosition, Tooltip, prelude::*, right_click_menu,
 };
 use util::{
     ResultExt, debug_panic, markdown::MarkdownInlineCode, maybe, paths::PathStyle,
@@ -445,10 +444,9 @@ pub struct Pane {
     pub new_item_context_menu_handle: PopoverMenuHandle<ContextMenu>,
     pub split_item_context_menu_handle: PopoverMenuHandle<ContextMenu>,
     pinned_tab_count: usize,
-    diagnostics: HashMap<ProjectPath, DiagnosticSeverity>,
     zoom_out_on_close: bool,
     focus_follows_mouse: FocusFollowsMouse,
-    diagnostic_summary_update: Task<()>,
+    /// 若项目项希望在重建时保留数据，可在此预先存储。
     /// If a certain project item wants to get recreated with specific data, it can persist its data before the recreation here.
     pub project_item_restoration_data: HashMap<ProjectItemKind, Box<dyn Any + Send>>,
     welcome_page: Option<Entity<crate::welcome::WelcomePage>>,
@@ -563,8 +561,8 @@ impl Pane {
             cx.on_focus(&focus_handle, window, Pane::focus_in),
             cx.on_focus_in(&focus_handle, window, Pane::focus_in),
             cx.on_focus_out(&focus_handle, window, Pane::focus_out),
+            // §15.1 project::Event 已裁剪，不再订阅诊断/显示事件；pane 仅保留容器与标签管理。
             cx.observe_global_in::<SettingsStore>(window, Self::settings_changed),
-            cx.subscribe(&project, Self::project_events),
         ];
 
         let handle = cx.entity().downgrade();
@@ -618,10 +616,8 @@ impl Pane {
             split_item_context_menu_handle: Default::default(),
             new_item_context_menu_handle: Default::default(),
             pinned_tab_count: 0,
-            diagnostics: Default::default(),
             zoom_out_on_close: true,
             focus_follows_mouse: WorkspaceSettings::get_global(cx).focus_follows_mouse,
-            diagnostic_summary_update: Task::ready(()),
             project_item_restoration_data: HashMap::default(),
             welcome_page: None,
             in_center_group: false,
@@ -734,58 +730,6 @@ impl Pane {
         cx.notify();
     }
 
-    fn project_events(
-        &mut self,
-        _project: Entity<Project>,
-        event: &project::Event,
-        cx: &mut Context<Self>,
-    ) {
-        match event {
-            project::Event::DiskBasedDiagnosticsFinished { .. }
-            | project::Event::DiagnosticsUpdated { .. } => {
-                if ItemSettings::get_global(cx).show_diagnostics != ShowDiagnostics::Off {
-                    self.diagnostic_summary_update = cx.spawn(async move |this, cx| {
-                        cx.background_executor()
-                            .timer(Duration::from_millis(30))
-                            .await;
-                        this.update(cx, |this, cx| {
-                            this.update_diagnostics(cx);
-                            cx.notify();
-                        })
-                        .log_err();
-                    });
-                }
-            }
-            _ => {}
-        }
-    }
-
-    fn update_diagnostics(&mut self, cx: &mut Context<Self>) {
-        let Some(project) = self.project.upgrade() else {
-            return;
-        };
-        let show_diagnostics = ItemSettings::get_global(cx).show_diagnostics;
-        self.diagnostics = if show_diagnostics != ShowDiagnostics::Off {
-            project
-                .read(cx)
-                .diagnostic_summaries(false, cx)
-                .filter_map(|(project_path, _, diagnostic_summary)| {
-                    if diagnostic_summary.error_count > 0 {
-                        Some((project_path, DiagnosticSeverity::ERROR))
-                    } else if diagnostic_summary.warning_count > 0
-                        && show_diagnostics != ShowDiagnostics::Errors
-                    {
-                        Some((project_path, DiagnosticSeverity::WARNING))
-                    } else {
-                        None
-                    }
-                })
-                .collect()
-        } else {
-            HashMap::default()
-        }
-    }
-
     fn settings_changed(&mut self, window: &mut Window, cx: &mut Context<Self>) {
         let tab_bar_settings = TabBarSettings::get_global(cx);
 
@@ -811,7 +755,6 @@ impl Pane {
             self.close_items_on_settings_change(window, cx);
         }
 
-        self.update_diagnostics(cx);
         cx.notify();
     }
 
@@ -1249,8 +1192,19 @@ impl Pane {
                 return;
             };
 
+            // §2.1 project 已移除 path_for_entry；通过 worktree + entry 重构 ProjectPath。
             let project = project.read(cx);
-            if let Some(project_path) = project.path_for_entry(entry_id, cx) {
+            if let Some(project_path) =
+                project
+                    .worktree_for_entry(entry_id, cx)
+                    .and_then(|worktree| {
+                        let worktree_id = worktree.read(cx).id();
+                        project.entry_for_id(entry_id, cx).map(|entry| ProjectPath {
+                            worktree_id,
+                            path: entry.path.clone(),
+                        })
+                    })
+            {
                 let abs_path = project.absolute_path(&project_path, cx);
                 self.nav_history
                     .0
@@ -2430,6 +2384,7 @@ impl Pane {
                 }
             }
 
+            // §2.1 DirectoryLister/find_or_create_worktree 已移除；SaveAs 暂不支持。
             if can_save {
                 pane.update_in(cx, |pane, window, cx| {
                     pane.unpreview_item_if_preview(item.item_id());
@@ -2445,72 +2400,6 @@ impl Pane {
                     )
                 })?
                 .await?;
-            } else if can_save_as && is_singleton {
-                let suggested_name =
-                    cx.update(|_window, cx| item.suggested_filename(cx).to_string())?;
-                let new_path = pane.update_in(cx, |pane, window, cx| {
-                    pane.activate_item(item_ix, true, true, window, cx);
-                    pane.workspace.update(cx, |workspace, cx| {
-                        let lister = if workspace.project().read(cx).is_local() {
-                            DirectoryLister::Local(
-                                workspace.project().clone(),
-                                workspace.app_state().fs.clone(),
-                            )
-                        } else {
-                            DirectoryLister::Project(workspace.project().clone())
-                        };
-                        workspace.prompt_for_new_path(lister, Some(suggested_name), window, cx)
-                    })
-                })??;
-                let Some(new_path) = new_path.await.ok().flatten().into_iter().flatten().next()
-                else {
-                    return Ok(false);
-                };
-
-                let project_path = pane
-                    .update(cx, |pane, cx| {
-                        pane.project
-                            .update(cx, |project, cx| {
-                                project.find_or_create_worktree(new_path, true, cx)
-                            })
-                            .ok()
-                    })
-                    .ok()
-                    .flatten();
-                let save_task = if let Some(project_path) = project_path {
-                    let (worktree, path) = project_path.await?;
-                    let worktree_id = worktree.read_with(cx, |worktree, _| worktree.id());
-                    let new_path = ProjectPath { worktree_id, path };
-
-                    pane.update_in(cx, |pane, window, cx| {
-                        if let Some(item) = pane.item_for_path(new_path.clone(), cx) {
-                            pane.remove_item(item.item_id(), false, false, window, cx);
-                        }
-
-                        item.save_as(project.clone(), new_path, window, cx)
-                    })?
-                } else {
-                    return Ok(false);
-                };
-
-                save_task.await?;
-                if should_format {
-                    pane.update_in(cx, |pane, window, cx| {
-                        pane.unpreview_item_if_preview(item.item_id());
-                        item.save(
-                            SaveOptions {
-                                format: true,
-                                autosave: false,
-                                force_format,
-                            },
-                            project,
-                            window,
-                            cx,
-                        )
-                    })?
-                    .await?;
-                }
-                return Ok(true);
             }
         }
 
@@ -2777,48 +2666,16 @@ impl Pane {
     fn tab_icon_element(
         &self,
         item: &dyn ItemHandle,
-        is_active: bool,
+        _is_active: bool,
         window: &Window,
         cx: &App,
     ) -> Option<AnyElement> {
-        let icon = item
-            .tab_icon(window, cx)?
-            .size(IconSize::Small)
-            .color(Color::Muted);
-
-        let item_diagnostic = item
-            .project_path(cx)
-            .and_then(|project_path| self.diagnostics.get(&project_path));
-
-        let Some(diagnostic) = item_diagnostic else {
-            return Some(icon.into_any_element());
-        };
-
-        let knockout_item_color = if is_active {
-            cx.theme().colors().tab_active_background
-        } else {
-            cx.theme().colors().tab_bar_background
-        };
-
-        let (icon_decoration, icon_color) = if matches!(diagnostic, &DiagnosticSeverity::ERROR) {
-            (IconDecorationKind::X, Color::Error)
-        } else {
-            (IconDecorationKind::Triangle, Color::Warning)
-        };
-
+        // §2.1 project::diagnostic_summaries 已移除，标签图标不再显示诊断装饰。
         Some(
-            DecoratedIcon::new(
-                icon,
-                Some(
-                    IconDecoration::new(icon_decoration, knockout_item_color, cx)
-                        .color(icon_color.color(cx))
-                        .position(Point {
-                            x: px(-2.),
-                            y: px(-2.),
-                        }),
-                ),
-            )
-            .into_any_element(),
+            item.tab_icon(window, cx)?
+                .size(IconSize::Small)
+                .color(Color::Muted)
+                .into_any_element(),
         )
     }
 
@@ -3253,6 +3110,7 @@ impl Pane {
                             );
                         }
 
+                        // §2.1 项目面板/文件管理器 reveal 依赖已删除的 project 方法，仅保留路径复制与终端入口。
                         if let Some(entry) = single_entry_to_resolve {
                             let project_path = pane
                                 .read(cx)
@@ -3273,27 +3131,12 @@ impl Pane {
                             });
 
                             let entry_abs_path = pane.read(cx).entry_abs_path(entry, cx);
-                            let reveal_path = entry_abs_path.clone();
                             let parent_abs_path = entry_abs_path
                                 .as_deref()
                                 .and_then(|abs_path| Some(abs_path.parent()?.to_path_buf()));
                             let relative_path = project_path
                                 .map(|project_path| project_path.path)
                                 .filter(|_| has_relative_path);
-
-                            let visible_in_project_panel = relative_path.is_some()
-                                && worktree.is_some_and(|worktree| worktree.read(cx).is_visible());
-                            let is_local = pane.read(cx).project.upgrade().is_some_and(|project| {
-                                let project = project.read(cx);
-                                project.is_local() || project.is_via_wsl_with_host_interop(cx)
-                            });
-                            let is_remote = pane
-                                .read(cx)
-                                .project
-                                .upgrade()
-                                .is_some_and(|project| project.read(cx).is_remote());
-
-                            let entry_id = entry.to_proto();
 
                             menu = menu
                                 .separator()
@@ -3324,41 +3167,7 @@ impl Pane {
                                         }),
                                     )
                                 })
-                                .when(is_local, |menu| {
-                                    menu.when_some(reveal_path, |menu, reveal_path| {
-                                        menu.separator().entry(
-                                            ui::utils::reveal_in_file_manager_label(is_remote),
-                                            Some(Box::new(
-                                                zed_actions::editor::RevealInFileManager,
-                                            )),
-                                            window.handler_for(&pane, move |pane, _, cx| {
-                                                if let Some(project) = pane.project.upgrade() {
-                                                    project.update(cx, |project, cx| {
-                                                        project.reveal_path(&reveal_path, cx);
-                                                    });
-                                                } else {
-                                                    cx.reveal_path(&reveal_path);
-                                                }
-                                            }),
-                                        )
-                                    })
-                                })
                                 .map(pin_tab_entries)
-                                .when(visible_in_project_panel, |menu| {
-                                    menu.entry(
-                                        "Reveal In Project Panel",
-                                        Some(Box::new(RevealInProjectPanel::default())),
-                                        window.handler_for(&pane, move |pane, _, cx| {
-                                            pane.project
-                                                .update(cx, |_, cx| {
-                                                    cx.emit(project::Event::RevealInProjectPanel(
-                                                        ProjectEntryId::from_proto(entry_id),
-                                                    ))
-                                                })
-                                                .ok();
-                                        }),
-                                    )
-                                })
                                 .when_some(parent_abs_path, |menu, parent_abs_path| {
                                     menu.entry(
                                         "Open in Terminal",
@@ -3980,11 +3789,21 @@ impl Pane {
         self.workspace
             .update(cx, |_, cx| {
                 cx.defer_in(window, move |workspace, window, cx| {
-                    if let Some(project_path) = workspace
-                        .project()
-                        .read(cx)
-                        .path_for_entry(project_entry_id, cx)
-                    {
+                    // §2.1 project 已移除 path_for_entry；通过 worktree + entry 重构 ProjectPath。
+                    let project = workspace.project().read(cx);
+                    let project_path =
+                        project
+                            .worktree_for_entry(project_entry_id, cx)
+                            .and_then(|worktree| {
+                                let worktree_id = worktree.read(cx).id();
+                                project.entry_for_id(project_entry_id, cx).map(|entry| {
+                                    ProjectPath {
+                                        worktree_id,
+                                        path: entry.path.clone(),
+                                    }
+                                })
+                            });
+                    if let Some(project_path) = project_path {
                         let load_path_task = workspace.load_path(project_path.clone(), window, cx);
                         cx.spawn_in(window, async move |workspace, mut cx| {
                             if let Some((project_entry_id, build_item)) = load_path_task
@@ -4054,20 +3873,7 @@ impl Pane {
         let mut to_pane = cx.entity();
         let mut split_direction = self.drag_split_direction;
         let paths = paths.paths().to_vec();
-        let is_remote = self
-            .workspace
-            .update(cx, |workspace, cx| {
-                if workspace.project().read(cx).is_via_collab() {
-                    workspace.show_error("Cannot drop files on a remote project", cx);
-                    true
-                } else {
-                    false
-                }
-            })
-            .unwrap_or(true);
-        if is_remote {
-            return;
-        }
+        // §2.1 project::is_via_collab 已移除；不再按本地/远程区分外部路径拖放。
 
         self.workspace
             .update(cx, |workspace, cx| {
@@ -4305,7 +4111,6 @@ impl Render for Pane {
         let Some(project) = self.project.upgrade() else {
             return div().track_focus(&self.focus_handle(cx));
         };
-        let is_local = project.read(cx).is_local();
 
         v_flex()
             .key_context(key_context)
@@ -4430,37 +4235,6 @@ impl Render for Pane {
                         .detach_and_log_err(cx)
                 },
             ))
-            .on_action(cx.listener(
-                |pane: &mut Self, action: &RevealInProjectPanel, _window, cx| {
-                    let active_item = pane.active_item();
-                    let entry_id = active_item.as_ref().and_then(|item| {
-                        action
-                            .entry_id
-                            .map(ProjectEntryId::from_proto)
-                            .or_else(|| item.project_entry_ids(cx).first().copied())
-                    });
-
-                    pane.project
-                        .update(cx, |project, cx| {
-                            if let Some(entry_id) = entry_id
-                                && project
-                                    .worktree_for_entry(entry_id, cx)
-                                    .is_some_and(|worktree| worktree.read(cx).is_visible())
-                            {
-                                return cx.emit(project::Event::RevealInProjectPanel(entry_id));
-                            }
-
-                            // When no entry is found, which is the case when
-                            // working with an unsaved buffer, or the worktree
-                            // is not visible, for example, a file that doesn't
-                            // belong to an open project, we can't reveal the
-                            // entry but we still want to activate the project
-                            // panel.
-                            cx.emit(project::Event::ActivateProjectPanel);
-                        })
-                        .log_err();
-                },
-            ))
             .on_action(cx.listener(|_, _: &menu::Cancel, window, cx| {
                 if cx.stop_active_drag(window) {
                 } else {
@@ -4471,7 +4245,8 @@ impl Render for Pane {
                 pane.child((self.render_tab_bar.clone())(self, window, cx))
             })
             .child({
-                let has_worktrees = project.read(cx).visible_worktrees(cx).next().is_some();
+                // §2.1 visible_worktrees 已移除，使用 worktrees 判断是否存在可见工作树。
+                let has_worktrees = project.read(cx).worktrees(cx).next().is_some();
                 // main content
                 div()
                     .flex_1()
@@ -4480,9 +4255,7 @@ impl Render for Pane {
                     .overflow_hidden()
                     .on_drag_move::<DraggedTab>(cx.listener(Self::handle_drag_move))
                     .on_drag_move::<DraggedSelection>(cx.listener(Self::handle_drag_move))
-                    .when(is_local, |div| {
-                        div.on_drag_move::<ExternalPaths>(cx.listener(Self::handle_drag_move))
-                    })
+                    .on_drag_move::<ExternalPaths>(cx.listener(Self::handle_drag_move))
                     .map(|div| {
                         if let Some(item) = self.active_item() {
                             div.id("pane_placeholder")
@@ -4531,9 +4304,7 @@ impl Render for Pane {
                             .bg(cx.theme().colors().drop_target_background)
                             .group_drag_over::<DraggedTab>("", |style| style.visible())
                             .group_drag_over::<DraggedSelection>("", |style| style.visible())
-                            .when(is_local, |div| {
-                                div.group_drag_over::<ExternalPaths>("", |style| style.visible())
-                            })
+                            .group_drag_over::<ExternalPaths>("", |style| style.visible())
                             .when_some(self.can_drop_predicate.clone(), |this, p| {
                                 this.can_drop(move |a, window, cx| p(a, window, cx))
                             })

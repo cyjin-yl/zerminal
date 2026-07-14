@@ -1,7 +1,7 @@
 use super::{SerializedAxis, SerializedWindowBounds};
 use crate::{
     Member, Pane, PaneAxis, SerializableItemRegistry, Workspace, WorkspaceId, item::ItemHandle,
-    multi_workspace::SerializedProjectGroupState, path_list::PathList,
+    path_list::PathList,
 };
 use anyhow::{Context, Result};
 use async_recursion::async_recursion;
@@ -13,15 +13,14 @@ use db::sqlez::{
 use gpui::{AsyncWindowContext, Entity, WeakEntity, WindowId};
 
 use language::{Toolchain, ToolchainScope};
-use project::{
-    Project, ProjectGroupKey, bookmark_store::SerializedBookmark,
-    debugger::breakpoint_store::SourceBreakpoint,
-};
+// 规范 §2.1 / §15.1：工作区仅保留面板/标签页/布局/窗口管理；
+// 已删除 project 中的 ProjectGroupKey、bookmark_store、debugger 等类型。
+use project::Project;
 use remote::RemoteConnectionOptions;
 use serde::{Deserialize, Serialize};
 use std::{
     collections::BTreeMap,
-    path::{Path, PathBuf},
+    path::PathBuf,
     sync::Arc,
 };
 use util::{ResultExt, path_list::SerializedPathList};
@@ -74,36 +73,8 @@ fn default_expanded() -> bool {
     true
 }
 
-impl SerializedProjectGroup {
-    pub fn from_group(key: &ProjectGroupKey, expanded: bool) -> Self {
-        Self {
-            path_list: key.path_list().serialize(),
-            location: match key.host() {
-                Some(host) => SerializedWorkspaceLocation::Remote(host),
-                None => SerializedWorkspaceLocation::Local,
-            },
-            expanded,
-        }
-    }
-
-    pub fn into_restored_state(self) -> SerializedProjectGroupState {
-        let path_list = PathList::deserialize(&self.path_list);
-        let host = match self.location {
-            SerializedWorkspaceLocation::Local => None,
-            SerializedWorkspaceLocation::Remote(opts) => Some(opts),
-        };
-        SerializedProjectGroupState {
-            key: ProjectGroupKey::new(host, path_list),
-            expanded: self.expanded,
-        }
-    }
-}
-
-impl From<SerializedProjectGroup> for ProjectGroupKey {
-    fn from(value: SerializedProjectGroup) -> Self {
-        value.into_restored_state().key
-    }
-}
+// 规范 §2.1 / §15.1：SerializedProjectGroup 仅保留序列化形状，
+// 删除依赖已删除 ProjectGroupKey 的转换方法。
 
 /// Per-window state for a MultiWorkspace, persisted to KVP.
 #[derive(Debug, Clone, Default, serde::Serialize, serde::Deserialize)]
@@ -143,8 +114,7 @@ pub(crate) struct SerializedWorkspace {
     pub(crate) display: Option<Uuid>,
     pub(crate) docks: DockStructure,
     pub(crate) session_id: Option<String>,
-    pub(crate) bookmarks: BTreeMap<Arc<Path>, Vec<SerializedBookmark>>,
-    pub(crate) breakpoints: BTreeMap<Arc<Path>, Vec<SourceBreakpoint>>,
+    // 规范 §2.1 / §15.1：书签与断点依赖已删除的 project 子模块，已移除。
     pub(crate) user_toolchains: BTreeMap<ToolchainScope, IndexSet<Toolchain>>,
     pub(crate) window_id: Option<u64>,
 }

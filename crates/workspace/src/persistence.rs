@@ -1,7 +1,6 @@
 pub mod model;
 
 use std::{
-    borrow::Cow,
     collections::BTreeMap,
     path::{Path, PathBuf},
     str::FromStr,
@@ -20,12 +19,9 @@ use db::{
     sqlez_macros::sql,
 };
 use gpui::{Axis, Bounds, Task, WindowBounds, WindowId, point, size};
-use project::{
-    ProjectGroupKey,
-    bookmark_store::SerializedBookmark,
-    debugger::breakpoint_store::{BreakpointState, SourceBreakpoint},
-    trusted_worktrees::{DbTrustedPaths, RemoteHostLocation},
-};
+// 规范 §2.1 / §15.1：工作区仅保留面板/标签页/布局/窗口管理；
+// 已删除 project 中的 ProjectGroupKey、bookmark_store、debugger 等类型。
+use project::trusted_worktrees::{DbTrustedPaths, RemoteHostLocation};
 
 use language::{LanguageName, Toolchain, ToolchainScope};
 use remote::{
@@ -391,134 +387,9 @@ pub async fn write_default_dock_state(
     Ok(())
 }
 
-#[derive(Debug)]
-pub struct Bookmark {
-    pub row: u32,
-    pub label: String,
-}
+// 规范 §2.1 / §15.1：书签与断点随 project::bookmark_store / debugger 一起删除，
+// 相关的本地 Bookmark / Breakpoint 类型与数据库绑定实现一并移除。
 
-impl sqlez::bindable::StaticColumnCount for Bookmark {
-    fn column_count() -> usize {
-        // row, label
-        2
-    }
-}
-
-impl sqlez::bindable::Bind for Bookmark {
-    fn bind(
-        &self,
-        statement: &sqlez::statement::Statement,
-        start_index: i32,
-    ) -> anyhow::Result<i32> {
-        let next_index = statement.bind(&self.row, start_index)?;
-        statement.bind(&self.label, next_index)
-    }
-}
-
-impl Column for Bookmark {
-    fn column(statement: &mut Statement, start_index: i32) -> Result<(Self, i32)> {
-        let row = statement
-            .column_int(start_index)
-            .with_context(|| format!("Failed to read bookmark at index {start_index}"))?
-            as u32;
-
-        let (label, next_index) = String::column(statement, start_index + 1)?;
-
-        Ok((Bookmark { row, label }, next_index))
-    }
-}
-
-#[derive(Debug)]
-pub struct Breakpoint {
-    pub position: u32,
-    pub message: Option<Arc<str>>,
-    pub condition: Option<Arc<str>>,
-    pub hit_condition: Option<Arc<str>>,
-    pub state: BreakpointState,
-}
-
-/// Wrapper for DB type of a breakpoint
-struct BreakpointStateWrapper<'a>(Cow<'a, BreakpointState>);
-
-impl From<BreakpointState> for BreakpointStateWrapper<'static> {
-    fn from(kind: BreakpointState) -> Self {
-        BreakpointStateWrapper(Cow::Owned(kind))
-    }
-}
-
-impl StaticColumnCount for BreakpointStateWrapper<'_> {
-    fn column_count() -> usize {
-        1
-    }
-}
-
-impl Bind for BreakpointStateWrapper<'_> {
-    fn bind(&self, statement: &Statement, start_index: i32) -> anyhow::Result<i32> {
-        statement.bind(&self.0.to_int(), start_index)
-    }
-}
-
-impl Column for BreakpointStateWrapper<'_> {
-    fn column(statement: &mut Statement, start_index: i32) -> anyhow::Result<(Self, i32)> {
-        let state = statement.column_int(start_index)?;
-
-        match state {
-            0 => Ok((BreakpointState::Enabled.into(), start_index + 1)),
-            1 => Ok((BreakpointState::Disabled.into(), start_index + 1)),
-            _ => anyhow::bail!("Invalid BreakpointState discriminant {state}"),
-        }
-    }
-}
-
-impl sqlez::bindable::StaticColumnCount for Breakpoint {
-    fn column_count() -> usize {
-        // Position, log message, condition message, and hit condition message
-        4 + BreakpointStateWrapper::column_count()
-    }
-}
-
-impl sqlez::bindable::Bind for Breakpoint {
-    fn bind(
-        &self,
-        statement: &sqlez::statement::Statement,
-        start_index: i32,
-    ) -> anyhow::Result<i32> {
-        let next_index = statement.bind(&self.position, start_index)?;
-        let next_index = statement.bind(&self.message, next_index)?;
-        let next_index = statement.bind(&self.condition, next_index)?;
-        let next_index = statement.bind(&self.hit_condition, next_index)?;
-        statement.bind(
-            &BreakpointStateWrapper(Cow::Borrowed(&self.state)),
-            next_index,
-        )
-    }
-}
-
-impl Column for Breakpoint {
-    fn column(statement: &mut Statement, start_index: i32) -> Result<(Self, i32)> {
-        let position = statement
-            .column_int(start_index)
-            .with_context(|| format!("Failed to read BreakPoint at index {start_index}"))?
-            as u32;
-        let (message, next_index) = Option::<String>::column(statement, start_index + 1)?;
-        let (condition, next_index) = Option::<String>::column(statement, next_index)?;
-        let (hit_condition, next_index) = Option::<String>::column(statement, next_index)?;
-        let (state, next_index) = BreakpointStateWrapper::column(statement, next_index)?;
-
-        Ok((
-            Breakpoint {
-                position,
-                message: message.map(Arc::from),
-                condition: condition.map(Arc::from),
-                hit_condition: hit_condition.map(Arc::from),
-                state: state.0.into_owned(),
-            },
-            next_index,
-        ))
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
 struct SerializedPixels(gpui::Pixels);
 impl sqlez::bindable::StaticColumnCount for SerializedPixels {}
 
@@ -1198,8 +1069,7 @@ impl WorkspaceDb {
             display,
             docks,
             session_id: None,
-            bookmarks: self.bookmarks(workspace_id),
-            breakpoints: self.breakpoints(workspace_id),
+            // 规范 §2.1 / §15.1：书签与断点字段随 project 子模块删除而移除。
             window_id,
             user_toolchains: self.user_toolchains(workspace_id, remote_connection_id),
         })
@@ -1302,96 +1172,13 @@ impl WorkspaceDb {
             display,
             docks,
             session_id: None,
-            bookmarks: self.bookmarks(workspace_id),
-            breakpoints: self.breakpoints(workspace_id),
+            // 规范 §2.1 / §15.1：书签与断点字段随 project 子模块删除而移除。
             window_id,
             user_toolchains: self.user_toolchains(workspace_id, remote_connection_id),
         })
     }
 
-    fn bookmarks(&self, workspace_id: WorkspaceId) -> BTreeMap<Arc<Path>, Vec<SerializedBookmark>> {
-        let bookmarks: Result<Vec<(PathBuf, Bookmark)>> = self
-            .select_bound(sql! {
-                SELECT path, row, label
-                FROM bookmarks
-                WHERE workspace_id = ?
-                ORDER BY path, row
-            })
-            .and_then(|mut prepared_statement| (prepared_statement)(workspace_id));
-
-        match bookmarks {
-            Ok(bookmarks) => {
-                if bookmarks.is_empty() {
-                    log::debug!("Bookmarks are empty after querying database for them");
-                }
-
-                let mut map: BTreeMap<_, Vec<_>> = BTreeMap::default();
-
-                for (path, bookmark) in bookmarks {
-                    let path: Arc<Path> = path.into();
-                    map.entry(path.clone())
-                        .or_default()
-                        .push(SerializedBookmark {
-                            row: bookmark.row,
-                            label: bookmark.label,
-                        })
-                }
-
-                map
-            }
-            Err(e) => {
-                log::error!("Failed to load bookmarks: {}", e);
-                BTreeMap::default()
-            }
-        }
-    }
-
-    fn breakpoints(&self, workspace_id: WorkspaceId) -> BTreeMap<Arc<Path>, Vec<SourceBreakpoint>> {
-        let breakpoints: Result<Vec<(PathBuf, Breakpoint)>> = self
-            .select_bound(sql! {
-                SELECT path, breakpoint_location, log_message, condition, hit_condition, state
-                FROM breakpoints
-                WHERE workspace_id = ?
-            })
-            .and_then(|mut prepared_statement| (prepared_statement)(workspace_id));
-
-        match breakpoints {
-            Ok(bp) => {
-                if bp.is_empty() {
-                    log::debug!("Breakpoints are empty after querying database for them");
-                }
-
-                let mut map: BTreeMap<Arc<Path>, Vec<SourceBreakpoint>> = Default::default();
-
-                for (path, breakpoint) in bp {
-                    let path: Arc<Path> = path.into();
-                    map.entry(path.clone()).or_default().push(SourceBreakpoint {
-                        row: breakpoint.position,
-                        path,
-                        message: breakpoint.message,
-                        condition: breakpoint.condition,
-                        hit_condition: breakpoint.hit_condition,
-                        state: breakpoint.state,
-                    });
-                }
-
-                for (path, bps) in map.iter() {
-                    log::info!(
-                        "Got {} breakpoints from database at path: {}",
-                        bps.len(),
-                        path.to_string_lossy()
-                    );
-                }
-
-                map
-            }
-            Err(msg) => {
-                log::error!("Breakpoints query failed with msg: {msg}");
-                Default::default()
-            }
-        }
-    }
-
+    // 规范 §2.1 / §15.1：书签与断点的数据库加载函数随相关类型一起删除。
     fn user_toolchains(
         &self,
         workspace_id: WorkspaceId,
@@ -1486,53 +1273,8 @@ impl WorkspaceDb {
                     DELETE FROM panes WHERE workspace_id = ?1;))?(workspace.id)
                     .context("Clearing old panes")?;
 
-                conn.exec_bound(
-                    sql!(
-                        DELETE FROM bookmarks WHERE workspace_id = ?1;
-                    )
-                )?(workspace.id).context("Clearing old bookmarks")?;
-
-                for (path, bookmarks) in workspace.bookmarks {
-                    for bookmark in bookmarks {
-                        conn.exec_bound(sql!(
-                            INSERT INTO bookmarks (workspace_id, path, row, label)
-                            VALUES (?1, ?2, ?3, ?4);
-                        ))?((workspace.id, path.as_ref(), bookmark.row, bookmark.label)).context("Inserting bookmark")?;
-                    }
-                }
-
-                conn.exec_bound(
-                    sql!(
-                        DELETE FROM breakpoints WHERE workspace_id = ?1;
-                    )
-                )?(workspace.id).context("Clearing old breakpoints")?;
-
-                for (path, breakpoints) in workspace.breakpoints {
-                    for bp in breakpoints {
-                        let state = BreakpointStateWrapper::from(bp.state);
-                        match conn.exec_bound(sql!(
-                            INSERT INTO breakpoints (workspace_id, path, breakpoint_location,  log_message, condition, hit_condition, state)
-                            VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7);))?
-
-                        ((
-                            workspace.id,
-                            path.as_ref(),
-                            bp.row,
-                            bp.message,
-                            bp.condition,
-                            bp.hit_condition,
-                            state,
-                        )) {
-                            Ok(_) => {
-                                log::debug!("Stored breakpoint at row: {} in path: {}", bp.row, path.to_string_lossy())
-                            }
-                            Err(err) => {
-                                log::error!("{err}");
-                                continue;
-                            }
-                        }
-                    }
-                }
+                // 规范 §2.1 / §15.1：书签与断点数据随 project 子模块删除，
+                // 不再写入数据库；保留旧表以兼容降级。
 
                 conn.exec_bound(
                     sql!(
@@ -1885,20 +1627,8 @@ impl WorkspaceDb {
         }
     }
 
-    query! {
-        pub fn breakpoints_for_file(workspace_id: WorkspaceId, file_path: &Path) -> Result<Vec<Breakpoint>> {
-            SELECT breakpoint_location
-            FROM breakpoints
-            WHERE  workspace_id= ?1 AND path = ?2
-        }
-    }
-
-    query! {
-        pub fn clear_breakpoints(file_path: &Path) -> Result<()> {
-            DELETE FROM breakpoints
-            WHERE file_path = ?2
-        }
-    }
+    // 规范 §2.1 / §15.1：breakpoints_for_file / clear_breakpoints 依赖已删除的
+    // project::debugger::breakpoint_store::Breakpoint，已移除。
 
     fn remote_connections(&self) -> Result<HashMap<RemoteConnectionId, RemoteConnectionOptions>> {
         Ok(self.select(sql!(
@@ -2665,15 +2395,8 @@ pub struct RecentWorkspace {
     pub timestamp: DateTime<Utc>,
 }
 
-impl RecentWorkspace {
-    pub fn project_group_key(&self) -> ProjectGroupKey {
-        let host = match &self.location {
-            SerializedWorkspaceLocation::Local => None,
-            SerializedWorkspaceLocation::Remote(options) => Some(options.clone()),
-        };
-        ProjectGroupKey::new(host, self.identity_paths.clone())
-    }
-}
+// 规范 §2.1 / §15.1：project::ProjectGroupKey 已删除；
+// RecentWorkspace 不再提供 project_group_key 转换方法。
 
 async fn resolve_local_workspace_identity(fs: &dyn Fs, paths: &PathList) -> Option<PathList> {
     let raw_paths = paths.paths();

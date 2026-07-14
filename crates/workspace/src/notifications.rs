@@ -245,9 +245,31 @@ impl Workspace {
     }
 }
 
+// §15.1 project::LanguageServerPromptRequest 已删除；工作区保留本地通知占位类型。
+#[derive(Clone)]
+pub struct LanguageServerPromptRequest {
+    pub id: u64,
+    pub level: PromptLevel,
+    pub lsp_name: String,
+    pub message: String,
+    pub actions: Vec<LanguageServerPromptAction>,
+}
+
+#[derive(Clone)]
+pub struct LanguageServerPromptAction {
+    pub title: String,
+}
+
+impl LanguageServerPromptRequest {
+    // 原 respond 通过 proto 返回答复；协同移除后仅返回空任务。
+    pub fn respond(self, _ix: usize) -> Task<anyhow::Result<()>> {
+        Task::ready(Ok(()))
+    }
+}
+
 pub struct LanguageServerPrompt {
     focus_handle: FocusHandle,
-    request: Option<project::LanguageServerPromptRequest>,
+    request: Option<LanguageServerPromptRequest>,
     scroll_handle: ScrollHandle,
     markdown: Entity<Markdown>,
     dismiss_task: Option<Task<()>>,
@@ -262,7 +284,7 @@ impl Focusable for LanguageServerPrompt {
 impl Notification for LanguageServerPrompt {}
 
 impl LanguageServerPrompt {
-    pub fn new(request: project::LanguageServerPromptRequest, cx: &mut App) -> Self {
+    pub fn new(request: LanguageServerPromptRequest, cx: &mut App) -> Self {
         let markdown = cx.new(|cx| Markdown::new(request.message.clone().into(), None, None, cx));
 
         Self {

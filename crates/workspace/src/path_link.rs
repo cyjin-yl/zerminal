@@ -298,15 +298,13 @@ fn possible_open_target_internal(
     }
 
     let project = workspace.read(cx).project().clone();
-    let background_path_checks = background_path_checks.unwrap_or_else(|| {
-        if project.read(cx).is_local() {
-            BackgroundPathChecks::LocalFileSystem
-        } else {
-            BackgroundPathChecks::ProjectPathResolution
-        }
-    });
+    // §2.1 删除远程协同后，项目永远按本地文件系统解析路径；不再依赖 Project::is_local。
+    let background_path_checks = background_path_checks
+        .unwrap_or(BackgroundPathChecks::LocalFileSystem);
 
     let background_resolution_task = match background_path_checks {
+        // §15.1 Project::resolve_abs_path 已删除，远程路径解析分支已移除。
+        BackgroundPathChecks::ProjectPathResolution => Task::ready(open_target),
         BackgroundPathChecks::LocalFileSystem => {
             let fs_paths_to_check =
                 local_paths_to_check(&potential_paths, cwd, &worktree_candidates, cx);
@@ -325,46 +323,6 @@ fn possible_open_target_internal(
                             return Some(OpenTarget::Path(
                                 path_to_check,
                                 metadata.is_dir,
-                                #[cfg(any(test, feature = "test-support"))]
-                                OpenTargetFoundBy::BackgroundPathResolution,
-                            ));
-                        }
-
-                        break;
-                    }
-                }
-
-                open_target
-            })
-        }
-        BackgroundPathChecks::ProjectPathResolution => {
-            let paths_to_check = project_paths_to_check(&potential_paths, cwd);
-            cx.spawn(async move |cx| {
-                for mut path_to_check in paths_to_check {
-                    let path = path_to_check.path.to_string_lossy();
-                    let resolve_task = project.update(cx, |project, cx| {
-                        project.resolve_abs_path(path.as_ref(), cx)
-                    });
-
-                    if let Some(resolved_path) = resolve_task.await
-                        && let Some(resolved_abs_path) = {
-                            let is_dir = resolved_path.is_dir();
-                            resolved_path
-                                .into_abs_path()
-                                .map(|resolved_abs_path| (resolved_abs_path, is_dir))
-                        }
-                    {
-                        let (resolved_abs_path, is_dir) = resolved_abs_path;
-                        let resolved_abs_path = PathBuf::from(resolved_abs_path);
-                        if open_target
-                            .as_ref()
-                            .map(|open_target| open_target.path().path != resolved_abs_path)
-                            .unwrap_or(true)
-                        {
-                            path_to_check.path = resolved_abs_path;
-                            return Some(OpenTarget::Path(
-                                path_to_check,
-                                is_dir,
                                 #[cfg(any(test, feature = "test-support"))]
                                 OpenTargetFoundBy::BackgroundPathResolution,
                             ));

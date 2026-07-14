@@ -2,13 +2,20 @@ use crate::{
     ItemNavHistory, WorkspaceId,
     item::{Item, ItemEvent},
 };
-// use client::{User, proto::PeerId};  // removed-crate: client
 use gpui::{
     AnyView, AppContext as _, Entity, EventEmitter, FocusHandle, Focusable, InteractiveElement,
     ParentElement, Render, SharedString, Styled, Task, div,
 };
 use std::sync::Arc;
 use ui::{Icon, IconName, prelude::*};
+
+// §15.1 client 与 proto 已删除，保留 SharedScreen 外壳所需的最小占位类型。
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub struct PeerId(pub u64);
+
+pub struct User {
+    pub username: SharedString,
+}
 
 pub enum Event {
     Close,

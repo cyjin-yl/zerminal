@@ -31,7 +31,22 @@ pub enum PanelEvent {
     Close,
 }
 
-pub use proto::PanelId;
+// §15.1 proto 已删除，PanelId 仅在本地 dock 管理中使用，用本地枚举替代。
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum PanelId {
+    AssistantPanel = 0,
+    DebugPanel = 1,
+}
+
+impl PanelId {
+    pub fn from_i32(value: i32) -> Option<Self> {
+        match value {
+            0 => Some(Self::AssistantPanel),
+            1 => Some(Self::DebugPanel),
+            _ => None,
+        }
+    }
+}
 
 pub trait Panel: Focusable + EventEmitter<PanelEvent> + Render + Sized {
     fn persistent_name() -> &'static str;
@@ -77,7 +92,7 @@ pub trait Panel: Focusable + EventEmitter<PanelEvent> + Render + Sized {
     fn pane(&self) -> Option<Entity<Pane>> {
         None
     }
-    fn remote_id() -> Option<proto::PanelId> {
+    fn remote_id() -> Option<PanelId> {
         None
     }
     fn activation_priority(&self) -> u32;
@@ -105,7 +120,7 @@ pub trait PanelHandle: Send + Sync {
     fn is_zoomed(&self, window: &Window, cx: &App) -> bool;
     fn set_zoomed(&self, zoomed: bool, window: &mut Window, cx: &mut App);
     fn set_active(&self, active: bool, window: &mut Window, cx: &mut App);
-    fn remote_id(&self) -> Option<proto::PanelId>;
+    fn remote_id(&self) -> Option<PanelId>;
     fn pane(&self, cx: &App) -> Option<Entity<Pane>>;
     fn default_size(&self, window: &Window, cx: &App) -> Pixels;
     fn min_size(&self, window: &Window, cx: &App) -> Option<Pixels>;
@@ -443,7 +458,6 @@ impl Dock {
                 }
                 cx.emit(Event::ZoomChanged);
                 workspace.dismiss_zoomed_items_to_reveal(Some(position), window, cx);
-                workspace.update_active_view_for_followers(window, cx)
             }
         })
         .detach();
