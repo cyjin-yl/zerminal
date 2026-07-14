@@ -4,23 +4,22 @@ use std::sync::Arc;
 
 use anyhow::{Context as _, Result};
 use async_trait::async_trait;
-use collections::{HashMap, HashSet};
+use collections::HashMap;
 use extension::{Extension, ExtensionLanguageServerProxy, WorktreeDelegate};
-use futures::{FutureExt, future::join_all, lock::OwnedMutexGuard};
+use futures::{FutureExt, lock::OwnedMutexGuard};
 use gpui::{App, AppContext, AsyncApp, Task};
 use language::{
     BinaryStatus, CodeLabel, DynLspInstaller, HighlightId, Language, LanguageName,
     LanguageServerBinaryLocations, LspAdapter, LspAdapterDelegate, Toolchain,
 };
 use lsp::{
-    CodeActionKind, LanguageServerBinary, LanguageServerBinaryOptions, LanguageServerName,
-    LanguageServerSelector, Uri,
+    CodeActionKind, LanguageServerBinary, LanguageServerBinaryOptions, LanguageServerName, Uri,
 };
 use serde::Serialize;
 use serde_json::Value;
 use util::{ResultExt, fs::make_file_executable, maybe, rel_path::RelPath};
 
-use crate::{LanguageServerRegistryProxy, LspAccess};
+use crate::LanguageServerRegistryProxy;
 
 /// An adapter that allows an [`LspAdapterDelegate`] to be used as a [`WorktreeDelegate`].
 struct WorktreeDelegateAdapter(pub Arc<dyn LspAdapterDelegate>);
@@ -77,47 +76,9 @@ impl ExtensionLanguageServerProxy for LanguageServerRegistryProxy {
         self.language_registry
             .remove_lsp_adapter(language, language_server_name);
 
-        let mut tasks = Vec::new();
-        match &self.lsp_access {
-            LspAccess::ViaLspStore(lsp_store) => {
-                if let Ok(stop_task) = lsp_store.update(cx, |lsp_store, cx| {
-                    lsp_store.stop_language_servers_for_buffers(
-                        Vec::new(),
-                        HashSet::from_iter([LanguageServerSelector::Name(
-                            language_server_name.clone(),
-                        )]),
-                        cx,
-                    )
-                }) {
-                    tasks.push(stop_task);
-                }
-            }
-            LspAccess::ViaWorkspaces(lsp_store_provider) => {
-                if let Ok(lsp_stores) = lsp_store_provider(cx) {
-                    for lsp_store in lsp_stores {
-                        lsp_store.update(cx, |lsp_store, cx| {
-                            let stop_task = lsp_store.stop_language_servers_for_buffers(
-                                Vec::new(),
-                                HashSet::from_iter([LanguageServerSelector::Name(
-                                    language_server_name.clone(),
-                                )]),
-                                cx,
-                            );
-                            tasks.push(stop_task);
-                        });
-                    }
-                }
-            }
-            LspAccess::Noop => {}
-        }
-
-        cx.background_spawn(async move {
-            let results = join_all(tasks).await;
-            for result in results {
-                result?;
-            }
-            Ok(())
-        })
+        // project::LspStore 已删除，无法通过 project 停止正在运行的语言服务器；
+        // 仅从语言注册表中移除适配器。
+        cx.background_spawn(async move { Ok(()) })
     }
 
     fn update_language_server_status(

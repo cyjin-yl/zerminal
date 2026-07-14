@@ -538,20 +538,22 @@ fn template_and_validate_json_snippets(
                 }
             }
             "debug" => {
+                // task::DebugTaskFile 已删除，仅校验 JSON 语法
                 if !snippet_json_fixed.starts_with('[') || !snippet_json_fixed.ends_with(']') {
                     snippet_json_fixed.insert(0, '[');
                     snippet_json_fixed.push_str("\n]");
                 }
 
-                settings::parse_json_with_comments::<task::DebugTaskFile>(&snippet_json_fixed)?;
+                settings::parse_json_with_comments::<serde_json::Value>(&snippet_json_fixed)?;
             }
             "tasks" => {
+                // task::TaskTemplates 已删除，仅校验 JSON 语法
                 if !snippet_json_fixed.starts_with('[') || !snippet_json_fixed.ends_with(']') {
                     snippet_json_fixed.insert(0, '[');
                     snippet_json_fixed.push_str("\n]");
                 }
 
-                settings::parse_json_with_comments::<task::TaskTemplates>(&snippet_json_fixed)?;
+                settings::parse_json_with_comments::<serde_json::Value>(&snippet_json_fixed)?;
             }
             "icon-theme" => {
                 if !snippet_json_fixed.starts_with('{') || !snippet_json_fixed.ends_with('}') {

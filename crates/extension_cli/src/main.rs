@@ -9,17 +9,13 @@ use std::sync::Arc;
 use ::fs::{CopyOptions, Fs, RealFs, RemoveOptions, copy_recursive};
 use anyhow::{Context as _, Result, anyhow, bail};
 use clap::Parser;
-// use cloud_api_types::ExtensionProvides;  // removed-crate: cloud_api_types
 use extension::build_debug_adapter_schema_path;
 use extension::extension_builder::CompilationConcurrency;
 use extension::extension_builder::{CompileExtensionOptions, ExtensionBuilder};
-use extension::{ExtensionManifest, ExtensionSnippets};
+use extension::{ExtensionManifest, ExtensionProvides, ExtensionSnippets};
 use language::LanguageConfig;
 use reqwest_client::ReqwestClient;
 use settings_content::SemanticTokenRules;
-// use snippet_provider::file_to_snippets;  // removed-crate: snippet_provider
-// use snippet_provider::format::VsSnippetsFile;  // removed-crate: snippet_provider
-// use task::TaskTemplates;  // removed-crate: task
 use tokio::process::Command;
 use tree_sitter::{Language, Query, WasmStore};
 
@@ -128,18 +124,19 @@ async fn main() -> Result<()> {
         );
     }
 
-    let manifest_json = serde_json::to_string(&cloud_api_types::ExtensionApiManifest {
-        name: manifest.name,
-        version: manifest.version,
-        description: manifest.description,
-        authors: manifest.authors,
-        schema_version: Some(manifest.schema_version.0),
-        repository: manifest
+    // 内联构造扩展 API manifest，避免依赖已删除的 cloud_api_types crate
+    let manifest_json = serde_json::to_string(&serde_json::json!({
+        "name": manifest.name,
+        "version": manifest.version,
+        "description": manifest.description,
+        "authors": manifest.authors,
+        "schema_version": manifest.schema_version.0,
+        "repository": manifest
             .repository
             .context("missing repository in extension manifest")?,
-        wasm_api_version: manifest.lib.version.map(|version| version.to_string()),
-        provides: extension_provides,
-    })?;
+        "wasm_api_version": manifest.lib.version.map(|version| version.to_string()),
+        "provides": extension_provides,
+    }))?;
     fs.remove_dir(
         &archive_dir,
         RemoveOptions {
@@ -467,22 +464,7 @@ fn test_languages(
                 SemanticTokenRules::FILE_NAME => {
                     let _token_rules = SemanticTokenRules::load(&file_path)?;
                 }
-                TaskTemplates::FILE_NAME => {
-                    let task_file_content = std::fs::read(&file_path).with_context(|| {
-                        anyhow!(
-                            "Failed to read tasks file at {path}",
-                            path = file_path.display()
-                        )
-                    })?;
-                    let _task_templates =
-                        serde_json_lenient::from_slice::<TaskTemplates>(&task_file_content)
-                            .with_context(|| {
-                                anyhow!(
-                                    "Failed to parse tasks file at {path}",
-                                    path = file_path.display()
-                                )
-                            })?;
-                }
+                // task::TaskTemplates 已删除，跳过任务文件校验
                 _ if file_name.ends_with(".scm") => {
                     let grammar = grammar.with_context(|| {
                         format! {
@@ -539,6 +521,7 @@ async fn test_snippets(
     extension_path: &Path,
     fs: Arc<dyn Fs>,
 ) -> Result<()> {
+    // snippet_provider crate 已删除，仅保留 JSON 语法校验
     for relative_snippet_path in manifest
         .snippets
         .as_ref()
@@ -548,23 +531,9 @@ async fn test_snippets(
     {
         let snippet_path = extension_path.join(relative_snippet_path);
         let snippets_content = fs.load_bytes(&snippet_path).await?;
-        let snippets_file = serde_json_lenient::from_slice::<VsSnippetsFile>(&snippets_content)
-            .with_context(|| anyhow!("Failed to parse snippet file at {snippet_path:?}"))?;
-        let snippet_errors = file_to_snippets(snippets_file, &snippet_path)
-            .flat_map(Result::err)
-            .collect::<Vec<_>>();
-        let error_count = snippet_errors.len();
-
-        anyhow::ensure!(
-            error_count == 0,
-            "Could not parse {error_count} snippet{suffix} in file {snippet_path:?}:\n\n{snippet_errors}",
-            suffix = if error_count == 1 { "" } else { "s" },
-            snippet_errors = snippet_errors
-                .iter()
-                .map(ToString::to_string)
-                .collect::<Vec<_>>()
-                .join("\n")
-        );
+        let _snippets_file: serde_json::Value =
+            serde_json_lenient::from_slice(&snippets_content)
+                .with_context(|| anyhow!("Failed to parse snippet file at {snippet_path:?}"))?;
     }
 
     Ok(())
@@ -606,8 +575,6 @@ async fn test_debug_adapter_schemas(
 
 #[cfg(test)]
 mod tests {
-// use cloud_api_types::ExtensionProvides;  // removed-crate: cloud_api_types
-
     use super::*;
 
     #[test]

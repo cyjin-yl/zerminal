@@ -1072,14 +1072,12 @@ fn handle_open_request(request: OpenRequest, app_state: Arc<AppState>, cx: &mut 
                     cx.spawn_in(window, async move |workspace, cx| {
                         let res = async move {
                             let json = app_state.languages.language_for_name("JSONC").await.ok();
-                            let lsp_store = workspace.update(cx, |workspace, cx| {
-                                workspace
-                                    .project()
-                                    .update(cx, |project, _| project.lsp_store())
+                            let project = workspace.update(cx, |workspace, _cx| {
+                                workspace.project().clone()
                             })?;
                             let uri = format!("zerminal://schemas/{}", schema_path);
                             let json_schema_content =
-                                json_schema_store::handle_schema_request(lsp_store, uri, cx)
+                                json_schema_store::handle_schema_request(project, uri, cx)
                                     .await?;
                             let json_schema_value: serde_json::Value =
                                 serde_json::from_str(&json_schema_content)

@@ -2,30 +2,17 @@ use std::sync::{Arc, LazyLock};
 
 use anyhow::{Context as _, Result};
 use collections::HashMap;
-use gpui::{App, AsyncApp, BorrowAppContext as _, Entity, Task, WeakEntity};
-use language::{
-    LanguageRegistry, LanguageServerName, LspAdapterDelegate,
-    language_settings::AllLanguageSettings,
-};
+use gpui::{App, AsyncApp, BorrowAppContext as _, Entity, Task};
+use language::{LanguageRegistry, language_settings::AllLanguageSettings};
 use parking_lot::RwLock;
-use project::{LspStore, lsp_store::LocalLspAdapterDelegate};
-use settings::{LSP_SETTINGS_SCHEMA_URL_PREFIX, Settings as _, SettingsLocation};
+use project::Project;
+use settings::Settings as _;
 use util::schemars::{AllowTrailingCommas, DefaultDenyUnknownFields};
 
 const SCHEMA_URI_PREFIX: &str = "zerminal://schemas/";
 
 const TSCONFIG_SCHEMA: &str = include_str!("schemas/tsconfig.json");
 const PACKAGE_JSON_SCHEMA: &str = include_str!("schemas/package.json");
-
-static TASKS_SCHEMA: LazyLock<String> = LazyLock::new(|| {
-    serde_json::to_string(&task::TaskTemplates::generate_json_schema())
-        .expect("TaskTemplates schema should serialize")
-});
-
-static SNIPPETS_SCHEMA: LazyLock<String> = LazyLock::new(|| {
-    serde_json::to_string(&snippet_provider::format::VsSnippetsFile::generate_json_schema())
-        .expect("VsSnippetsFile schema should serialize")
-});
 
 static JSONC_SCHEMA: LazyLock<String> = LazyLock::new(|| {
     serde_json::to_string(&generate_jsonc_schema()).expect("JSONC schema should serialize")
@@ -47,30 +34,18 @@ static ACTION_SCHEMA_CACHE: LazyLock<RwLock<HashMap<String, String>>> =
 
 // Runtime cache for dynamic schemas that depend on runtime state:
 // - "settings": depends on installed fonts, themes, languages, LSP adapters (extensions can add these)
-// - "settings/lsp/*": depends on LSP adapter initialization options
-// - "debug_tasks": depends on DAP adapters (extensions can add these)
-// Cache is invalidated via notify_schema_changed() when extensions or DAP registry change.
+// Cache is invalidated via notify_schema_changed() when extensions change.
 static DYNAMIC_SCHEMA_CACHE: LazyLock<RwLock<HashMap<String, String>>> =
     LazyLock::new(|| RwLock::new(HashMap::default()));
 
 pub fn init(cx: &mut App) {
     cx.set_global(SchemaStore::default());
-    project::lsp_store::json_language_server_ext::register_schema_handler(
-        handle_schema_request,
-        cx,
-    );
-
-    cx.observe_new(|_, _, cx| {
-        let lsp_store = cx.weak_entity();
-        cx.global_mut::<SchemaStore>().lsp_stores.push(lsp_store);
-    })
-    .detach();
 
     if let Some(extension_events) = extension::ExtensionEvents::try_global(cx) {
         cx.subscribe(&extension_events, move |_, evt, cx| match evt {
             extension::Event::ExtensionsInstalledChanged => {
-                cx.update_global::<SchemaStore, _>(|schema_store, cx| {
-                    schema_store.notify_schema_changed(ChangedSchemas::Settings, cx);
+                cx.update_global::<SchemaStore, _>(|schema_store, _cx| {
+                    schema_store.notify_schema_changed();
                 });
             }
             extension::Event::ExtensionUninstalled(_)
@@ -79,67 +54,22 @@ pub fn init(cx: &mut App) {
         })
         .detach();
     }
-
-    cx.observe_global::<dap::DapRegistry>(move |cx| {
-        cx.update_global::<SchemaStore, _>(|schema_store, cx| {
-            schema_store.notify_schema_changed(ChangedSchemas::DebugTasks, cx);
-        });
-    })
-    .detach();
 }
 
 #[derive(Default)]
-pub struct SchemaStore {
-    lsp_stores: Vec<WeakEntity<LspStore>>,
-}
+pub struct SchemaStore;
 
 impl gpui::Global for SchemaStore {}
 
-enum ChangedSchemas {
-    Settings,
-    DebugTasks,
-}
-
 impl SchemaStore {
-    fn notify_schema_changed(&mut self, changed_schemas: ChangedSchemas, cx: &mut App) {
-        let uris_to_invalidate = match changed_schemas {
-            ChangedSchemas::Settings => {
-                let settings_uri_prefix = &format!("{SCHEMA_URI_PREFIX}settings");
-                let project_settings_uri = &format!("{SCHEMA_URI_PREFIX}project_settings");
-                DYNAMIC_SCHEMA_CACHE
-                    .write()
-                    .extract_if(|uri, _| {
-                        uri == project_settings_uri || uri.starts_with(settings_uri_prefix)
-                    })
-                    .map(|(url, _)| url)
-                    .collect()
-            }
-            ChangedSchemas::DebugTasks => DYNAMIC_SCHEMA_CACHE
-                .write()
-                .remove_entry(&format!("{SCHEMA_URI_PREFIX}debug_tasks"))
-                .map_or_else(Vec::new, |(uri, _)| vec![uri]),
-        };
-
-        if uris_to_invalidate.is_empty() {
-            return;
-        }
-
-        self.lsp_stores.retain(|lsp_store| {
-            let Some(lsp_store) = lsp_store.upgrade() else {
-                return false;
-            };
-            project::lsp_store::json_language_server_ext::notify_schemas_changed(
-                lsp_store,
-                &uris_to_invalidate,
-                cx,
-            );
-            true
-        })
+    /// 扩展安装状态变化时，清除依赖运行时状态的动态 schema 缓存。
+    fn notify_schema_changed(&mut self) {
+        DYNAMIC_SCHEMA_CACHE.write().clear();
     }
 }
 
 pub fn handle_schema_request(
-    lsp_store: Entity<LspStore>,
+    project: Entity<Project>,
     uri: String,
     cx: &mut AsyncApp,
 ) -> Task<Result<String>> {
@@ -156,10 +86,11 @@ pub fn handle_schema_request(
         return Task::ready(Ok(cached));
     }
 
+    let languages = project.read_with(cx, |project, _| project.languages().clone());
     let path = path.to_string();
     let uri_clone = uri.clone();
     cx.spawn(async move |cx| {
-        let schema = resolve_dynamic_schema(lsp_store, &path, cx).await?;
+        let schema = resolve_dynamic_schema(&languages, &path, cx).await?;
         let json = serde_json::to_string(&schema).context("Failed to serialize schema")?;
 
         DYNAMIC_SCHEMA_CACHE.write().insert(uri_clone, json.clone());
@@ -175,8 +106,6 @@ fn resolve_static_schema(path: &str) -> Option<String> {
     match schema_name {
         "tsconfig" => Some(TSCONFIG_SCHEMA.to_string()),
         "package_json" => Some(PACKAGE_JSON_SCHEMA.to_string()),
-        "tasks" => Some(TASKS_SCHEMA.clone()),
-        "snippets" => Some(SNIPPETS_SCHEMA.clone()),
         "jsonc" => Some(JSONC_SCHEMA.clone()),
         "keymap" => Some(KEYMAP_SCHEMA.clone()),
         "zed_inspector_style" => {
@@ -223,91 +152,14 @@ fn resolve_static_schema(path: &str) -> Option<String> {
 }
 
 async fn resolve_dynamic_schema(
-    lsp_store: Entity<LspStore>,
+    languages: &Arc<LanguageRegistry>,
     path: &str,
     cx: &mut AsyncApp,
 ) -> Result<serde_json::Value> {
-    let languages = lsp_store.read_with(cx, |lsp_store, _| lsp_store.languages.clone());
-    let (schema_name, rest) = path.split_once('/').unzip();
+    let (schema_name, _rest) = path.split_once('/').unzip();
     let schema_name = schema_name.unwrap_or(path);
 
     let schema = match schema_name {
-        "settings" if rest.is_some_and(|r| r.starts_with("lsp/")) => {
-            let lsp_path = rest
-                .and_then(|r| {
-                    r.strip_prefix(
-                        LSP_SETTINGS_SCHEMA_URL_PREFIX
-                            .strip_prefix(SCHEMA_URI_PREFIX)
-                            .and_then(|s| s.strip_prefix("settings/"))
-                            .unwrap_or("lsp/"),
-                    )
-                })
-                .context("Invalid LSP schema path")?;
-
-            // Parse the schema type from the path:
-            // - "rust-analyzer/initialization_options" → initialization_options_schema
-            // - "rust-analyzer/settings" → settings_schema
-            enum LspSchemaKind {
-                InitializationOptions,
-                Settings,
-            }
-            let (lsp_name, schema_kind) = if let Some(adapter_name) =
-                lsp_path.strip_suffix("/initialization_options")
-            {
-                (adapter_name, LspSchemaKind::InitializationOptions)
-            } else if let Some(adapter_name) = lsp_path.strip_suffix("/settings") {
-                (adapter_name, LspSchemaKind::Settings)
-            } else {
-                anyhow::bail!(
-                    "Invalid LSP schema path: \
-                    Expected '{{adapter}}/initialization_options' or '{{adapter}}/settings', got '{}'",
-                    lsp_path
-                );
-            };
-
-            let adapter = languages
-                .all_lsp_adapters()
-                .into_iter()
-                .find(|adapter| adapter.name().as_ref() as &str == lsp_name)
-                .or_else(|| {
-                    languages.load_available_lsp_adapter(&LanguageServerName::from(lsp_name))
-                })
-                .with_context(|| format!("LSP adapter not found: {}", lsp_name))?;
-
-            let delegate: Arc<dyn LspAdapterDelegate> = cx
-                .update(|inner_cx| {
-                    lsp_store.update(inner_cx, |lsp_store, cx| {
-                        let Some(local) = lsp_store.as_local() else {
-                            return None;
-                        };
-                        let Some(worktree) = local.worktree_store.read(cx).worktrees().next()
-                        else {
-                            return None;
-                        };
-                        Some(LocalLspAdapterDelegate::from_local_lsp(
-                            local, &worktree, cx,
-                        ))
-                    })
-                })
-                .context(concat!(
-                    "Failed to create adapter delegate - ",
-                    "either LSP store is not in local mode or no worktree is available"
-                ))?;
-
-            let schema = match schema_kind {
-                LspSchemaKind::InitializationOptions => {
-                    adapter.initialization_options_schema(&delegate, cx).await
-                }
-                LspSchemaKind::Settings => adapter.settings_schema(&delegate, cx).await,
-            };
-
-            schema.unwrap_or_else(|| {
-                serde_json::json!({
-                    "type": "object",
-                    "additionalProperties": true
-                })
-            })
-        }
         "settings" => {
             let mut lsp_adapter_names: Vec<String> = languages
                 .all_lsp_adapters()
@@ -404,23 +256,10 @@ async fn resolve_dynamic_schema(
             inject_feature_flags_schema(&mut schema);
             schema
         }
-        "debug_tasks" => {
-            let adapter_schemas = cx.read_global::<dap::DapRegistry, _>(|dap_registry, _| {
-                dap_registry.adapters_schema()
-            });
-            task::DebugTaskFile::generate_json_schema(&adapter_schemas)
-        }
         "keymap" => cx.update(settings::KeymapFile::generate_json_schema_for_registered_actions),
         "action" => {
-            let normalized_action_name = rest.context("No Action name provided")?;
-            let action_name = denormalize_action_name(normalized_action_name);
-            let mut generator = settings::KeymapFile::action_schema_generator();
-            let schema = cx
-                .update(|cx| cx.action_schema_by_name(&action_name, &mut generator))
-                .flatten();
-            root_schema_from_action_schema(schema, &mut generator).to_value()
+            anyhow::bail!("Action schemas are resolved statically");
         }
-        "tasks" => task::TaskTemplates::generate_json_schema(),
         _ => {
             anyhow::bail!("Unrecognized schema: {schema_name}");
         }
@@ -432,7 +271,7 @@ const JSONC_LANGUAGE_NAME: &str = "JSONC";
 
 pub fn all_schema_file_associations(
     languages: &Arc<LanguageRegistry>,
-    path: Option<SettingsLocation<'_>>,
+    path: Option<settings::SettingsLocation<'_>>,
     cx: &mut App,
 ) -> serde_json::Value {
     let extension_globs = languages
@@ -465,30 +304,6 @@ pub fn all_schema_file_associations(
         {
             "fileMatch": [schema_file_match(paths::keymap_file())],
             "url": format!("{SCHEMA_URI_PREFIX}keymap"),
-        },
-        {
-            "fileMatch": [
-                schema_file_match(paths::tasks_file()),
-                paths::local_tasks_file_relative_path()
-            ],
-            "url": format!("{SCHEMA_URI_PREFIX}tasks"),
-        },
-        {
-            "fileMatch": [
-                schema_file_match(paths::debug_scenarios_file()),
-                paths::local_debug_file_relative_path()
-            ],
-            "url": format!("{SCHEMA_URI_PREFIX}debug_tasks"),
-        },
-        {
-            "fileMatch": [
-                schema_file_match(
-                    paths::snippets_dir()
-                        .join("*.json")
-                        .as_path()
-                )
-            ],
-            "url": format!("{SCHEMA_URI_PREFIX}snippets"),
         },
         {
             "fileMatch": ["tsconfig.json"],

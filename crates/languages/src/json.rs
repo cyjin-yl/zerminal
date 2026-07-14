@@ -4,15 +4,12 @@ use async_tar::Archive;
 use async_trait::async_trait;
 use collections::HashMap;
 use futures::StreamExt;
-use gpui::{App, AsyncApp, Entity, Task};
+use gpui::AsyncApp;
 use http_client::github::{GitHubLspBinaryVersion, latest_github_release};
 use language::{
-    Buffer, ContextProvider, LanguageName, LanguageRegistry, LocalFile as _, LspAdapter,
-    LspAdapterDelegate, LspInstaller, Toolchain,
+    LanguageName, LanguageRegistry, LspAdapter, LspAdapterDelegate, LspInstaller, Toolchain,
 };
 use lsp::{LanguageServerBinary, LanguageServerName, Uri};
-// use node_runtime::{NodeRuntime, VersionStrategy};  // removed-crate: node_runtime
-use project::lsp_store::language_server_settings;
 use semver::Version;
 use serde_json::{Value, json};
 use settings::SettingsLocation;
@@ -29,119 +26,29 @@ use std::{
     str::FromStr,
     sync::Arc,
 };
-// use task::{TaskTemplate, TaskTemplates, VariableName};  // removed-crate: task
 use util::{
     ResultExt, archive::extract_zip, fs::remove_matching, maybe, merge_json_value_into,
     paths::PathStyle, rel_path::RelPath,
 };
 
-use crate::PackageJsonData;
-
 const SERVER_PATH: &str =
     "node_modules/vscode-langservers-extracted/bin/vscode-json-language-server";
-
-pub(crate) struct JsonTaskProvider;
-
-impl ContextProvider for JsonTaskProvider {
-    fn associated_tasks(
-        &self,
-        buffer: Option<Entity<Buffer>>,
-        cx: &App,
-    ) -> gpui::Task<Option<TaskTemplates>> {
-        let file = buffer.as_ref().and_then(|buf| buf.read(cx).file());
-        let Some(file) = project::File::from_dyn(file).cloned() else {
-            return Task::ready(None);
-        };
-        let is_package_json = file.path.ends_with(RelPath::unix("package.json").unwrap());
-        let is_composer_json = file.path.ends_with(RelPath::unix("composer.json").unwrap());
-        if !is_package_json && !is_composer_json {
-            return Task::ready(None);
-        }
-
-        cx.spawn(async move |cx| {
-            let contents = file
-                .worktree
-                .update(cx, |this, cx| this.load_file(&file.path, cx))
-                .await
-                .ok()?;
-            let path = cx.update(|cx| file.abs_path(cx)).as_path().into();
-
-            let task_templates = if is_package_json {
-                let package_json = serde_json_lenient::from_str::<
-                    HashMap<String, serde_json_lenient::Value>,
-                >(&contents.text)
-                .ok()?;
-                let package_json = PackageJsonData::new(path, package_json);
-                let command = package_json.package_manager.unwrap_or("npm").to_owned();
-                package_json
-                    .scripts
-                    .into_iter()
-                    .map(|(_, key)| TaskTemplate {
-                        label: format!("run {key}"),
-                        command: command.clone(),
-                        args: vec!["run".into(), key],
-                        cwd: Some(VariableName::Dirname.template_value()),
-                        ..TaskTemplate::default()
-                    })
-                    .chain([TaskTemplate {
-                        label: "package script $ZERMINAL_CUSTOM_script".to_owned(),
-                        command: command.clone(),
-                        args: vec![
-                            "run".into(),
-                            VariableName::Custom("script".into()).template_value(),
-                        ],
-                        cwd: Some(VariableName::Dirname.template_value()),
-                        tags: vec!["package-script".into()],
-                        ..TaskTemplate::default()
-                    }])
-                    .collect()
-            } else if is_composer_json {
-                serde_json_lenient::Value::from_str(&contents.text)
-                    .ok()?
-                    .get("scripts")?
-                    .as_object()?
-                    .keys()
-                    .map(|key| TaskTemplate {
-                        label: format!("run {key}"),
-                        command: "composer".to_owned(),
-                        args: vec!["-d".into(), "$ZERMINAL_DIRNAME".into(), key.into()],
-                        ..TaskTemplate::default()
-                    })
-                    .chain([TaskTemplate {
-                        label: "composer script $ZERMINAL_CUSTOM_script".to_owned(),
-                        command: "composer".to_owned(),
-                        args: vec![
-                            "-d".into(),
-                            "$ZERMINAL_DIRNAME".into(),
-                            VariableName::Custom("script".into()).template_value(),
-                        ],
-                        tags: vec!["composer-script".into()],
-                        ..TaskTemplate::default()
-                    }])
-                    .collect()
-            } else {
-                vec![]
-            };
-
-            Some(TaskTemplates(task_templates))
-        })
-    }
-}
 
 fn server_binary_arguments(server_path: &Path) -> Vec<OsString> {
     vec![server_path.into(), "--stdio".into()]
 }
 
+/// JSON 语言服务器适配器 (spec §3.1 L1)
+/// node_runtime crate 已删除，不再支持 npm 安装
 pub struct JsonLspAdapter {
     languages: Arc<LanguageRegistry>,
-    node: NodeRuntime,
 }
 
 impl JsonLspAdapter {
     const PACKAGE_NAME: &str = "vscode-langservers-extracted";
 
-    pub fn new(languages: Arc<LanguageRegistry>, node: NodeRuntime) -> Self {
-        Self { languages, node }
+    pub fn new(languages: Arc<LanguageRegistry>) -> Self {
+        Self { languages }
     }
 }
 
@@ -154,9 +61,7 @@ impl LspInstaller for JsonLspAdapter {
         _: bool,
         _: &mut AsyncApp,
     ) -> Result<Self::BinaryVersion> {
-        self.node
-            .npm_package_latest_version(Self::PACKAGE_NAME)
-            .await
+        anyhow::bail!("npm package version lookup unavailable (node_runtime removed)")
     }
 
     async fn check_if_user_installed(
@@ -179,66 +84,33 @@ impl LspInstaller for JsonLspAdapter {
 
     fn check_if_version_installed(
         &self,
-        version: &Self::BinaryVersion,
-        container_dir: &PathBuf,
-        _: &Arc<dyn LspAdapterDelegate>,
+        _version: &Self::BinaryVersion,
+        _container_dir: &PathBuf,
+        _delegate: &Arc<dyn LspAdapterDelegate>,
     ) -> impl Send + Future<Output = Option<LanguageServerBinary>> + use<> {
-        let node = self.node.clone();
-        let version = version.clone();
-        let container_dir = container_dir.clone();
-
-        async move {
-            let server_path = container_dir.join(SERVER_PATH);
-
-            let should_install_language_server = node
-                .should_install_npm_package(
-                    Self::PACKAGE_NAME,
-                    &server_path,
-                    &container_dir,
-                    VersionStrategy::Latest(&version),
-                )
-                .await;
-
-            if should_install_language_server {
-                None
-            } else {
-                Some(LanguageServerBinary {
-                    path: node.binary_path().await.ok()?,
-                    env: None,
-                    arguments: server_binary_arguments(&server_path),
-                })
-            }
-        }
+        async { None }
     }
 
     fn fetch_server_binary(
         &self,
         _latest_version: Self::BinaryVersion,
-        container_dir: PathBuf,
-        _: &Arc<dyn LspAdapterDelegate>,
+        _container_dir: PathBuf,
+        _delegate: &Arc<dyn LspAdapterDelegate>,
     ) -> impl Send + Future<Output = Result<LanguageServerBinary>> + use<> {
-        let node = self.node.clone();
-
-        async move {
-            let server_path = container_dir.join(SERVER_PATH);
-
-            node.npm_install_latest_packages(&container_dir, &[Self::PACKAGE_NAME])
-                .await?;
-
-            Ok(LanguageServerBinary {
-                path: node.binary_path().await?,
-                env: None,
-                arguments: server_binary_arguments(&server_path),
-            })
+        async {
+            anyhow::bail!(
+                "language server installation unavailable (node_runtime removed)"
+            )
         }
     }
 
     async fn cached_server_binary(
         &self,
-        container_dir: PathBuf,
-        _: &dyn LspAdapterDelegate,
+        _container_dir: PathBuf,
+        _delegate: &dyn LspAdapterDelegate,
     ) -> Option<LanguageServerBinary> {
-        get_cached_server_binary(container_dir, &self.node).await
+        // node_runtime 已删除，无法检查缓存的 npm 包
+        None
     }
 }
 
@@ -287,8 +159,6 @@ impl LspAdapter for JsonLspAdapter {
                 cx,
             );
 
-            // This can be viewed via `dev: open language server logs` -> `json-language-server` ->
-            // `Server Info`
             serde_json::json!({
                 "json": {
                     "format": {
@@ -308,15 +178,7 @@ impl LspAdapter for JsonLspAdapter {
             merge_json_value_into(proxy_settings, &mut config);
         }
 
-        let project_options = cx.update(|cx| {
-            language_server_settings(delegate.as_ref(), &self.name(), cx)
-                .and_then(|s| worktree_root(delegate, s.settings.clone()))
-        });
-
-        if let Some(override_options) = project_options {
-            merge_json_value_into(override_options, &mut config);
-        }
-
+        // lsp_store 已删除，跳过 project options
         Ok(config)
     }
 
@@ -376,26 +238,6 @@ fn json_schema_proxy_settings(proxy: Option<String>) -> Option<Value> {
             }
         })
     })
-}
-
-async fn get_cached_server_binary(
-    container_dir: PathBuf,
-    node: &NodeRuntime,
-) -> Option<LanguageServerBinary> {
-    maybe!(async {
-        let server_path = container_dir.join(SERVER_PATH);
-        anyhow::ensure!(
-            server_path.exists(),
-            "missing executable in directory {server_path:?}"
-        );
-        Ok(LanguageServerBinary {
-            path: node.binary_path().await?,
-            env: None,
-            arguments: server_binary_arguments(&server_path),
-        })
-    })
-    .await
-    .log_err()
 }
 
 #[cfg(test)]

@@ -6,7 +6,6 @@ use http_client::github::{AssetKind, GitHubLspBinaryVersion, latest_github_relea
 use http_client::github_download::{GithubBinaryMetadata, download_server_binary};
 pub use language::*;
 use lsp::{InitializeParams, LanguageServerBinary, LanguageServerName};
-use project::lsp_store::clangd_ext;
 use serde_json::json;
 use smol::fs;
 use std::{env::consts, future::Future, path::PathBuf, sync::Arc};
@@ -376,13 +375,6 @@ impl super::LspAdapter for CLspAdapter {
         Ok(original)
     }
 
-    fn retain_old_diagnostic(&self, previous_diagnostic: &Diagnostic) -> bool {
-        clangd_ext::is_inactive_region(previous_diagnostic)
-    }
-
-    fn underline_diagnostic(&self, diagnostic: &lsp::Diagnostic) -> bool {
-        !clangd_ext::is_lsp_inactive_region(diagnostic)
-    }
 }
 
 async fn get_cached_server_binary(container_dir: PathBuf) -> Option<LanguageServerBinary> {

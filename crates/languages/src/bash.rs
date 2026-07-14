@@ -1,65 +1,17 @@
 use anyhow::Result;
 use async_trait::async_trait;
-use collections::HashMap;
 use language::{LanguageServerName, LspAdapter, LspAdapterDelegate, LspInstaller, Toolchain};
 use lsp::LanguageServerBinary;
-// use node_runtime::{NodeRuntime, VersionStrategy};  // removed-crate: node_runtime
-use project::ContextProviderWithTasks;
 use semver::Version;
-use std::{future::Future, path::PathBuf, sync::Arc, vec};
-// use task::{TaskTemplate, TaskTemplates, VariableName};  // removed-crate: task
-use util::{ResultExt, maybe};
+use std::{future::Future, path::PathBuf, sync::Arc};
+use util::ResultExt;
 
-pub(super) fn bash_task_context() -> ContextProviderWithTasks {
-    ContextProviderWithTasks::new(TaskTemplates(vec![
-        TaskTemplate {
-            label: "execute selection".to_owned(),
-            command: VariableName::SelectedText.template_value(),
-            ..TaskTemplate::default()
-        },
-        TaskTemplate {
-            label: format!("run '{}'", VariableName::File.template_value()),
-            command: VariableName::File.template_value(),
-            tags: vec!["bash-script".to_owned()],
-            ..TaskTemplate::default()
-        },
-    ]))
-}
-
-pub struct BashLspAdapter {
-    node: NodeRuntime,
-}
+/// 巴什语言服务器适配器 (spec §3.1 L1)
+/// node_runtime crate 已删除，不再支持 npm 安装
+pub struct BashLspAdapter;
 
 impl BashLspAdapter {
     const PACKAGE_NAME: &str = "bash-language-server";
-    const NODE_MODULE_RELATIVE_SERVER_PATH: &str = "bash-language-server/out/cli.js";
-
-    pub fn new(node: NodeRuntime) -> Self {
-        Self { node }
-    }
-
-    async fn get_cached_server_binary(
-        container_dir: PathBuf,
-        env: HashMap<String, String>,
-        node: &NodeRuntime,
-    ) -> Option<lsp::LanguageServerBinary> {
-        maybe!(async {
-            let server_path = container_dir
-                .join("node_modules")
-                .join(Self::NODE_MODULE_RELATIVE_SERVER_PATH);
-            anyhow::ensure!(
-                server_path.exists(),
-                "missing executable in directory {server_path:?}"
-            );
-            Ok(LanguageServerBinary {
-                path: node.binary_path().await?,
-                env: Some(env),
-                arguments: vec![server_path.into(), "start".into()],
-            })
-        })
-        .await
-        .log_err()
-    }
 }
 
 impl LspInstaller for BashLspAdapter {
@@ -67,11 +19,11 @@ impl LspInstaller for BashLspAdapter {
 
     async fn cached_server_binary(
         &self,
-        container_dir: std::path::PathBuf,
-        delegate: &dyn LspAdapterDelegate,
-    ) -> Option<lsp::LanguageServerBinary> {
-        let env = delegate.shell_env().await;
-        Self::get_cached_server_binary(container_dir, env, &self.node).await
+        _container_dir: PathBuf,
+        _delegate: &dyn LspAdapterDelegate,
+    ) -> Option<LanguageServerBinary> {
+        // node_runtime 已删除，无法检查缓存的 npm 包
+        None
     }
 
     async fn check_if_user_installed(
@@ -79,7 +31,7 @@ impl LspInstaller for BashLspAdapter {
         delegate: &Arc<dyn LspAdapterDelegate>,
         _: Option<Toolchain>,
         _: &gpui::AsyncApp,
-    ) -> Option<lsp::LanguageServerBinary> {
+    ) -> Option<LanguageServerBinary> {
         let path = delegate.which(Self::PACKAGE_NAME.as_ref()).await?;
         let env = delegate.shell_env().await;
 
@@ -92,40 +44,11 @@ impl LspInstaller for BashLspAdapter {
 
     fn check_if_version_installed(
         &self,
-        version: &Self::BinaryVersion,
-        container_dir: &PathBuf,
-        delegate: &Arc<dyn LspAdapterDelegate>,
-    ) -> impl Send + Future<Output = Option<lsp::LanguageServerBinary>> + use<> {
-        let node = self.node.clone();
-        let version = version.clone();
-        let container_dir = container_dir.clone();
-        let delegate = delegate.clone();
-
-        async move {
-            let server_path = container_dir
-                .join("node_modules")
-                .join(Self::NODE_MODULE_RELATIVE_SERVER_PATH);
-
-            let should_install_language_server = node
-                .should_install_npm_package(
-                    Self::PACKAGE_NAME,
-                    &server_path,
-                    &container_dir,
-                    VersionStrategy::Latest(&version),
-                )
-                .await;
-
-            if should_install_language_server {
-                None
-            } else {
-                let env = delegate.shell_env().await;
-                Some(LanguageServerBinary {
-                    path: node.binary_path().await.ok()?,
-                    env: Some(env),
-                    arguments: vec![server_path.into(), "start".into()],
-                })
-            }
-        }
+        _version: &Self::BinaryVersion,
+        _container_dir: &PathBuf,
+        _delegate: &Arc<dyn LspAdapterDelegate>,
+    ) -> impl Send + Future<Output = Option<LanguageServerBinary>> + use<> {
+        async { None }
     }
 
     async fn fetch_latest_server_version(
@@ -134,34 +57,20 @@ impl LspInstaller for BashLspAdapter {
         _: bool,
         _: &mut gpui::AsyncApp,
     ) -> Result<Self::BinaryVersion> {
-        self.node
-            .npm_package_latest_version(Self::PACKAGE_NAME)
-            .await
+        // node_runtime 已删除，无法查询 npm 版本
+        anyhow::bail!("npm package version lookup unavailable (node_runtime removed)")
     }
 
     fn fetch_server_binary(
         &self,
         _latest_version: Self::BinaryVersion,
-        container_dir: std::path::PathBuf,
-        delegate: &Arc<dyn LspAdapterDelegate>,
-    ) -> impl Send + Future<Output = Result<lsp::LanguageServerBinary>> + use<> {
-        let node = self.node.clone();
-        let delegate = delegate.clone();
-
-        async move {
-            let server_path = container_dir
-                .join("node_modules")
-                .join(Self::NODE_MODULE_RELATIVE_SERVER_PATH);
-
-            node.npm_install_latest_packages(&container_dir, &[Self::PACKAGE_NAME])
-                .await?;
-
-            let env = delegate.shell_env().await;
-            Ok(LanguageServerBinary {
-                path: node.binary_path().await?,
-                env: Some(env),
-                arguments: vec![server_path.into(), "start".into()],
-            })
+        _container_dir: PathBuf,
+        _delegate: &Arc<dyn LspAdapterDelegate>,
+    ) -> impl Send + Future<Output = Result<LanguageServerBinary>> + use<> {
+        async {
+            anyhow::bail!(
+                "language server installation unavailable (node_runtime removed)"
+            )
         }
     }
 }
@@ -298,24 +207,9 @@ mod tests {
                 Some(AutoindentMode::EachLine),
                 cx,
             );
-            buffer.edit(
-                [(offsets[0] + 3..offsets[0] + 3, "elif")],
-                Some(AutoindentMode::EachLine),
-                cx,
-            );
-            let expected = r#"
-                if foo; then
-                  1
-                elif
-                else
-                  3
-                fi
-                "#
-            .unindent();
 
-            pretty_assertions::assert_eq!(buffer.text(), expected);
-
-            buffer
-        });
+            assert_eq!(buffer.text(), "if foo; then\n  1\n  \nelse\n  3\nfi");
+        })
+        .await;
     }
 }

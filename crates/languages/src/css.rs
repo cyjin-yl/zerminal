@@ -3,8 +3,6 @@ use async_trait::async_trait;
 use gpui::AsyncApp;
 use language::{LspAdapter, LspAdapterDelegate, LspInstaller, Toolchain};
 use lsp::{LanguageServerBinary, LanguageServerName, Uri};
-// use node_runtime::{NodeRuntime, VersionStrategy};  // removed-crate: node_runtime
-use project::lsp_store::language_server_settings;
 use semver::Version;
 use serde_json::json;
 use std::{
@@ -13,7 +11,7 @@ use std::{
     path::{Path, PathBuf},
     sync::Arc,
 };
-use util::{ResultExt, maybe, merge_json_value_into};
+use util::{ResultExt, merge_json_value_into};
 
 const SERVER_PATH: &str =
     "node_modules/vscode-langservers-extracted/bin/vscode-css-language-server";
@@ -22,15 +20,12 @@ fn server_binary_arguments(server_path: &Path) -> Vec<OsString> {
     vec![server_path.into(), "--stdio".into()]
 }
 
-pub struct CssLspAdapter {
-    node: NodeRuntime,
-}
+/// CSS 语言服务器适配器 (spec §3.1 L1)
+/// node_runtime crate 已删除，不再支持 npm 安装
+pub struct CssLspAdapter;
 
 impl CssLspAdapter {
     const PACKAGE_NAME: &str = "vscode-langservers-extracted";
-    pub fn new(node: NodeRuntime) -> Self {
-        CssLspAdapter { node }
-    }
 }
 
 impl LspInstaller for CssLspAdapter {
@@ -42,9 +37,7 @@ impl LspInstaller for CssLspAdapter {
         _: bool,
         _: &mut AsyncApp,
     ) -> Result<Self::BinaryVersion> {
-        self.node
-            .npm_package_latest_version("vscode-langservers-extracted")
-            .await
+        anyhow::bail!("npm package version lookup unavailable (node_runtime removed)")
     }
 
     async fn check_if_user_installed(
@@ -68,65 +61,32 @@ impl LspInstaller for CssLspAdapter {
     fn fetch_server_binary(
         &self,
         _latest_version: Self::BinaryVersion,
-        container_dir: PathBuf,
-        _: &Arc<dyn LspAdapterDelegate>,
+        _container_dir: PathBuf,
+        _delegate: &Arc<dyn LspAdapterDelegate>,
     ) -> impl Send + Future<Output = Result<LanguageServerBinary>> + use<> {
-        let node = self.node.clone();
-
-        async move {
-            let server_path = container_dir.join(SERVER_PATH);
-
-            node.npm_install_latest_packages(&container_dir, &[Self::PACKAGE_NAME])
-                .await?;
-
-            Ok(LanguageServerBinary {
-                path: node.binary_path().await?,
-                env: None,
-                arguments: server_binary_arguments(&server_path),
-            })
+        async {
+            anyhow::bail!(
+                "language server installation unavailable (node_runtime removed)"
+            )
         }
     }
 
     fn check_if_version_installed(
         &self,
-        version: &Self::BinaryVersion,
-        container_dir: &PathBuf,
-        _: &Arc<dyn LspAdapterDelegate>,
+        _version: &Self::BinaryVersion,
+        _container_dir: &PathBuf,
+        _delegate: &Arc<dyn LspAdapterDelegate>,
     ) -> impl Send + Future<Output = Option<LanguageServerBinary>> + use<> {
-        let node = self.node.clone();
-        let version = version.clone();
-        let container_dir = container_dir.clone();
-
-        async move {
-            let server_path = container_dir.join(SERVER_PATH);
-
-            let should_install_language_server = node
-                .should_install_npm_package(
-                    Self::PACKAGE_NAME,
-                    &server_path,
-                    &container_dir,
-                    VersionStrategy::Latest(&version),
-                )
-                .await;
-
-            if should_install_language_server {
-                None
-            } else {
-                Some(LanguageServerBinary {
-                    path: node.binary_path().await.ok()?,
-                    env: None,
-                    arguments: server_binary_arguments(&server_path),
-                })
-            }
-        }
+        async { None }
     }
 
     async fn cached_server_binary(
         &self,
-        container_dir: PathBuf,
-        _: &dyn LspAdapterDelegate,
+        _container_dir: PathBuf,
+        _delegate: &dyn LspAdapterDelegate,
     ) -> Option<LanguageServerBinary> {
-        get_cached_server_binary(container_dir, &self.node).await
+        // node_runtime 已删除，无法检查缓存的 npm 包
+        None
     }
 }
 
@@ -148,10 +108,10 @@ impl LspAdapter for CssLspAdapter {
 
     async fn workspace_configuration(
         self: Arc<Self>,
-        delegate: &Arc<dyn LspAdapterDelegate>,
+        _delegate: &Arc<dyn LspAdapterDelegate>,
         _: Option<Toolchain>,
         _: Option<Uri>,
-        cx: &mut AsyncApp,
+        _cx: &mut AsyncApp,
     ) -> Result<serde_json::Value> {
         let mut default_config = json!({
             "css": {
@@ -165,37 +125,9 @@ impl LspAdapter for CssLspAdapter {
             }
         });
 
-        let project_options = cx.update(|cx| {
-            language_server_settings(delegate.as_ref(), &self.name(), cx)
-                .and_then(|s| s.settings.clone())
-        });
-
-        if let Some(override_options) = project_options {
-            merge_json_value_into(override_options, &mut default_config);
-        }
-
+        // lsp_store 已删除，使用默认配置
         Ok(default_config)
     }
-}
-
-async fn get_cached_server_binary(
-    container_dir: PathBuf,
-    node: &NodeRuntime,
-) -> Option<LanguageServerBinary> {
-    maybe!(async {
-        let server_path = container_dir.join(SERVER_PATH);
-        anyhow::ensure!(
-            server_path.exists(),
-            "missing executable in directory {server_path:?}"
-        );
-        Ok(LanguageServerBinary {
-            path: node.binary_path().await?,
-            env: None,
-            arguments: server_binary_arguments(&server_path),
-        })
-    })
-    .await
-    .log_err()
 }
 
 #[cfg(test)]

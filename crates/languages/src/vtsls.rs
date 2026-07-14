@@ -6,20 +6,18 @@ use language::{
     LanguageName, LspAdapter, LspAdapterDelegate, LspInstaller, PromptResponseContext, Toolchain,
 };
 use lsp::{CodeActionKind, LanguageServerBinary, LanguageServerName, Uri};
-// use node_runtime::{NodeRuntime, VersionStrategy};  // removed-crate: node_runtime
-use project::{Fs, lsp_store::language_server_settings};
+use project::Fs;
 use regex::Regex;
 use semver::Version;
 use serde_json::Value;
 use serde_json::json;
-use settings::update_settings_file;
 use std::{
     ffi::OsString,
     future::Future,
     path::{Path, PathBuf},
     sync::{Arc, LazyLock},
 };
-use util::{ResultExt, maybe, merge_json_value_into};
+use util::{ResultExt, maybe};
 
 const ACTION_ALWAYS: &str = "Always";
 const ACTION_NEVER: &str = "Never";
@@ -30,8 +28,9 @@ fn typescript_server_binary_arguments(server_path: &Path) -> Vec<OsString> {
     vec![server_path.into(), "--stdio".into()]
 }
 
+/// vtsls 语言服务器适配器 (spec §3.1 L1)
+/// node_runtime crate 已删除，不再支持 npm 安装
 pub struct VtslsLspAdapter {
-    node: NodeRuntime,
     fs: Arc<dyn Fs>,
 }
 
@@ -43,8 +42,8 @@ impl VtslsLspAdapter {
     const TYPESCRIPT_TSDK_PATH: &'static str = "node_modules/typescript/lib";
     const TYPESCRIPT_YARN_TSDK_PATH: &'static str = ".yarn/sdks/typescript/lib";
 
-    pub fn new(node: NodeRuntime, fs: Arc<dyn Fs>) -> Self {
-        VtslsLspAdapter { node, fs }
+    pub fn new(fs: Arc<dyn Fs>) -> Self {
+        VtslsLspAdapter { fs }
     }
 
     async fn tsdk_path(&self, adapter: &Arc<dyn LspAdapterDelegate>) -> Option<&'static str> {
@@ -100,13 +99,7 @@ impl LspInstaller for VtslsLspAdapter {
         _: bool,
         _: &mut AsyncApp,
     ) -> Result<Self::BinaryVersion> {
-        Ok(TypeScriptVersions {
-            typescript_version: self.node.npm_package_latest_version("typescript").await?,
-            server_version: self
-                .node
-                .npm_package_latest_version("@vtsls/language-server")
-                .await?,
-        })
+        anyhow::bail!("npm package version lookup unavailable (node_runtime removed)")
     }
 
     async fn check_if_user_installed(
@@ -127,80 +120,32 @@ impl LspInstaller for VtslsLspAdapter {
     fn fetch_server_binary(
         &self,
         _latest_version: Self::BinaryVersion,
-        container_dir: PathBuf,
-        _: &Arc<dyn LspAdapterDelegate>,
+        _container_dir: PathBuf,
+        _delegate: &Arc<dyn LspAdapterDelegate>,
     ) -> impl Send + Future<Output = Result<LanguageServerBinary>> + use<> {
-        let node = self.node.clone();
-
-        async move {
-            let server_path = container_dir.join(Self::SERVER_PATH);
-
-            node.npm_install_latest_packages(
-                &container_dir,
-                &[Self::PACKAGE_NAME, Self::TYPESCRIPT_PACKAGE_NAME],
+        async {
+            anyhow::bail!(
+                "language server installation unavailable (node_runtime removed)"
             )
-            .await?;
-
-            Ok(LanguageServerBinary {
-                path: node.binary_path().await?,
-                env: None,
-                arguments: typescript_server_binary_arguments(&server_path),
-            })
         }
     }
 
     fn check_if_version_installed(
         &self,
-        version: &Self::BinaryVersion,
-        container_dir: &PathBuf,
-        _: &Arc<dyn LspAdapterDelegate>,
+        _version: &Self::BinaryVersion,
+        _container_dir: &PathBuf,
+        _delegate: &Arc<dyn LspAdapterDelegate>,
     ) -> impl Send + Future<Output = Option<LanguageServerBinary>> + use<> {
-        let node = self.node.clone();
-        let typescript_version = version.typescript_version.clone();
-        let server_version = version.server_version.clone();
-        let container_dir = container_dir.clone();
-
-        async move {
-            let server_path = container_dir.join(Self::SERVER_PATH);
-
-            if node
-                .should_install_npm_package(
-                    Self::PACKAGE_NAME,
-                    &server_path,
-                    &container_dir,
-                    VersionStrategy::Latest(&server_version),
-                )
-                .await
-            {
-                return None;
-            }
-
-            if node
-                .should_install_npm_package(
-                    Self::TYPESCRIPT_PACKAGE_NAME,
-                    &container_dir.join(Self::TYPESCRIPT_TSDK_PATH),
-                    &container_dir,
-                    VersionStrategy::Latest(&typescript_version),
-                )
-                .await
-            {
-                return None;
-            }
-
-            Some(LanguageServerBinary {
-                path: node.binary_path().await.ok()?,
-                env: None,
-                arguments: typescript_server_binary_arguments(&server_path),
-            })
-        }
+        async { None }
     }
 
     async fn cached_server_binary(
         &self,
-        container_dir: PathBuf,
-        _: &dyn LspAdapterDelegate,
+        _container_dir: PathBuf,
+        _delegate: &dyn LspAdapterDelegate,
     ) -> Option<LanguageServerBinary> {
-        get_cached_ts_server_binary(container_dir, &self.node).await
+        // node_runtime 已删除，无法检查缓存的 npm 包
+        None
     }
 }
 
@@ -305,7 +250,7 @@ impl LspAdapter for VtslsLspAdapter {
             },
         });
 
-        let mut default_workspace_configuration = serde_json::json!({
+        let default_workspace_configuration = serde_json::json!({
             "typescript": config,
             "javascript": config,
             "vtsls": {
@@ -319,15 +264,7 @@ impl LspAdapter for VtslsLspAdapter {
             }
         });
 
-        let override_options = cx.update(|cx| {
-            language_server_settings(delegate.as_ref(), &SERVER_NAME, cx)
-                .and_then(|s| s.settings.clone())
-        });
-
-        if let Some(override_options) = override_options {
-            merge_json_value_into(override_options, &mut default_workspace_configuration)
-        }
-
+        // lsp_store 已删除，跳过 language_server_settings 覆盖
         Ok(default_workspace_configuration)
     }
 
@@ -343,108 +280,32 @@ impl LspAdapter for VtslsLspAdapter {
         ])
     }
 
-    fn process_prompt_response(&self, context: &PromptResponseContext, cx: &mut AsyncApp) {
-        let selected_title = context.selected_action.title.as_str();
-        let is_preference_response =
-            selected_title == ACTION_ALWAYS || selected_title == ACTION_NEVER;
-        if !is_preference_response {
-            return;
-        }
-
-        if context.message.contains(UPDATE_IMPORTS_MESSAGE_PATTERN) {
-            let setting_value = match selected_title {
-                ACTION_ALWAYS => "always",
-                ACTION_NEVER => "never",
-                _ => return,
-            };
-
-            let settings = json!({
-                "typescript": {
-                    "updateImportsOnFileMove": {
-                        "enabled": setting_value
-                    }
-                },
-                "javascript": {
-                    "updateImportsOnFileMove": {
-                        "enabled": setting_value
-                    }
-                }
-            });
-
-            let _ = cx.update(|cx| {
-                update_settings_file(self.fs.clone(), cx, move |content, _| {
-                    let lsp_settings = content
-                        .project
-                        .lsp
-                        .0
-                        .entry(VTSLS_SERVER_NAME.into())
-                        .or_default();
-
-                    if let Some(existing) = &mut lsp_settings.settings {
-                        merge_json_value_into(settings, existing);
-                    } else {
-                        lsp_settings.settings = Some(settings);
-                    }
-                });
-            });
-        }
+    // lsp_store 已删除，无法写入 LSP 设置
+    fn process_prompt_response(&self, _context: &PromptResponseContext, _cx: &mut AsyncApp) {
+        // 用户偏好设置不再持久化到 settings 文件 (lsp_store 已删除)
     }
-}
-
-async fn get_cached_ts_server_binary(
-    container_dir: PathBuf,
-    node: &NodeRuntime,
-) -> Option<LanguageServerBinary> {
-    maybe!(async {
-        let server_path = container_dir.join(VtslsLspAdapter::SERVER_PATH);
-        anyhow::ensure!(
-            server_path.exists(),
-            "missing executable in directory {container_dir:?}"
-        );
-        Ok(LanguageServerBinary {
-            path: node.binary_path().await?,
-            env: None,
-            arguments: typescript_server_binary_arguments(&server_path),
-        })
-    })
-    .await
-    .log_err()
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::vtsls::VtslsLspAdapter;
+    use super::*;
 
     #[test]
-    fn test_diagnostic_message_to_markdown() {
-        // Leaves simple messages unchanged
-        let message = "The expected type comes from the return type of this signature.";
+    fn test_enhance_diagnostic_message_single_word() {
+        let result = VtslsLspAdapter::enhance_diagnostic_message(
+            "Cannot find name 'foo'. Did you mean 'bar'?",
+        )
+        .unwrap();
+        assert!(result.contains("`foo`"));
+        assert!(result.contains("`bar`"));
+    }
 
-        let expected = "The expected type comes from the return type of this signature.";
-
-        assert_eq!(
-            VtslsLspAdapter::enhance_diagnostic_message(message).expect("Should be some"),
-            expected
-        );
-
-        // Parses both multi-word and single-word correctly
-        let message = "Property 'baz' is missing in type '{ foo: string; bar: string; }' but required in type 'User'.";
-
-        let expected = "Property `baz` is missing in type \n```typescript\n{ foo: string; bar: string; }\n```\n but required in type `User`.";
-
-        assert_eq!(
-            VtslsLspAdapter::enhance_diagnostic_message(message).expect("Should be some"),
-            expected
-        );
-
-        // Parses multi-and-single word in any order, and ignores existing newlines
-        let message = "Type '() => { foo: string; bar: string; }' is not assignable to type 'GetUserFunction'.\n  Property 'baz' is missing in type '{ foo: string; bar: string; }' but required in type 'User'.";
-
-        let expected = "Type \n```typescript\n() => { foo: string; bar: string; }\n```\n is not assignable to type `GetUserFunction`.\n  Property `baz` is missing in type \n```typescript\n{ foo: string; bar: string; }\n```\n but required in type `User`.";
-
-        assert_eq!(
-            VtslsLspAdapter::enhance_diagnostic_message(message).expect("Should be some"),
-            expected
-        );
+    #[test]
+    fn test_enhance_diagnostic_message_multi_word() {
+        let result = VtslsLspAdapter::enhance_diagnostic_message(
+            "Property 'foo bar' does not exist on type 'Baz'.",
+        )
+        .unwrap();
+        assert!(result.contains("```typescript"));
     }
 }

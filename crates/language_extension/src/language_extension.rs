@@ -5,14 +5,14 @@ use std::sync::Arc;
 
 use anyhow::Result;
 use extension::{ExtensionGrammarProxy, ExtensionHostProxy, ExtensionLanguageProxy};
-use gpui::{App, Entity, WeakEntity};
+use gpui::{App, Entity};
 use language::{LanguageMatcher, LanguageName, LanguageRegistry, LoadedLanguage};
-use project::LspStore;
+use project::Project;
 
 #[derive(Clone)]
 pub enum LspAccess {
-    ViaLspStore(WeakEntity<LspStore>),
-    ViaWorkspaces(Arc<dyn Fn(&mut App) -> Result<Vec<Entity<LspStore>>> + Send + Sync + 'static>),
+    /// project::LspStore 已删除，zerminal 使用 ViaWorkspaces。
+    ViaWorkspaces(Arc<dyn Fn(&mut App) -> Result<Vec<Entity<Project>>> + Send + Sync + 'static>),
     Noop,
 }
 
@@ -21,10 +21,8 @@ pub fn init(
     extension_host_proxy: Arc<ExtensionHostProxy>,
     language_registry: Arc<LanguageRegistry>,
 ) {
-    let language_server_registry_proxy = LanguageServerRegistryProxy {
-        language_registry,
-        lsp_access,
-    };
+    let _ = lsp_access;
+    let language_server_registry_proxy = LanguageServerRegistryProxy { language_registry };
     extension_host_proxy.register_grammar_proxy(language_server_registry_proxy.clone());
     extension_host_proxy.register_language_proxy(language_server_registry_proxy.clone());
     extension_host_proxy.register_language_server_proxy(language_server_registry_proxy);
@@ -33,7 +31,6 @@ pub fn init(
 #[derive(Clone)]
 struct LanguageServerRegistryProxy {
     language_registry: Arc<LanguageRegistry>,
-    lsp_access: LspAccess,
 }
 
 impl ExtensionGrammarProxy for LanguageServerRegistryProxy {
