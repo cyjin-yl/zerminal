@@ -506,8 +506,8 @@ impl EditorElement {
         register_action(editor, window, Editor::stop_language_server);
         register_action(editor, window, Editor::show_character_palette);
         register_action(editor, window, |editor, action: &ComposeCompletion, window, cx| {
-            if let Some(task) = editor.compose_completion(action, window, cx) {
-                editor.detach_and_notify_err::<(), anyhow::Error>(task, window, cx);
+            if let Some(task) = editor.compose_completion(action, &mut *window, &mut *cx) {
+                editor.detach_and_notify_err::<(), anyhow::Error>(task, &mut *window, &mut *cx);
             } else {
                 cx.propagate();
             }
@@ -653,33 +653,33 @@ impl EditorElement {
                 }
             });
             register_action(editor, window, |editor, action: &ConfirmCompletion, window, cx| {
-                if let Some(task) = editor.confirm_completion(action, window, cx) {
+                if let Some(task) = editor.confirm_completion(action, &mut *window, &mut *cx) {
                     let _: gpui::Task<Result<Vec<AvailableCodeAction>, anyhow::Error>> = task;
-                    editor.detach_and_notify_err(task, window, cx);
+                    editor.detach_and_notify_err(task, &mut *window, &mut *cx);
                 } else {
                     cx.propagate();
                 }
             });
             register_action(editor, window, |editor, action: &ConfirmCompletionReplace, window, cx| {
-                if let Some(task) = editor.confirm_completion_replace(action, window, cx) {
+                if let Some(task) = editor.confirm_completion_replace(action, &mut *window, &mut *cx) {
                     let _: gpui::Task<Result<Vec<String>, anyhow::Error>> = task;
-                    editor.detach_and_notify_err(task, window, cx);
+                    editor.detach_and_notify_err(task, &mut *window, &mut *cx);
                 } else {
                     cx.propagate();
                 }
             });
             register_action(editor, window, |editor, action: &ConfirmCompletionInsert, window, cx| {
-                if let Some(task) = editor.confirm_completion_insert(action, window, cx) {
+                if let Some(task) = editor.confirm_completion_insert(action, &mut *window, &mut *cx) {
                     let _: gpui::Task<Result<Vec<String>, anyhow::Error>> = task;
-                    editor.detach_and_notify_err(task, window, cx);
+                    editor.detach_and_notify_err(task, &mut *window, &mut *cx);
                 } else {
                     cx.propagate();
                 }
             });
             register_action(editor, window, |editor, action: &ConfirmCodeAction, window, cx| {
-                if let Some(task) = editor.confirm_code_action(action, window, cx) {
+                if let Some(task) = editor.confirm_code_action(action, &mut *window, &mut *cx) {
                     let _: gpui::Task<Result<Vec<AvailableCodeAction>, anyhow::Error>> = task;
-                    editor.detach_and_notify_err(task, window, cx);
+                    editor.detach_and_notify_err(task, &mut *window, &mut *cx);
                 } else {
                     cx.propagate();
                 }
