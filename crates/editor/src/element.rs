@@ -8,9 +8,9 @@ pub(crate) use header::{header_jump_data, render_buffer_header};
 
 use crate::{
     BUFFER_HEADER_PADDING, BlockId, ChunkRendererContext, ChunkReplacement, CodeActionSource,
-    CodeActionsMenu, ConflictsOurs, ConflictsOursMarker, ConflictsOuter, ConflictsTheirs, ConflictsTheirsMarker,
+    CodeActionsMenu, ComposeCompletion, ConflictsOurs, ConflictsOursMarker, ConflictsOuter, ConflictsTheirs, ConflictsTheirsMarker,
     ContextMenuPlacement, CursorPopoverType, CursorShape, CustomBlockId, DisplayDiffHunk, DisplayPoint, DisplayRow,
-    EditDisplayMode, Editor, EditorMode, EditorSettings, EditorSnapshot, EditorStyle,
+    EditDisplayMode, Editor, EditorMode, EditorSettings, EditorSnapshot, EditorStyle, FindAllReferences,
     FILE_HEADER_HEIGHT, FocusedBlock, GutterDimensions, HalfPageDown, HalfPageUp,
     HandleInput, HOVER_POPOVER_GAP, HoveredCursor, InlayHintRefreshReason, LineDown, LineHighlight, LineUp,
     MENU_GAP, MENU_ASIDE_MIN_WIDTH, MENU_ASIDE_MAX_WIDTH, MIN_POPOVER_CHARACTER_WIDTH, MIN_POPOVER_LINE_HEIGHT, POPOVER_RIGHT_OFFSET,
@@ -502,14 +502,14 @@ impl EditorElement {
         register_action(editor, window, Editor::restart_language_server);
         register_action(editor, window, Editor::stop_language_server);
         register_action(editor, window, Editor::show_character_palette);
-        register_action(editor, window, |editor, action, window, cx| {
+        register_action(editor, window, |editor, action: &ComposeCompletion, window, cx| {
             if let Some(task) = editor.compose_completion(action, window, cx) {
                 editor.detach_and_notify_err(task, window, cx);
             } else {
                 cx.propagate();
             }
         });
-        register_action(editor, window, |editor, action, window, cx| {
+        register_action(editor, window, |editor, action: &FindAllReferences, window, cx| {
             if let Some(task) = editor.find_all_references(action, window, cx) {
                 task.detach_and_log_err(cx);
             } else {

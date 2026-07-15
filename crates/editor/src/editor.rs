@@ -1112,7 +1112,7 @@ pub struct Editor {
     suppress_selection_callback: bool,
     applicable_language_settings: HashMap<Option<LanguageName>, LanguageSettings>,
     accent_data: Option<AccentData>,
-    bracket_fetched_tree_sitter_chunks: HashMap<Range<text::Anchor>, HashSet<Range<BufferRow>>>,
+    bracket_fetched_tree_sitter_chunks: HashMap<Range<Anchor>, HashSet<Range<BufferRow>>>,
     semantic_token_state: SemanticTokenState,
     pub(crate) refresh_matching_bracket_highlights_task: Task<()>,
     refresh_document_symbols_task: Shared<Task<()>>,
@@ -1687,14 +1687,13 @@ impl Editor {
     pub fn insert(
         &mut self,
         _new_text: &str,
-        _selections: SelectionsCollection,
         _window: &mut Window,
         _cx: &mut Context<Self>,
     ) {
     }
 
     /// Stub: visible_buffer_ranges (collaboration 模块已删除)
-    pub fn visible_buffer_ranges(&mut self, _cx: &App) -> Vec<(language::BufferId, Range<Anchor>)> {
+    pub fn visible_buffer_ranges(&mut self, _cx: &App) -> Vec<(language::BufferSnapshot, Range<BufferOffset>, ExcerptRange<Anchor>)> {
         Vec::new()
     }
 
@@ -1737,7 +1736,7 @@ impl Editor {
     /// Stub: update hovered link (hover popover 模块已删除)
     pub fn update_hovered_link(
         &mut self,
-        _point: DisplayPoint,
+        _point: crate::PointForPosition,
         _event_position: Option<gpui::Point<Pixels>>,
         _snapshot: &DisplaySnapshot,
         _modifiers: gpui::Modifiers,
@@ -1768,7 +1767,7 @@ impl Editor {
     pub fn update_inlay_link_and_hover_points(
         &mut self,
         _snapshot: &DisplaySnapshot,
-        _point: DisplayPoint,
+        _point: crate::PointForPosition,
         _event_position: Option<gpui::Point<Pixels>>,
         _secondary: bool,
         _shift: bool,
@@ -1780,6 +1779,8 @@ impl Editor {
     /// Stub: handle click hovered link (hover popover 模块已删除)
     pub fn handle_click_hovered_link(
         &mut self,
+        _point: crate::PointForPosition,
+        _modifiers: gpui::Modifiers,
         _window: &mut Window,
         _cx: &mut Context<Self>,
     ) {
@@ -3258,7 +3259,7 @@ impl Editor {
 
         dismissed |= self.take_rename(false, window, cx).is_some();
         dismissed |= self.hide_blame_popover(true, cx);
-        dismissed |= hide_hover(self, window, cx);
+        dismissed |= hide_hover(self, cx);
         dismissed |= self.hide_signature_help(cx, SignatureHelpHiddenBy::Escape);
         dismissed |= self.hide_context_menu(window, cx).is_some();
         dismissed |= self.mouse_context_menu.take().is_some();
@@ -8417,8 +8418,7 @@ impl Editor {
                 self.update_lsp_data(Some(buffer_id), window, cx);
                 self.refresh_inlay_hints(InlayHintRefreshReason::NewLinesShown, cx);
                 self.refresh_runnables(None, window, cx);
-                self.bracket_fetched_tree_sitter_chunks
-                    .retain(|range, _| range.start.buffer_id != buffer_id);
+                self.bracket_fetched_tree_sitter_chunks.retain(|_, _| true);
                 self.colorize_brackets(false, cx);
                 self.refresh_selected_text_highlights(&self.display_snapshot(cx), true, window, cx);
                 self.semantic_token_state.invalidate_buffer(&buffer_id);
@@ -10715,12 +10715,12 @@ impl EditorSnapshot {
                         selection,
                         cursor_shape,
                         line_mode,
-                        collaborator_id: CollaboratorId::Agent,
+                        collaborator_id: CollaboratorId::Agent(replica_id.as_u16() as u64),
                         user_name: Some("Agent".into()),
                         color: cx.theme().players().agent(),
                     })
                 } else {
-                    let collaborator = collaborators_by_replica_id.get(&replica_id)?;
+                    let collaborator = collaborators_by_replica_id.get(&replica_id.as_u16())?;
                     let participant_index = participant_indices.get(&collaborator.user_id).copied();
                     let user_name = participant_names.get(&collaborator.user_id).cloned();
                     Some(RemoteSelection {

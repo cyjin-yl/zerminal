@@ -3,10 +3,10 @@
 
 use std::{any::Any, sync::Arc};
 
-use gpui::{App, AnyElement, Entity, IntoElement, Modifiers, Pixels, ScrollHandle, SharedString, Task, TextStyle, Window, div, px};
+use gpui::{App, AnyElement, Element as _, Entity, IntoElement, Modifiers, Pixels, ScrollHandle, SharedString, Task, TextStyle, Window, div, px};
 use language::{Buffer, Location};
 use project::Project;
-use text::{Anchor, BufferId, ToOffset};
+use text::{Anchor, BufferId};
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use settings::SnippetSortOrder;
@@ -146,7 +146,7 @@ impl ProjectCapabilityExt for Project {
 
 pub trait ProjectBufferExt {
     fn buffer_for_id(&self, _buffer_id: BufferId, _cx: &App) -> Option<Entity<Buffer>>;
-    fn create_buffer(&mut self, _capacity: usize, _cx: &mut App,
+    fn create_buffer(&mut self, _language: Option<language::Language>, _has_root: bool, _cx: &mut App,
     ) -> Task<anyhow::Result<Entity<Buffer>>>;
 }
 
@@ -154,13 +154,15 @@ impl ProjectBufferExt for Project {
     fn buffer_for_id(&self, _buffer_id: BufferId, _cx: &App) -> Option<Entity<Buffer>> { None }
     fn create_buffer(
         &mut self,
-        _capacity: usize,
+        _language: Option<language::Language>,
+        _has_root: bool,
         _cx: &mut App,
     ) -> Task<anyhow::Result<Entity<Buffer>>> {
         Task::ready(Err(anyhow::anyhow!("create_buffer stub")))
     }
 }
 
+#[derive(Clone, Debug)]
 pub struct RevealInFileManager;
 
 impl gpui::Action for RevealInFileManager {
@@ -185,7 +187,7 @@ impl gpui::Action for RevealInFileManager {
     }
 }
 
-pub fn parse_zed_link(_link: &str) -> Option<Location> { None }
+pub fn parse_zed_link(_link: &str, _cx: &App) -> Option<Location> { None }
 
 // ---------------------------------------------------------------------------
 // Telemetry
@@ -249,7 +251,7 @@ pub struct CompletionGroup;
 #[derive(Clone, Debug)]
 pub struct CompletionResponse;
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Debug)]
 pub enum CompletionSource {
     Lsp {
         server_id: lsp::LanguageServerId,
@@ -369,8 +371,8 @@ impl CompletionsMenu {
         _id: CompletionId,
         _show_completion_documentation: bool,
         _choices: Vec<Snippet>,
-        _position: Anchor,
-        _range: std::ops::Range<Anchor>,
+        _position: multi_buffer::Anchor,
+        _range: std::ops::Range<multi_buffer::Anchor>,
         _buffer: Entity<Buffer>,
         _scroll_handle: Option<ScrollHandle>,
         _snippet_sort_order: SnippetSortOrder,
@@ -462,12 +464,11 @@ impl FileTarget {
 pub enum HoverLink {
     Url(String),
     InlayHighlight(LocationLink),
-    Text(LocationLink),
     LspLocation(language::Location, lsp::LanguageServerId),
     File(FileTarget),
 }
 
-pub fn find_file(_path: &std::path::Path) -> Option<Entity<Buffer>> { None }
+pub fn find_file(_buffer: &Entity<Buffer>, _project: Entity<Project>, _position: text::Anchor, _cx: &mut App) -> Option<(Entity<Buffer>, FileTarget)> { None }
 
 pub fn find_url(_text: &str) -> Option<String> { None }
 
@@ -476,13 +477,13 @@ pub fn find_url_from_range(_text: &str, _range: std::ops::Range<usize>) -> Optio
 pub fn exclude_link_to_position(
     _buffer: &Entity<Buffer>,
     _position: &text::Anchor,
-    _location: &language::Location,
+    _location: language::Location,
     _cx: &App,
 ) -> bool {
     false
 }
 
-pub fn hide_hover(_editor: &mut crate::Editor, _window: &mut Window, _cx: &mut gpui::Context<crate::Editor>) -> bool { false }
+pub fn hide_hover(_editor: &mut crate::Editor, _cx: &mut gpui::Context<crate::Editor>) -> bool { false }
 
 pub fn hover_at(
     _editor: &mut crate::Editor,
@@ -573,8 +574,8 @@ impl LspInlayHintData {
     pub fn remove_inlay_chunk_data(&mut self, _buffer_ids: &[language::BufferId]) {}
 }
 pub fn inlay_hint_settings(
-    _anchor: text::Anchor,
-    _snapshot: &language::BufferSnapshot,
+    _anchor: multi_buffer::Anchor,
+    _snapshot: &multi_buffer::MultiBufferSnapshot,
     _cx: &App,
 ) -> InlayHintSettings {
     InlayHintSettings::default()
@@ -735,6 +736,7 @@ impl BreakpointStore {
         &self,
         _buffer: &Entity<Buffer>,
         _range: Option<std::ops::Range<Anchor>>,
+        _buffer_snapshot: &multi_buffer::MultiBufferSnapshot,
         _cx: &App,
     ) -> Vec<(Anchor, Breakpoint, Option<BreakpointSessionState>)> {
         Vec::new()
@@ -754,6 +756,7 @@ impl BreakpointStore {
         &mut self,
         _buffer: Entity<Buffer>,
         _breakpoint: BreakpointWithPosition,
+        _edit_action: BreakpointEditAction,
         _cx: &mut gpui::Context<Self>,
     ) {
     }
@@ -796,6 +799,7 @@ pub const MENU_ASIDE_MAX_WIDTH: Pixels = px(480.);
 /// Stub: refresh linked ranges (linked editing 模块已删除)
 pub fn refresh_linked_ranges(
     _editor: &mut crate::Editor,
+    _window: &mut Window,
     _cx: &mut gpui::Context<crate::Editor>,
 ) {
 }
@@ -804,7 +808,7 @@ pub fn refresh_linked_ranges(
 #[derive(Clone)]
 pub struct Inlay {
     pub id: project::InlayId,
-    pub position: text::Anchor,
+    pub position: multi_buffer::Anchor,
     text: text::Rope,
     pub content: InlayContent,
 }
@@ -820,16 +824,16 @@ impl Inlay {
         &self.text
     }
 
-    pub fn mock_hint(_id: usize, anchor: text::Anchor, hint_text: &str) -> Self {
+    pub fn mock_hint(_id: usize, anchor: multi_buffer::Anchor, hint_text: &str) -> Self {
         Self { id: project::InlayId::Hint(0), position: anchor, text: text::Rope::from(hint_text), content: InlayContent::Label(gpui::SharedString::from(hint_text)) }
     }
 
-    pub fn edit_prediction(_id: usize, anchor: text::Anchor, pred_text: &str) -> Self {
+    pub fn edit_prediction(_id: usize, anchor: multi_buffer::Anchor, pred_text: &str) -> Self {
         Self { id: project::InlayId::Hint(0), position: anchor, text: text::Rope::from(pred_text), content: InlayContent::Label(gpui::SharedString::from(pred_text)) }
     }
 
-    pub fn debugger(_id: usize, anchor: text::Anchor, text: &str) -> Self {
-        Self { id: project::InlayId::DebuggerValue(0), position: anchor, text: text::Rope::from(text), content: InlayContent::Label(gpui::SharedString::from(text)) }
+    pub fn debugger(_id: usize, anchor: multi_buffer::Anchor, text: String) -> Self {
+        Self { id: project::InlayId::DebuggerValue(0), position: anchor, text: text::Rope::from(text.clone()), content: InlayContent::Label(gpui::SharedString::from(text)) }
     }
 }
 
