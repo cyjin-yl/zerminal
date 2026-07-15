@@ -7,6 +7,7 @@ use collections::BTreeMap;
 use gpui::{App, Entity, SharedString, Task};
 use serde::{Deserialize, Serialize};
 use fs::Fs;
+use extension::ExtensionProvides;
 use text::Anchor;
 
 pub type CompletionId = u64;
@@ -668,6 +669,16 @@ impl Client {
     pub fn telemetry(&self) -> Arc<Telemetry> {
         Arc::new(Telemetry)
     }
+
+    /// Stub: read (client crate 已删除)
+    pub fn read(&self, _cx: &gpui::App) -> &Self {
+        self
+    }
+
+    /// Stub: shell (client crate 已删除)
+    pub fn shell(&self) -> Option<Arc<ShellConfig>> {
+        None
+    }
 }
 
 impl Telemetry {
@@ -1076,9 +1087,28 @@ impl settings::Settings for FileFinderSettings {
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ExtensionMetadata {
     pub id: Arc<str>,
-    pub manifest: extension::ExtensionManifest,
+    pub dev: bool,
+    pub manifest: ExtensionMetadataManifest,
     pub published_at: Option<String>,
     pub download_count: u64,
+}
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct ExtensionMetadataManifest {
+    pub version: Arc<str>,
+    pub schema_version: Option<i32>,
+    pub wasm_api_version: Option<String>,
+    pub name: String,
+    pub description: Option<String>,
+    pub repository: Option<String>,
+    pub authors: Vec<String>,
+    pub provides_list: Vec<ExtensionProvides>,
+}
+
+impl ExtensionMetadataManifest {
+    pub fn provides(&self) -> &Vec<ExtensionProvides> {
+        &self.provides_list
+    }
 }
 
 /// Stub: VimModeSetting (vim_mode_setting crate 已删除)
@@ -1107,17 +1137,27 @@ pub type TaskId = u64;
 pub enum RevealStrategy {
     Center,
     Top,
+    Always,
+    NoFocus,
+    Never,
 }
 
 /// Stub: RevealTarget (open_path_prompt crate 已删除)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum RevealTarget {
     Center,
+    Dock,
 }
 
 /// Stub: Shell (task crate 已删除)
-#[derive(Debug, Clone)]
-pub struct Shell {
+#[derive(Debug, Clone, PartialEq)]
+pub enum Shell {
+    System,
+    Program(Arc<ShellConfig>),
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ShellConfig {
     pub program: String,
     pub args: Vec<String>,
 }
@@ -1129,12 +1169,29 @@ pub struct ShellBuilder {
     pub args: Vec<String>,
 }
 
+impl ShellBuilder {
+    pub fn new() -> Self {
+        Self {
+            program: String::new(),
+            args: Vec::new(),
+        }
+    }
+}
+
 /// Stub: SpawnInTerminal (task crate 已删除)
 #[derive(Debug, Clone)]
 pub struct SpawnInTerminal {
     pub program: String,
     pub args: Vec<String>,
     pub working_directory: Option<ProjectPath>,
+    pub shell: Option<Shell>,
+    pub allow_concurrent_runs: bool,
+    pub use_new_terminal: bool,
+    pub full_label: String,
+    pub id: u64,
+    pub reveal: RevealStrategy,
+    pub reveal_target: RevealTarget,
+    pub command: String,
 }
 
 /// Stub: Breadcrumbs (breadcrumbs crate 已删除)

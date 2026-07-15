@@ -7,6 +7,7 @@ use editor::{Editor, MultiBuffer};
 use gpui::{
     App, DismissEvent, Entity, EventEmitter, FocusHandle, Focusable, TaskExt, Window, actions,
     prelude::*,
+};
 use release_channel::{AppVersion, ReleaseChannel};
 use semver::Version;
 use serde::Deserialize;

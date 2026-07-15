@@ -24,6 +24,7 @@ pub mod private {
 }
 
 use gpui::{App, Global};
+use serde::{Serialize, Deserialize};
 
 use rust_embed::RustEmbed;
 use std::env;

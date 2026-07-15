@@ -42,6 +42,16 @@ pub use remote::{
 };
 pub use toast_layer::{ToastAction, ToastLayer, ToastView};
 
+/// Stub: TerminalProvider trait (replaces deleted terminal_view::TerminalProvider)
+pub trait TerminalProvider: Send + Sync {
+    fn spawn(
+        &self,
+        task: project::SpawnInTerminal,
+        window: &mut gpui::Window,
+        cx: &mut gpui::App,
+    ) -> gpui::Task<Option<anyhow::Result<std::process::ExitStatus>>>;
+}
+
 use anyhow::{Context as _, Result, anyhow};
 use collections::{BTreeMap, HashMap, HashSet, TypeIdHashMap, hash_map};
 use dock::{Dock, DockPosition, PanelButtons, PanelHandle, RESIZE_HANDLE_SIZE};
@@ -6877,6 +6887,14 @@ impl Workspace {
                 });
             }
         }
+    }
+
+    /// Stub: set_terminal_provider (collab 已删除)
+    pub fn set_terminal_provider(&mut self, _provider: Box<dyn crate::TerminalProvider>) {}
+
+    /// Stub: active_call (collab 已删除)
+    pub fn active_call(&self) -> Option<()> {
+        None
     }
 }
 

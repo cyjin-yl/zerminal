@@ -466,6 +466,48 @@ impl Project {
     ) -> Task<anyhow::Result<Entity<language::Buffer>>> {
         Task::ready(Err(anyhow::anyhow!("stub: symbol search disabled")))
     }
+
+    /// Stub: create_terminal_shell (task crate 已删除)
+    pub fn create_terminal_shell(
+        &self,
+        _working_directory: Option<std::path::PathBuf>,
+        _cx: &mut Context<Self>,
+    ) -> Task<anyhow::Result<gpui::Entity<terminal::Terminal>>> {
+        Task::ready(Err(anyhow::anyhow!("stub: terminal creation disabled")))
+    }
+
+    /// Stub: clone_terminal (task crate 已删除)
+    pub fn clone_terminal(
+        &self,
+        _terminal: &gpui::Entity<terminal::Terminal>,
+        _cx: &mut Context<Self>,
+        _working_directory: Option<std::path::PathBuf>,
+    ) -> Task<anyhow::Result<gpui::Entity<terminal::Terminal>>> {
+        Task::ready(Err(anyhow::anyhow!("stub: terminal clone disabled")))
+    }
+
+    /// Stub: is_via_collab (collab 已删除)
+    pub fn is_via_collab(&self) -> bool {
+        false
+    }
+
+    /// Stub: create_terminal_task (task crate 已删除)
+    pub fn create_terminal_task(
+        &mut self,
+        _task: &SpawnInTerminal,
+        _worktree: &gpui::Entity<Worktree>,
+        _cx: &mut Context<Self>,
+    ) -> Task<anyhow::Result<gpui::Entity<terminal::Terminal>>> {
+        Task::ready(Err(anyhow::anyhow!("stub: terminal task disabled")))
+    }
+
+    /// Stub: create_local_terminal (task crate 已删除)
+    pub fn create_local_terminal(
+        &mut self,
+        _cx: &mut Context<Self>,
+    ) -> Task<anyhow::Result<gpui::Entity<terminal::Terminal>>> {
+        Task::ready(Err(anyhow::anyhow!("stub: local terminal disabled")))
+    }
 }
 
 impl ProjectItem for Buffer {

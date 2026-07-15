@@ -275,7 +275,7 @@ impl TerminalPanel {
 
         if let Some(workspace) = workspace.upgrade() {
             workspace.update(&mut cx, |workspace, _| {
-                workspace.set_terminal_provider(TerminalProvider(terminal_panel.clone()))
+                workspace.set_terminal_provider(Box::new(TerminalProvider(terminal_panel.clone())))
             });
         }
 
@@ -1362,11 +1362,7 @@ impl Render for TerminalPanel {
                 registrar.size_full().child(self.center.render(
                     workspace.zoomed_item(),
                     &workspace::PaneRenderContext {
-                        follower_states: &HashMap::default(),
-                        active_call: workspace.active_call(),
                         active_pane: &self.active_pane,
-                        app_state: workspace.app_state(),
-                        project: workspace.project(),
                         workspace: &workspace.weak_handle(),
                     },
                     window,

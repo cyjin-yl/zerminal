@@ -126,6 +126,10 @@ pub struct ExtensionMetadata {
     pub id: Arc<str>,
     pub dev: bool,
     pub manifest: ExtensionMetadataManifest,
+    #[serde(default)]
+    pub published_at: Option<String>,
+    #[serde(default)]
+    pub download_count: u64,
 }
 
 #[derive(Debug, Clone, Deserialize)]
@@ -133,6 +137,18 @@ pub struct ExtensionMetadataManifest {
     pub version: Arc<str>,
     pub schema_version: Option<i32>,
     pub wasm_api_version: Option<String>,
+    pub name: String,
+    pub description: Option<String>,
+    pub repository: Option<String>,
+    pub authors: Vec<String>,
+    #[serde(default)]
+    pub provides_list: Vec<extension::ExtensionProvides>,
+}
+
+impl ExtensionMetadataManifest {
+    pub fn provides(&self) -> &Vec<extension::ExtensionProvides> {
+        &self.provides_list
+    }
 }
 
 /// 已删除的 `cloud_api_types::GetExtensionsResponse` 的本地 stub。

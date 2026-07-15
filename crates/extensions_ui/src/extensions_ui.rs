@@ -11,7 +11,7 @@ use extension::ExtensionProvides;
 use collections::{BTreeMap, BTreeSet};
 use command_palette_hooks::CommandPaletteFilter;
 use editor::{Editor, EditorElement, EditorStyle};
-use extension_host::{ExtensionManifest, ExtensionOperation, ExtensionStore};
+use extension_host::{ExtensionManifest, ExtensionMetadata, ExtensionOperation, ExtensionStore};
 use fuzzy::{StringMatch, StringMatchCandidate, match_strings};
 use gpui::{
     Action, Anchor, App, ClipboardItem, Context, DismissEvent, Entity, EventEmitter, Focusable,
@@ -33,7 +33,7 @@ use ui::{
     Tooltip, WithScrollbar, prelude::*,
 };
 use util::ResultExt;
-use project::{ExtensionMetadata, VimModeSetting};
+use project::VimModeSetting;
 use workspace::{
     Workspace,
     item::{Item, ItemEvent},
@@ -637,7 +637,7 @@ impl ExtensionsPage {
                     let versions = versions.await?;
                     let latest = versions
                         .into_iter()
-                        .max_by_key(|v| v.manifest.version.as_ref())
+                        .max_by_key(|v| v.manifest.version.clone())
                         .context("no extension found")?;
                     Ok(vec![latest])
                 })
@@ -915,10 +915,10 @@ impl ExtensionsPage {
                                     h_flex().gap_1().children(
                                         extension
                                             .manifest
-                                            \.provides()
+                                            .provides()
                                             .iter()
                                             .filter_map(|provides| {
-                                                match provides {
+                                                match *provides {
                                                     ExtensionProvides::AgentServers
                                                     | ExtensionProvides::SlashCommands
                                                     | ExtensionProvides::IndexedDocsProviders => {
@@ -927,7 +927,7 @@ impl ExtensionsPage {
                                                     _ => {}
                                                 }
 
-                                                Some(Chip::new(extension_provides_label(provides).into()))
+                                                Some(Chip::new(SharedString::from(extension_provides_label(*provides))))
                                             })
                                             .collect::<Vec<_>>(),
                                     ),
@@ -1001,10 +1001,9 @@ impl ExtensionsPage {
                                         cx,
                                     )
                                 })
-                                .on_click(cx.listener(
-                                        cx.open_url(&repository_url.as_ref().unwrap().clone());
-                                    },
-                                ))
+                                .on_click(cx.listener(move |_, _, _, cx| {
+                                    cx.open_url(&repository_url.as_ref().unwrap().clone());
+                                }))
                             })
                             .child(
                                 PopoverMenu::new(SharedString::from(format!(
@@ -1137,7 +1136,7 @@ impl ExtensionsPage {
 
         let is_configurable = extension
             .manifest
-            \.provides()
+            .provides()
             .contains(&ExtensionProvides::ContextServers);
 
         match status.clone() {
