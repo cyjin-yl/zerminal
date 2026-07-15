@@ -373,7 +373,7 @@ impl CompletionsMenu {
         _show_completion_documentation: bool,
         _choices: &Vec<String>,
         _position: multi_buffer::Anchor,
-        _range: std::ops::Range<multi_buffer::Anchor>,
+        _range: std::ops::Range<text::Anchor>,
         _buffer: Entity<Buffer>,
         _scroll_handle: Option<Option<ScrollHandle>>,
         _snippet_sort_order: SnippetSortOrder,

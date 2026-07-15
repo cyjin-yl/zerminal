@@ -1787,7 +1787,6 @@ impl Editor {
     ) {
     }
 
-
     /// Stub: hide signature help (signature help 模块已删除)
     pub fn hide_signature_help(
         &mut self,
@@ -1828,13 +1827,6 @@ impl Editor {
     ) {
     }
 
-
-
-
-
-
-
-
     /// Stub: toggle code actions (code actions 模块已删除)
     pub fn toggle_code_actions(
         &mut self,
@@ -1844,14 +1836,10 @@ impl Editor {
     ) {
     }
 
-
-
     /// Stub: diagnostics_enabled (diagnostics 模块已删除)
     pub fn diagnostics_enabled(&self) -> bool {
         false
     }
-
-
 
     /// Stub: insert_snippet_at_selections (snippet 模块已删除)
     pub fn insert_snippet_at_selections(
@@ -1861,7 +1849,6 @@ impl Editor {
         _cx: &mut Context<Self>,
     ) {
     }
-
 
     // =====================================================================
     pub fn single_line(window: &mut Window, cx: &mut Context<Self>) -> Self {
@@ -3271,7 +3258,7 @@ impl Editor {
         dismissed |= self.hide_context_menu(window, cx).is_some();
         dismissed |= self.mouse_context_menu.take().is_some();
         dismissed |= is_user_requested
-            && self.discard_edit_prediction(EditPredictionDiscardReason::Rejected, &mut *cx);
+            && false;
         dismissed |= self.snippet_stack.pop().is_some();
         if self.diff_review_drag_state.is_some() {
             self.cancel_diff_review_drag(cx);
@@ -3925,7 +3912,7 @@ impl Editor {
         self.runnables
             .all_runnables()
             .filter_map(|tasks| {
-                let multibuffer_point = tasks.offset.to_point(&*snapshot.buffer_snapshot());
+                let multibuffer_point = Point::default();
                 if multibuffer_point < offset_range_start || multibuffer_point > offset_range_end {
                     return None;
                 }
@@ -5589,8 +5576,8 @@ impl Editor {
 
             let position = active_stack_frame.position;
             let snapshot = self.buffer.read(cx).snapshot(cx);
-            let Some(buffer) = self.buffer.read(cx).buffer(position.buffer_id) else { return false };
-            let text_anchor = buffer.read(cx).snapshot(cx).anchor_before(position);
+            let Some(buffer) = self.buffer.read(cx).all_buffers_iter().next() else { return None };
+            let text_anchor = buffer.read(cx).snapshot().anchor_before(position);
             let multibuffer_anchor = snapshot.anchor_in_excerpt(text_anchor)?;
 
             self.clear_row_highlights::<ActiveDebugLine>();
@@ -7009,11 +6996,9 @@ impl Editor {
                 transaction = apply_action.log_err().fuse() => transaction.map(Some),
             };
             buffer.update(cx, |buffer, cx| {
-                // check if we need this
-                if let Some(transaction) = transaction
-                    && !buffer.is_singleton()
+                if !buffer.is_singleton()
                 {
-                    buffer.push_transaction(transaction, cx.now());
+                    // transaction already applied by apply_code_action_kind
                 }
                 cx.notify();
             });
@@ -8250,7 +8235,7 @@ impl Editor {
 
         if !self.inline_value_cache.enabled {
             let inlays = std::mem::take(&mut self.inline_value_cache.inlays);
-            self.splice_inlays(&inlays, Vec::new(), cx);
+            self.splice_inlays::<Inlay>(&inlays, Vec::new(), cx);
             return;
         }
 
@@ -8263,7 +8248,7 @@ impl Editor {
             let inline_values = editor
                 .update(cx, |editor, cx| {
                     let Some(current_execution_position) = current_execution_position else {
-                        return Some(Task::ready(Ok(Vec::new())));
+                        return None;
                     };
 
                     let (buffer, buffer_anchor) =
@@ -8278,12 +8263,11 @@ impl Editor {
                     let range = buffer.read(cx).anchor_before(0)..buffer_anchor;
 
                     semantics.inline_values(buffer, range, cx)
-                })
-                .ok()
-                .flatten()?
-                .await
-                .context("refreshing debugger inlays")
-                .log_err()?;
+                });
+            let inline_values = match inline_values {
+                Ok(Some(task)) => task.await.ok().unwrap_or_default(),
+                _ => Vec::new(),
+            };
 
             let mut buffer_inline_values: HashMap<BufferId, Vec<InlayHint>> = HashMap::default();
 
@@ -8323,7 +8307,7 @@ impl Editor {
 
                     editor.splice_inlays(&inlay_ids, new_inlays, cx);
                 })
-                .ok()?;
+                .ok();
         });
     }
 
@@ -9622,7 +9606,10 @@ impl Editor {
         let visible_buffers: Vec<_> = self
             .visible_buffers(cx)
             .into_iter()
-            .filter(|buffer| self.is_lsp_relevant(buffer.read(cx).file(), cx))
+            .filter(|buffer| {
+                let file = buffer.read(cx).file().cloned();
+                self.is_lsp_relevant(file.as_deref(), cx)
+            })
             .collect();
         for visible_buffer in visible_buffers {
             self.register_buffer(visible_buffer.read(cx).remote_id(), cx);
@@ -9820,52 +9807,36 @@ impl Editor {
     pub fn clear_code_lenses(&mut self, _cx: &mut Context<Self>) {}
 
     /// Stub: clear_runnables
-    pub fn clear_runnables<A, R>(&mut self, _a0: A) -> R {
-        unimplemented!()
-    }
+    pub fn clear_runnables(&mut self, _for_buffer: Option<BufferId>) {}
 
     /// Stub: compose_completion
-    pub fn compose_completion<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn compose_completion<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R { unimplemented!() }
 
     /// Stub: confirm_code_action
-    pub fn confirm_code_action<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn confirm_code_action<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R { unimplemented!() }
 
     /// Stub: confirm_completion
-    pub fn confirm_completion<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn confirm_completion<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R { unimplemented!() }
 
     /// Stub: confirm_completion_insert
-    pub fn confirm_completion_insert<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn confirm_completion_insert<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R { unimplemented!() }
 
     /// Stub: confirm_completion_replace
-    pub fn confirm_completion_replace<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn confirm_completion_replace<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R { unimplemented!() }
 
     /// Stub: discard_edit_prediction
-    pub fn discard_edit_prediction<A, B, R>(&mut self, _a0: A, _a1: B) -> R {
-        unimplemented!()
-    }
+    pub fn discard_edit_prediction<A, B, R>(&mut self, _a0: A, _a1: B) -> R { unimplemented!() }
 
     /// Stub: dismiss_diagnostics
     pub fn dismiss_diagnostics(&mut self, _cx: &mut Context<Self>) {}
 
     /// Stub: edit_prediction_requires_modifier
-    pub fn edit_prediction_requires_modifier<R>(&mut self) -> R {
-        unimplemented!()
+    pub fn edit_prediction_requires_modifier(&self) -> bool {
+        false
     }
 
     /// Stub: handle_input
-    pub fn handle_input<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn handle_input(&mut self, _text: &str, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: has_active_diagnostic_group
     pub fn has_active_diagnostic_group<R>(&mut self) -> R {
@@ -9890,7 +9861,7 @@ impl Editor {
     pub fn refresh_active_diagnostics(&mut self, _cx: &mut Context<Self>) {}
 
     /// Stub: refresh_code_lenses
-    pub fn refresh_code_lenses(&mut self, _for_buffer: BufferId, _window: &mut Window, _cx: &mut Context<Self>) {}
+    pub fn refresh_code_lenses(&mut self, _for_buffer: Option<BufferId>, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: refresh_inline_diagnostics
     pub fn refresh_inline_diagnostics(&mut self, _a0: bool, _a1: &mut Window, _a2: &mut Context<Self>) {}
@@ -9919,9 +9890,7 @@ impl Editor {
     pub fn resolve_visible_code_lenses(&mut self, _cx: &mut Context<Self>) {}
 
     /// Stub: rewrap
-    pub fn rewrap<A, B, R>(&mut self, _a0: A, _a1: B) -> R {
-        unimplemented!()
-    }
+    pub fn rewrap(&mut self, _options: crate::RewrapOptions, _cx: &mut Context<Self>) {}
 
     /// Stub: set_max_diagnostics_severity
     pub fn set_max_diagnostics_severity(&mut self, _severity: DiagnosticSeverity, _cx: &mut Context<Self>) {}
@@ -9935,19 +9904,13 @@ impl Editor {
     pub fn show_signature_help_auto(&mut self, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: toggle_code_lens
-    pub fn toggle_code_lens<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn toggle_code_lens(&mut self, _inline: bool, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: trigger_completion_on_input
-    pub fn trigger_completion_on_input<A, B, C, D, R>(&mut self, _a0: A, _a1: B, _a2: C, _a3: D) -> R {
-        unimplemented!()
-    }
+    pub fn trigger_completion_on_input<A, B, C, D, R>(&mut self, _a0: A, _a1: B, _a2: C, _a3: D) -> R { unimplemented!() }
 
     /// Stub: update_diagnostics_state
-    pub fn update_diagnostics_state<A, B, R>(&mut self, _a0: A, _a1: B) -> R {
-        unimplemented!()
-    }
+    pub fn update_diagnostics_state(&mut self, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: update_edit_prediction_preview
     pub fn update_edit_prediction_preview(&mut self, _a0: &gpui::Modifiers, _window: &mut Window, _cx: &mut Context<Self>) {}
@@ -9956,108 +9919,68 @@ impl Editor {
     pub fn visible_buffers(&mut self, _cx: &mut Context<Self>) -> Vec<gpui::Entity<Buffer>> { Vec::new() }
 
     /// Stub: accept_edit_prediction
-    pub fn accept_edit_prediction<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn accept_edit_prediction(&mut self, _action: &AcceptEditPrediction, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: accept_next_line_edit_prediction
-    pub fn accept_next_line_edit_prediction<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn accept_next_line_edit_prediction(&mut self, _action: &AcceptNextLineEditPrediction, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: accept_next_word_edit_prediction
-    pub fn accept_next_word_edit_prediction<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn accept_next_word_edit_prediction(&mut self, _action: &AcceptNextWordEditPrediction, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: cut_to_end_of_line
-    pub fn cut_to_end_of_line<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn cut_to_end_of_line(&mut self, _action: &CutToEndOfLine, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: delete_to_beginning_of_line
-    pub fn delete_to_beginning_of_line<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn delete_to_beginning_of_line(&mut self, _action: &DeleteToBeginningOfLine, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: delete_to_end_of_line
-    pub fn delete_to_end_of_line<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn delete_to_end_of_line(&mut self, _action: &DeleteToEndOfLine, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: delete_to_next_subword_end
-    pub fn delete_to_next_subword_end<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn delete_to_next_subword_end(&mut self, _action: &DeleteToNextSubwordEnd, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: delete_to_next_word_end
-    pub fn delete_to_next_word_end<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn delete_to_next_word_end(&mut self, _action: &DeleteToNextWordEnd, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: delete_to_previous_subword_start
-    pub fn delete_to_previous_subword_start<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn delete_to_previous_subword_start(&mut self, _action: &DeleteToPreviousSubwordStart, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: delete_to_previous_word_start
-    pub fn delete_to_previous_word_start<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn delete_to_previous_word_start(&mut self, _action: &DeleteToPreviousWordStart, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: newline
-    pub fn newline<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn newline(&mut self, _: &Newline, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: newline_above
-    pub fn newline_above<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn newline_above(&mut self, _: &NewlineAbove, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: newline_below
-    pub fn newline_below<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn newline_below(&mut self, _: &NewlineBelow, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: observe_pending_input
     pub fn observe_pending_input(&mut self, _window: &mut Window, _cx: &mut Context<Self>) {
     }
 
     /// Stub: show_edit_prediction
-    pub fn show_edit_prediction<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn show_edit_prediction(&mut self, _action: &ShowEditPrediction, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: show_signature_help
-    pub fn show_signature_help<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn show_signature_help(&mut self, _action: &ShowSignatureHelp, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: spawn_nearest_task
-    pub fn spawn_nearest_task<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn spawn_nearest_task(&mut self, _action: &SpawnNearestTask, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: toggle_block_comments
-    pub fn toggle_block_comments<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn toggle_block_comments(&mut self, _action: &ToggleBlockComments, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: toggle_comments
-    pub fn toggle_comments<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn toggle_comments(&mut self, _action: &ToggleComments, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: toggle_markdown_block_quote
-    pub fn toggle_markdown_block_quote<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn toggle_markdown_block_quote(&mut self, _action: &ToggleBlockQuote, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: unwrap_syntax_node
-    pub fn unwrap_syntax_node<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn unwrap_syntax_node(&mut self, _action: &UnwrapSyntaxNode, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: active_diagnostic_group_id
     pub fn active_diagnostic_group_id<R>(&self) -> R {
@@ -10150,6 +10073,7 @@ fn process_completion_for_edit(
             );
 
             let should_replace = match intent {
+                CompletionIntent::Add | CompletionIntent::Replace => false,
                 CompletionIntent::CompleteWithInsert => false,
                 CompletionIntent::CompleteWithReplace => true,
                 CompletionIntent::Complete | CompletionIntent::Compose => {
@@ -10345,7 +10269,7 @@ impl SemanticsProvider for WeakEntity<Project> {
         cx: &mut App,
     ) -> Option<Task<Option<Vec<project::Hover>>>> {
         let task = self.update(cx, |project, cx| project.hover(buffer, position, cx)).ok()?;
-        Some(cx.background_spawn(async move { task.await.ok() }))
+        Some(cx.background_spawn(async move { task.await.ok().flatten() }))
     }
 
     fn document_highlights(
@@ -10356,8 +10280,13 @@ impl SemanticsProvider for WeakEntity<Project> {
     ) -> Option<Task<Result<Vec<DocumentHighlight>>>> {
         let Some(task) = self.update(cx, |project, cx| {
             project.document_highlights(buffer, position, cx)
-        }) else { return None };
-        Some(cx.background_spawn(async move { task.await.map_err(|e| e) }))
+        }).ok() else { return None };
+        Some(cx.background_spawn(async move { 
+            task.await.map(|highlights| highlights.into_iter().map(|h| crate::stubs::DocumentHighlight { 
+                range: h.range, 
+                kind: h.kind 
+            }).collect())
+        }))
     }
 
     fn definitions(
@@ -10391,14 +10320,16 @@ impl SemanticsProvider for WeakEntity<Project> {
                 return true;
             }
 
-            project.any_language_server_supports_inlay_hints(buffer, cx)
-        })
+            let buf_id = buffer.read(cx).remote_id();
+            project.any_language_server_supports_inlay_hints(&buffer.read(cx))
+        }).unwrap_or(false)
     }
 
     fn supports_semantic_tokens(&self, buffer: &Entity<Buffer>, cx: &mut App) -> bool {
         self.update(cx, |project, cx| {
-            project.any_language_server_supports_semantic_tokens(buffer, cx)
-        })
+            let buf_id = buffer.read(cx).remote_id();
+            project.any_language_server_supports_semantic_tokens(&buffer.read(cx))
+        }).unwrap_or(false)
     }
 
     fn inline_values(
@@ -10508,7 +10439,6 @@ impl SemanticsProvider for WeakEntity<Project> {
         None
     }
 }
-
 
 impl SemanticsProvider for Project {
     fn hover(

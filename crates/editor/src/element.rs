@@ -9,14 +9,15 @@ pub use header::file_status_label_color;
 pub(crate) use header::{header_jump_data, render_buffer_header};
 
 use crate::{
-    BUFFER_HEADER_PADDING, BlockId, ChunkRendererContext, ChunkReplacement, CodeActionSource,
-    CodeActionsMenu, ComposeCompletion, ConflictsOurs, ConflictsOursMarker, ConflictsOuter, ConflictsTheirs, ConflictsTheirsMarker,
+    BUFFER_HEADER_PADDING, AvailableCodeAction, BlockId, ChunkRendererContext, ChunkReplacement, CodeActionSource,
+    CodeActionsMenu, ComposeCompletion, ConfirmCodeAction, ConfirmCompletion, ConfirmCompletionInsert, ConfirmCompletionReplace,
+    ConflictsOurs, ConflictsOursMarker, ConflictsOuter, ConflictsTheirs, ConflictsTheirsMarker,
     CodeContextMenu, ContextMenuOrigin, ContextMenuPlacement, CursorPopoverType, CursorShape, CustomBlockId, DisplayDiffHunk, DisplayPoint, DisplayRow,
     EditDisplayMode, Editor, EditorMode, EditorSettings, EditorSnapshot, EditorStyle, FindAllReferences,
     FILE_HEADER_HEIGHT, FocusedBlock, GutterDimensions, HalfPageDown, HalfPageUp,
     HandleInput, HOVER_POPOVER_GAP, HoveredCursor, InlayHintRefreshReason, LineDown, LineHighlight, LineUp,
     MENU_GAP, MENU_ASIDE_MIN_WIDTH, MENU_ASIDE_MAX_WIDTH, MIN_POPOVER_CHARACTER_WIDTH, MIN_POPOVER_LINE_HEIGHT, POPOVER_RIGHT_OFFSET,
-    MAX_LINE_LEN, MINIMAP_FONT_SIZE, PageDown, PageUp, Point, RowExt, RowRangeExt, Selection,
+    MAX_LINE_LEN, MINIMAP_FONT_SIZE, PageDown, PageUp, Point, Rename, RowExt, RowRangeExt, Selection,
     SelectionDragState, SizingBehavior, SoftWrap, ToPoint,
     column_pixels,
     display_map::{
@@ -651,36 +652,41 @@ impl EditorElement {
                     cx.propagate();
                 }
             });
-            register_action(editor, window, |editor, action, window, cx| {
+            register_action(editor, window, |editor, action: &ConfirmCompletion, window, cx| {
                 if let Some(task) = editor.confirm_completion(action, window, cx) {
+                    let _: gpui::Task<Result<Vec<AvailableCodeAction>, anyhow::Error>> = task;
                     editor.detach_and_notify_err(task, window, cx);
                 } else {
                     cx.propagate();
                 }
             });
-            register_action(editor, window, |editor, action, window, cx| {
+            register_action(editor, window, |editor, action: &ConfirmCompletionReplace, window, cx| {
                 if let Some(task) = editor.confirm_completion_replace(action, window, cx) {
+                    let _: gpui::Task<Result<Vec<String>, anyhow::Error>> = task;
                     editor.detach_and_notify_err(task, window, cx);
                 } else {
                     cx.propagate();
                 }
             });
-            register_action(editor, window, |editor, action, window, cx| {
+            register_action(editor, window, |editor, action: &ConfirmCompletionInsert, window, cx| {
                 if let Some(task) = editor.confirm_completion_insert(action, window, cx) {
+                    let _: gpui::Task<Result<Vec<String>, anyhow::Error>> = task;
                     editor.detach_and_notify_err(task, window, cx);
                 } else {
                     cx.propagate();
                 }
             });
-            register_action(editor, window, |editor, action, window, cx| {
+            register_action(editor, window, |editor, action: &ConfirmCodeAction, window, cx| {
                 if let Some(task) = editor.confirm_code_action(action, window, cx) {
+                    let _: gpui::Task<Result<Vec<AvailableCodeAction>, anyhow::Error>> = task;
                     editor.detach_and_notify_err(task, window, cx);
                 } else {
                     cx.propagate();
                 }
             });
-            register_action(editor, window, |editor, action, window, cx| {
+            register_action(editor, window, |editor, action: &Rename, window, cx| {
                 if let Some(task) = editor.rename(action, window, cx) {
+                    let _: gpui::Task<Result<(), anyhow::Error>> = task;
                     editor.detach_and_notify_err(task, window, cx);
                 } else {
                     cx.propagate();

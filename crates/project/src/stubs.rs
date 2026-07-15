@@ -910,7 +910,6 @@ impl Project {
     pub fn any_language_server_supports_inlay_hints(
         &mut self,
         _buffer: &language::Buffer,
-        _cx: &mut gpui::Context<Self>,
     ) -> bool {
         false
     }
@@ -918,7 +917,6 @@ impl Project {
     pub fn any_language_server_supports_semantic_tokens(
         &mut self,
         _buffer: &language::Buffer,
-        _cx: &mut gpui::Context<Self>,
     ) -> bool {
         false
     }
