@@ -7,6 +7,7 @@ use crate::{
     persistence::{EditorDb, SerializedEditor},
     scroll::{ScrollAnchor, ScrollOffset},
 };
+use crate::stubs::ProjectBufferExt;
 use anyhow::{Context as _, Result, anyhow};
 use collections::{HashMap, HashSet};
 use file_icons::FileIcons;

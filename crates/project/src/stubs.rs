@@ -188,6 +188,34 @@ pub mod bookmark_store {
         ) -> Task<anyhow::Result<Vec<Anchor>>> {
             Task::ready(Ok(Vec::new()))
         }
+
+        /// Stub: toggle bookmark (bookmark 模块已删除)
+        pub fn toggle_bookmark(
+            _store: Entity<BookmarkStore>,
+            _buffer: Entity<language::Buffer>,
+            _point: text::Point,
+            _cx: &mut gpui::Context<Entity<BookmarkStore>>,
+        ) {
+        }
+
+        /// Stub: bookmarks for buffer (bookmark 模块已删除)
+        pub fn bookmarks_for_buffer(
+            _store: Entity<BookmarkStore>,
+            _buffer: &Entity<language::Buffer>,
+            _cx: &mut gpui::Context<Entity<BookmarkStore>>,
+        ) -> Task<anyhow::Result<Vec<text::Anchor>>> {
+            Task::ready(Ok(Vec::new()))
+        }
+
+        /// Stub: find bookmark (bookmark 模块已删除)
+        pub fn find_bookmark(
+            _store: Entity<BookmarkStore>,
+            _buffer: Entity<language::Buffer>,
+            _point: text::Point,
+            _cx: &gpui::App,
+        ) -> Option<text::Anchor> {
+            None
+        }
     }
 }
 
@@ -208,13 +236,26 @@ pub mod debugger {
             pub condition: Option<String>,
             pub hit_condition: Option<String>,
             pub log_point: Option<String>,
+            pub message: Option<String>,
+        }
+
+        impl Breakpoint {
+            pub fn new_standard() -> Self {
+                Self { enabled: true, condition: None, hit_condition: None, log_point: None, message: None }
+            }
+
+            pub fn is_enabled(&self) -> bool {
+                self.enabled
+            }
+
+            pub fn is_disabled(&self) -> bool {
+                !self.enabled
+            }
         }
 
         #[derive(Clone, Copy, Debug)]
-        pub enum BreakpointSessionState {
-            Pending,
-            Hit,
-            PendingLog,
+        pub struct BreakpointSessionState {
+            pub verified: bool,
         }
 
         #[derive(Default)]
@@ -356,6 +397,7 @@ pub mod lsp_store {
         Invocation,
         TypeChange,
         Save,
+        Manual,
     }
 
     #[derive(Clone, Debug)]

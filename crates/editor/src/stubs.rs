@@ -3,17 +3,42 @@
 
 use std::{any::Any, sync::Arc};
 
-use gpui::{App, Entity, SharedString, Task, TextStyle, Window};
+use gpui::{App, Entity, Pixels, SharedString, Task, TextStyle, Window, px};
 use language::{Buffer, Location};
 use project::Project;
 use text::{Anchor, BufferId, Point};
+use schemars::JsonSchema;
+use serde::{Deserialize, Serialize};
 
-// Re-export project stub types that the editor still references.
+// Types that were previously imported from project but no longer exist there.
+// Defined as stubs locally to keep the editor crate compiling.
+
+#[derive(Clone, Debug)]
+pub struct BufferSemanticTokens;
+
+#[derive(Clone, Debug)]
+pub struct CacheInlayHints;
+
+#[derive(Clone, Debug)]
+pub struct CompletionDocumentation;
+
+#[derive(Clone, Debug)]
+pub struct DocumentHighlight;
+
+#[derive(Clone, Debug)]
+pub struct LspAction;
+
+#[derive(Clone, Debug)]
+pub struct LspFormatTarget;
+
+#[derive(Clone, Debug)]
+pub struct OpenLspBufferHandle;
+
+// Re-export project stub types that still exist.
 pub use project::{
-    BufferSemanticTokens, CacheInlayHints, CompletionDocumentation, DisableAiSettings,
-    DocumentHighlight, Hover, InlayHint, InlayHintLabel, InlayHintLabelPart,
-    InlayHintLabelPartTooltip, InlayHintTooltip, InlayId, InvalidationStrategy, LanguageServerToQuery,
-    LocationLink, LspAction, LspFormatTarget, OpenLspBufferHandle, TaskVariables,
+    DisableAiSettings, Hover, InlayHint, InlayHintLabel, InlayHintLabelPart,
+    InlayHintLabelPartTooltip, InlayHintTooltip, InlayId, InvalidationStrategy,
+    LanguageServerToQuery, LocationLink, TaskVariables,
 };
 
 #[derive(Clone, Debug)]
@@ -22,16 +47,51 @@ pub struct RefreshForServer;
 #[derive(Clone, Copy, Debug)]
 pub enum FormatTrigger { Manual }
 
-pub use project::debugger::{
-    breakpoint_store::{
-        Breakpoint, BreakpointSessionState, BreakpointWithPosition,
-    },
-    session::{Session, SessionEvent},
+
+// 调试器会话 stub (project::debugger::session 中不存在)
+#[derive(Default)]
+pub struct Session;
+
+#[derive(Clone, Debug)]
+pub struct SessionEvent;
+
+// Re-export debugger breakpoint types from project
+pub use project::debugger::breakpoint_store::{
+    Breakpoint, BreakpointSessionState, BreakpointWithPosition,
 };
+
+// ---------------------------------------------------------------------------
+// 任务相关类型 stub (task.rs 引用)
+// ---------------------------------------------------------------------------
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Serialize, Deserialize, JsonSchema)]
+pub enum RevealStrategy { #[default] InCenter, PreserveX }
+
+#[derive(Clone, Debug)]
+pub struct DebugScenario;
+
+#[derive(Clone, Debug)]
+pub struct ResolvedTask;
+
+#[derive(Clone, Debug)]
+pub struct RunnableTag;
+
+#[derive(Clone, Debug)]
+pub struct TaskContext;
+
+#[derive(Clone, Copy, Debug)]
+pub enum TaskSourceKind { Local }
+
+#[derive(Clone, Debug)]
+pub struct TaskTemplate;
 
 // ---------------------------------------------------------------------------
 // Navigation / remote IDs
 // ---------------------------------------------------------------------------
+
+// linked_editing_ranges 模块已删除，定义 stub 类型
+#[derive(Default)]
+pub struct LinkedEditingRanges;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Direction {
@@ -136,6 +196,7 @@ pub type CompletionId = u64;
 pub struct Completion {
     pub new_text: SharedString,
     pub old_range: std::ops::Range<Anchor>,
+    pub label: SharedString,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -186,6 +247,10 @@ impl CodeContextMenu {
         false
     }
 
+    pub fn visible(&self) -> bool {
+        false
+    }
+
     pub fn select_last(
         &mut self,
         _completion_provider: Option<&dyn CompletionProvider>,
@@ -218,7 +283,10 @@ impl SignatureHelpState {
 }
 
 #[derive(Clone, Debug, Default)]
-pub struct SignatureHelpPopover;
+pub struct SignatureHelpPopover {
+    pub current_signature: usize,
+    pub signatures: Vec<()>,
+}
 
 #[derive(Clone, Copy, Debug)]
 pub enum SignatureHelpHiddenBy { Escape }
@@ -237,6 +305,7 @@ pub struct HoveredLinkState;
 pub enum HoverLink {
     Url(String),
     InlayHighlight(LocationLink),
+    Text(String),
 }
 
 pub fn find_file(_path: &std::path::Path) -> Option<Entity<Buffer>> { None }
@@ -278,11 +347,13 @@ pub struct ResolvedTasks;
 // ---------------------------------------------------------------------------
 
 #[derive(Clone, Debug, Default)]
-pub struct InlineValueCache;
+pub struct InlineValueCache {
+    pub enabled: bool,
+    pub inlays: Vec<InlayId>,
+}
 
 #[derive(Clone, Debug, Default)]
 pub struct LspInlayHintData;
-
 pub fn inlay_hint_settings(_language: Option<&language::LanguageName>, _cx: &App) -> InlayHintSettings {
     InlayHintSettings::default()
 }
@@ -291,7 +362,7 @@ pub fn inlay_hint_settings(_language: Option<&language::LanguageName>, _cx: &App
 pub struct InlayHintSettings { pub enabled: bool }
 
 #[derive(Clone, Copy, Debug)]
-pub enum InlayHintRefreshReason { RefreshRequested }
+pub enum InlayHintRefreshReason { RefreshRequested, NewLinesShown, ModifiersChanged(bool) }
 
 #[derive(Clone, Debug)]
 pub struct InlaySplice {
@@ -306,6 +377,7 @@ pub struct ActiveDiagnostic;
 pub struct InlineDiagnostic {
     pub severity: language::DiagnosticSeverity,
     pub new_text: SharedString,
+    pub start: Anchor,
 }
 
 pub trait DiagnosticRenderer: Send + Sync {
@@ -367,7 +439,7 @@ pub struct EditPredictionState;
 pub fn make_suggestion_styles(_cx: &App) -> TextStyle { TextStyle::default() }
 
 #[derive(Clone, Debug)]
-pub struct Snippet;
+pub struct Snippet { pub text: SharedString }
 
 #[derive(Clone, Debug)]
 pub enum PrepareRenameResponse { Ready }
@@ -419,4 +491,24 @@ pub enum VariableName { Custom(SharedString) }
 
 pub trait CollaborationHub: Send + Sync {
     fn user_names(&self, _cx: &App) -> std::collections::HashMap<u64, SharedString>;
+}
+
+// ---------------------------------------------------------------------------
+// 常量 stub (来自已删除模块)
+// ---------------------------------------------------------------------------
+
+pub const HOVER_POPOVER_GAP: Pixels = px(4.);
+pub const POPOVER_RIGHT_OFFSET: Pixels = px(4.);
+pub const MIN_POPOVER_CHARACTER_WIDTH: Pixels = px(240.);
+pub const MIN_POPOVER_LINE_HEIGHT: Pixels = px(24.);
+
+pub const MENU_GAP: Pixels = px(8.);
+pub const MENU_ASIDE_MIN_WIDTH: Pixels = px(240.);
+pub const MENU_ASIDE_MAX_WIDTH: Pixels = px(480.);
+
+/// Stub: refresh linked ranges (linked editing 模块已删除)
+pub fn refresh_linked_ranges(
+    _editor: &mut crate::Editor,
+    _cx: &mut gpui::Context<crate::Editor>,
+) {
 }

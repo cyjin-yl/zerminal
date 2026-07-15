@@ -10,12 +10,12 @@ use crate::{
     BUFFER_HEADER_PADDING, BlockId, ChunkRendererContext, ChunkReplacement, CodeActionSource,
     ConflictsOurs, ConflictsOursMarker, ConflictsOuter, ConflictsTheirs, ConflictsTheirsMarker,
     ContextMenuPlacement, CursorShape, CustomBlockId, DisplayDiffHunk, DisplayPoint, DisplayRow,
-    EditDisplayMode, EditPrediction, Editor, EditorMode, EditorSettings, EditorSnapshot,
-    EditorStyle, FILE_HEADER_HEIGHT, FocusedBlock, GutterDimensions, HalfPageDown, HalfPageUp,
-    HandleInput, HoveredCursor, InlayHintRefreshReason, LineDown, LineHighlight, LineUp,
+    Editor, EditorMode, EditorSettings, EditorSnapshot, EditorStyle,
+    FILE_HEADER_HEIGHT, FocusedBlock, GutterDimensions, HalfPageDown, HalfPageUp,
+    HOVER_POPOVER_GAP, HoveredCursor, InlayHintRefreshReason, LineDown, LineHighlight, LineUp,
+    MENU_GAP, MIN_POPOVER_CHARACTER_WIDTH, MIN_POPOVER_LINE_HEIGHT, POPOVER_RIGHT_OFFSET,
     MAX_LINE_LEN, MINIMAP_FONT_SIZE, PageDown, PageUp, Point, RowExt, RowRangeExt, Selection,
     SelectionDragState, SizingBehavior, SoftWrap, ToPoint,
-    code_context_menus::{CodeActionsMenu, MENU_ASIDE_MAX_WIDTH, MENU_ASIDE_MIN_WIDTH, MENU_GAP},
     column_pixels,
     display_map::{
         Block, BlockContext, BlockStyle, ChunkRendererId, DisplaySnapshot, EditorMargins,
@@ -26,11 +26,6 @@ use crate::{
         ScrollBeyondLastLine, ScrollbarAxes, ScrollbarDiagnostics, ShowMinimap,
     },
     git::blame::{BlameRenderer, GitBlame, GlobalBlameRenderer},
-    hover_popover::{
-        self, HOVER_POPOVER_GAP, MIN_POPOVER_CHARACTER_WIDTH, MIN_POPOVER_LINE_HEIGHT,
-        POPOVER_RIGHT_OFFSET,
-    },
-    inlay_hint_settings,
     scroll::{
         ActiveScrollbarState, ScrollOffset, ScrollPixelOffset, ScrollbarThumbState,
         scroll_amount::ScrollAmount,
@@ -357,7 +352,6 @@ impl EditorElement {
         register_action(editor, window, Editor::split_selection_into_lines);
         register_action(editor, window, Editor::add_selection_above);
         register_action(editor, window, Editor::add_selection_below);
-        register_action(editor, window, Editor::insert_snippet_at_selections);
         register_action(editor, window, |editor, action, window, cx| {
             editor.select_next(action, window, cx).log_err();
         });
@@ -393,12 +387,8 @@ impl EditorElement {
             register_action(editor, window, Editor::expand_excerpts_up);
             register_action(editor, window, Editor::expand_excerpts_down);
         }
-        register_action(editor, window, Editor::go_to_diagnostic);
-        register_action(editor, window, Editor::go_to_prev_diagnostic);
         register_action(editor, window, Editor::go_to_next_hunk);
         register_action(editor, window, Editor::go_to_prev_hunk);
-        register_action(editor, window, Editor::go_to_next_document_highlight);
-        register_action(editor, window, Editor::go_to_prev_document_highlight);
         register_action(editor, window, |editor, action, window, cx| {
             editor
                 .go_to_definition(action, window, cx)
@@ -465,9 +455,6 @@ impl EditorElement {
         register_action(editor, window, Editor::set_mark);
         register_action(editor, window, Editor::save_location);
         register_action(editor, window, Editor::swap_selection_ends);
-        register_action(editor, window, Editor::show_completions);
-        register_action(editor, window, Editor::show_word_completions);
-        register_action(editor, window, Editor::toggle_code_actions);
         register_action(editor, window, Editor::open_excerpts);
         register_action(editor, window, Editor::open_excerpts_in_split);
         register_action(editor, window, Editor::toggle_soft_wrap);
@@ -476,21 +463,10 @@ impl EditorElement {
         register_action(editor, window, Editor::toggle_line_numbers);
         register_action(editor, window, Editor::toggle_relative_line_numbers);
         register_action(editor, window, Editor::toggle_indent_guides);
-        register_action(editor, window, Editor::toggle_inlay_hints);
-        register_action(editor, window, Editor::toggle_inline_values);
-        register_action(editor, window, Editor::toggle_code_lens_action);
         register_action(editor, window, Editor::toggle_semantic_highlights);
-        register_action(editor, window, Editor::toggle_edit_predictions);
-        if editor.read(cx).diagnostics_enabled() {
-            register_action(editor, window, Editor::toggle_diagnostics);
-        }
-        if editor.read(cx).inline_diagnostics_enabled() {
-            register_action(editor, window, Editor::toggle_inline_diagnostics);
-        }
         if editor.read(cx).supports_minimap(cx) {
             register_action(editor, window, Editor::toggle_minimap);
         }
-        register_action(editor, window, hover_popover::hover);
         register_action(editor, window, Editor::reveal_in_finder);
         register_action(editor, window, Editor::copy_path);
         register_action(editor, window, Editor::copy_relative_path);
@@ -551,8 +527,6 @@ impl EditorElement {
         register_action(editor, window, Editor::open_active_item_in_terminal);
         register_action(editor, window, Editor::spawn_nearest_task);
         register_action(editor, window, Editor::open_selections_in_multibuffer);
-        register_action(editor, window, Editor::toggle_bookmark);
-        register_action(editor, window, Editor::toggle_bookmark_with_label);
         register_action(editor, window, Editor::edit_bookmark);
         register_action(editor, window, Editor::go_to_next_bookmark);
         register_action(editor, window, Editor::go_to_previous_bookmark);

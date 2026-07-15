@@ -52,6 +52,16 @@ mod config;
 mod navigation;
 mod selection;
 
+mod jsx_tag_auto_close {
+    /// Stub: jsx tag auto close 模块已删除
+    pub fn refresh_enabled_in_any_buffer(
+        _editor: &mut crate::Editor,
+        _multibuffer: &multi_buffer::MultiBuffer,
+        _cx: &gpui::App,
+    ) {
+    }
+}
+
 pub(crate) use actions::*;
 pub use clipboard::ClipboardSelection;
 use collections::TypeIdHashMap;
@@ -67,18 +77,22 @@ pub use stubs::{
     EditPredictionSettings, EditPredictionState, GlobalDiagnosticRenderer, Hover, HoverLink,
     HoverState, HoveredLinkState, InlayHint, InlayHintLabel, InlayHintLabelPart,
     InlayHintLabelPartTooltip, InlayHintTooltip, InlayId, InlaySplice, InlineDiagnostic,
-    InlineValueCache, InvalidationStrategy, LanguageServerToQuery, LocationLink, LspAction,
-    LspFormatTarget, LspInlayHintData, MenuEditPredictionsPolicy, OpenLspBufferHandle,
-    ParticipantIndex, PrepareRenameResponse, ProjectExt, ProjectLspStoreExt, RevealInFileManager,
-    RunnableData, RunnableTasks, ResolvedTasks, Session, SessionEvent, SignatureHelpHiddenBy,
-    SignatureHelpState, Snippet, SuggestionDisplayType, TaskVariables, TelemetrySpawnLocation,
-    VariableName, ViewId, VimModeSetting, make_suggestion_styles, set_diagnostic_renderer,
+    InlineValueCache, InvalidationStrategy, LanguageServerToQuery, LinkedEditingRanges,
+    LocationLink, LspAction, LspFormatTarget, LspInlayHintData, MenuEditPredictionsPolicy,
+    OpenLspBufferHandle, ParticipantIndex, PrepareRenameResponse, ProjectExt, ProjectLspStoreExt,
+    RevealInFileManager, RunnableData, RunnableTasks, ResolvedTasks, Session, SessionEvent,
+    SignatureHelpHiddenBy, SignatureHelpState, Snippet, SuggestionDisplayType, TaskVariables,
+    TelemetrySpawnLocation, VariableName, ViewId, VimModeSetting, make_suggestion_styles,
+    set_diagnostic_renderer,
 };
 pub(crate) use stubs::{
     ActiveDiagnostic, CodeLensState, CompletionId, CompletionGroup as _, DiagnosticRenderer as _,
+    HOVER_POPOVER_GAP, MENU_ASIDE_MAX_WIDTH, MENU_ASIDE_MIN_WIDTH, MENU_GAP,
+    MIN_POPOVER_CHARACTER_WIDTH, MIN_POPOVER_LINE_HEIGHT, POPOVER_RIGHT_OFFSET,
     InlayHintRefreshReason, InlayHintSettings, ProjectBufferExt, ProjectCapabilityExt,
     SignatureHelpPopover, find_file, find_url, find_url_from_range, hide_hover, hover_at,
-    hover_markdown_style, inlay_hint_settings, parse_zed_link, send_telemetry, split_words,
+    hover_markdown_style, inlay_hint_settings, parse_zed_link, refresh_linked_ranges,
+    send_telemetry, split_words,
 };
 pub use display_map::{
     ChunkRenderer, ChunkRendererContext, DisplayPoint, FoldPlaceholder, HighlightKey,
@@ -952,7 +966,6 @@ pub struct Editor {
     context_menu: RefCell<Option<CodeContextMenu>>,
     context_menu_options: Option<ContextMenuOptions>,
     mouse_context_menu: Option<MouseContextMenu>,
-    completion_tasks: Vec<(CompletionId, Task<()>)>,
     inline_blame_popover: Option<InlineBlamePopover>,
     inline_blame_popover_show_task: Option<Task<()>>,
     signature_help_state: SignatureHelpState,
@@ -961,14 +974,14 @@ pub struct Editor {
     next_completion_id: CompletionId,
     code_actions_for_selection: CodeActionsForSelection,
     runnables_for_selection_toggle: Task<()>,
+    document_highlights_task: Option<Task<()>>,
+    linked_editing_range_task: Option<Task<Option<()>>>,
+    pending_rename: Option<RenameState>,
+    linked_edit_ranges: LinkedEditingRanges,
     quick_selection_highlight_task: Option<(Range<Anchor>, Task<()>)>,
     debounced_selection_highlight_task: Option<(Range<Anchor>, Task<()>)>,
     debounced_selection_highlight_complete: bool,
     last_selection_from_search: bool,
-    document_highlights_task: Option<Task<()>>,
-    linked_editing_range_task: Option<Task<Option<()>>>,
-    linked_edit_ranges: linked_editing_ranges::LinkedEditingRanges,
-    pending_rename: Option<RenameState>,
     searchable: bool,
     cursor_shape: CursorShape,
     /// Whether the cursor is offset one character to the left when something is
@@ -995,7 +1008,6 @@ pub struct Editor {
     edit_prediction_provider: Option<RegisteredEditPredictionDelegate>,
     code_action_providers: Vec<Rc<dyn CodeActionProvider>>,
     active_edit_prediction: Option<EditPredictionState>,
-    /// Used to prevent flickering as the user types while the menu is open
     stale_edit_prediction_in_menu: Option<EditPredictionState>,
     edit_prediction_settings: EditPredictionSettings,
     edit_predictions_hidden_for_vim_mode: bool,
@@ -1019,7 +1031,6 @@ pub struct Editor {
     use_auto_surround: bool,
     use_selection_highlight: bool,
     auto_replace_emoji_shortcode: bool,
-    jsx_tag_auto_close_enabled_in_any_buffer: bool,
     show_git_blame_gutter: bool,
     show_git_blame_inline: bool,
     show_git_blame_inline_delay_task: Option<Task<()>>,
@@ -1053,7 +1064,6 @@ pub struct Editor {
     /// paint over the scrollbar.
     last_horizontal_scrollbar_visible: bool,
     expect_bounds_change: Option<Bounds<Pixels>>,
-    runnables: RunnableData,
     bookmark_store: Option<Entity<BookmarkStore>>,
     breakpoint_store: Option<Entity<BreakpointStore>>,
     gutter_hover_button: (Option<GutterHoverButton>, Option<Task<()>>),
@@ -1076,6 +1086,7 @@ pub struct Editor {
     focused_block: Option<FocusedBlock>,
     next_scroll_position: NextScrollCursorCenterTopBottom,
     addons: TypeIdHashMap<Box<dyn Addon>>,
+    runnables: RunnableData,
     registered_buffers: HashMap<BufferId, OpenLspBufferHandle>,
     load_diff_task: Option<Shared<Task<()>>>,
     diff_hunk_delegate: Option<Arc<dyn DiffHunkDelegate>>,
@@ -1091,9 +1102,9 @@ pub struct Editor {
 
     selection_drag_state: SelectionDragState,
     colors: Option<LspColorData>,
-    code_lens: Option<CodeLensState>,
     post_scroll_update: Task<()>,
     refresh_colors_task: Task<()>,
+    code_lens: Option<CodeLensState>,
     refresh_code_lens_task: Task<()>,
     use_document_folding_ranges: bool,
     refresh_folding_ranges_task: Task<()>,
@@ -1673,6 +1684,163 @@ impl Render for GutterButtonTooltip {
 }
 
 impl Editor {
+    // =====================================================================
+    // 以下为 stub 方法 — 对应已删除的编辑功能模块
+    // =====================================================================
+
+    /// Stub: insert text at selection (编辑功能已删除)
+    pub fn insert(
+        &mut self,
+        _new_text: &str,
+        _selections: SelectionsCollection,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
+    ) {
+    }
+
+    /// Stub: refresh inlay hints (inlay hints 模块已删除)
+    pub fn refresh_inlay_hints(&mut self, _reason: InlayHintRefreshReason, _cx: &mut Context<Self>) {
+    }
+
+    /// Stub: refresh edit prediction (edit prediction 模块已删除)
+    pub fn refresh_edit_prediction(
+        &mut self,
+        _trigger: EditPredictionRequestTrigger,
+        _cx: &mut Context<Self>,
+    ) {
+    }
+
+    /// Stub: refresh runnables (runnables 模块已删除)
+    pub fn refresh_runnables(&mut self, _cx: &mut Context<Self>) {
+    }
+
+    /// Stub: splice inlays (inlay hints 模块已删除)
+    pub fn splice_inlays(
+        &mut self,
+        _ids_to_remove: &[InlayId],
+        _hints_to_insert: Vec<(Anchor, InlayHint)>,
+        _cx: &mut Context<Self>,
+    ) {
+    }
+
+    /// Stub: update visible edit prediction (edit prediction 模块已删除)
+    pub fn update_visible_edit_prediction(&mut self, _cx: &mut Context<Self>) {
+    }
+
+    /// Stub: update edit prediction settings (edit prediction 模块已删除)
+    pub fn update_edit_prediction_settings(&mut self, _cx: &mut Context<Self>) {
+    }
+
+    /// Stub: update hovered link (hover popover 模块已删除)
+    pub fn update_hovered_link(
+        &mut self,
+        _point: DisplayPoint,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
+    ) {
+    }
+
+    /// Stub: hide hovered link (hover popover 模块已删除)
+    pub fn hide_hovered_link(&mut self, _cx: &mut Context<Self>) {
+    }
+
+    /// Stub: unmark text (编辑功能已删除)
+    pub fn unmark_text(
+        &mut self,
+        _range: Range<Anchor>,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
+    ) {
+    }
+
+    /// Stub: show edit predictions in menu (edit prediction 模块已删除)
+    pub fn show_edit_predictions_in_menu(&mut self, _enabled: bool, _cx: &mut Context<Self>) {
+    }
+
+    /// Stub: update inlay link and hover points (inlay/hover 模块已删除)
+    pub fn update_inlay_link_and_hover_points(
+        &mut self,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
+    ) {
+    }
+
+    /// Stub: handle click hovered link (hover popover 模块已删除)
+    pub fn handle_click_hovered_link(
+        &mut self,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
+    ) {
+    }
+
+    /// Stub: visible buffer ranges (collaboration 模块已删除)
+    pub fn visible_buffer_ranges(&mut self) -> Vec<(BufferId, Range<Anchor>)> {
+        Vec::new()
+    }
+
+    /// Stub: hide signature help (signature help 模块已删除)
+    pub fn hide_signature_help(&mut self, _cx: &mut Context<Self>) {
+    }
+
+    /// Stub: has active edit prediction (edit prediction 模块已删除)
+    pub fn has_active_edit_prediction(&self) -> bool {
+        false
+    }
+
+    /// Stub: refresh code actions for selection (code actions 模块已删除)
+    pub fn refresh_code_actions_for_selection(&mut self, _cx: &mut Context<Self>) {
+    }
+
+    /// Stub: linked edits for selections (linked editing 模块已删除)
+    pub fn linked_edits_for_selections(&mut self, _cx: &mut Context<Self>) -> Task<()> {
+        Task::ready(())
+    }
+
+    /// Stub: go to diagnostic (diagnostics 模块已删除)
+    pub fn go_to_diagnostic(
+        &mut self,
+        _action: &GoToDiagnostic,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
+    ) {
+    }
+
+
+
+
+
+
+
+
+    /// Stub: toggle code actions (code actions 模块已删除)
+    pub fn toggle_code_actions(
+        &mut self,
+        _action: &ToggleCodeActions,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
+    ) {
+    }
+
+
+
+    /// Stub: diagnostics_enabled (diagnostics 模块已删除)
+    pub fn diagnostics_enabled(&self) -> bool {
+        false
+    }
+
+
+
+    /// Stub: insert_snippet_at_selections (snippet 模块已删除)
+    pub fn insert_snippet_at_selections(
+        &mut self,
+        _action: &InsertSnippet,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
+    ) {
+    }
+
+
+    // =====================================================================
     pub fn single_line(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let buffer = cx.new(|cx| Buffer::local("", cx));
         let buffer = cx.new(|cx| MultiBuffer::singleton(buffer, cx));
@@ -10880,7 +11048,7 @@ fn process_completion_for_edit(
                                     ..buffer.anchor_after(replace_range.end),
                             );
                             let mut current_needle = text_to_replace.next();
-                            for haystack_ch in completion.label.text.chars() {
+                            for haystack_ch in completion.label.chars() {
                                 if let Some(needle_ch) = current_needle
                                     && haystack_ch.eq_ignore_ascii_case(&needle_ch)
                                 {
@@ -10905,7 +11073,6 @@ fn process_completion_for_edit(
                                     .to_ascii_lowercase();
                                 completion
                                     .label
-                                    .text
                                     .to_ascii_lowercase()
                                     .ends_with(&text_after_cursor)
                             } else {
@@ -10955,9 +11122,9 @@ pub trait CollaborationHub {
 
 // spec: CollaborationHub implementation stubbed — project no longer has collaborator methods
 static EMPTY_COLLABORATORS: std::sync::LazyLock<HashMap<PeerId, Collaborator>> =
-    std::sync::LazyLock::new(HashMap::new);
+    std::sync::LazyLock::new(HashMap::default);
 static EMPTY_PARTICIPANT_INDICES: std::sync::LazyLock<HashMap<u64, ParticipantIndex>> =
-    std::sync::LazyLock::new(HashMap::new);
+    std::sync::LazyLock::new(HashMap::default);
 
 impl CollaborationHub for Entity<Project> {
     fn collaborators<'a>(&self, cx: &'a App) -> &'a HashMap<PeerId, Collaborator> {
@@ -10974,7 +11141,7 @@ impl CollaborationHub for Entity<Project> {
 
     fn user_names(&self, cx: &App) -> HashMap<u64, SharedString> {
         let _ = (self, cx);
-        HashMap::new()
+        HashMap::default()
     }
 }
 

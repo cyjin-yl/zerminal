@@ -9,6 +9,7 @@ use text::Bias;
 use ui::{Context, Window};
 use util::ResultExt as _;
 use workspace::{Workspace, searchable::Direction};
+use crate::stubs::ProjectBufferExt;
 
 use crate::display_map::DisplayRow;
 use crate::{
