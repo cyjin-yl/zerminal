@@ -145,7 +145,7 @@ impl ProjectCapabilityExt for Project {
 
 pub trait ProjectBufferExt {
     fn buffer_for_id(&self, _buffer_id: BufferId, _cx: &App) -> Option<Entity<Buffer>>;
-    fn create_buffer(&mut self, _language: Option<language::Language>, _has_root: bool, _cx: &mut Context<Project>)
+    fn create_buffer(&mut self, _language: Option<Arc<language::Language>>, _has_root: bool, _cx: &mut Context<Project>)
     -> Task<anyhow::Result<Entity<Buffer>>>;
 }
 
@@ -153,7 +153,7 @@ impl ProjectBufferExt for Project {
     fn buffer_for_id(&self, _buffer_id: BufferId, _cx: &App) -> Option<Entity<Buffer>> { None }
     fn create_buffer(
         &mut self,
-        _language: Option<language::Language>,
+        _language: Option<Arc<language::Language>>,
         _has_root: bool,
         _cx: &mut Context<Project>,
     ) -> Task<anyhow::Result<Entity<Buffer>>> {
@@ -161,7 +161,7 @@ impl ProjectBufferExt for Project {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct RevealInFileManager;
 
 impl gpui::Action for RevealInFileManager {
@@ -371,11 +371,11 @@ impl CompletionsMenu {
     pub fn new_snippet_choices(
         _id: CompletionId,
         _show_completion_documentation: bool,
-        _choices: Vec<Snippet>,
-        _position: multi_buffer::Anchor,
+        _choices: &Vec<String>,
+        _position: language::Anchor,
         _range: std::ops::Range<multi_buffer::Anchor>,
         _buffer: Entity<Buffer>,
-        _scroll_handle: Option<ScrollHandle>,
+        _scroll_handle: Option<Option<ScrollHandle>>,
         _snippet_sort_order: SnippetSortOrder,
     ) -> Self {
         Self::default()
@@ -711,7 +711,7 @@ pub struct EditPredictionState {
     pub completion: CursorPopoverType,
 }
 
-pub fn make_suggestion_styles(_cx: &App) -> TextStyle { TextStyle::default() }
+pub fn make_suggestion_styles(_cx: &App) -> crate::EditPredictionStyles { crate::EditPredictionStyles { insertion: gpui::HighlightStyle::default(), whitespace: gpui::HighlightStyle::default() } }
 
 #[derive(Clone, Debug)]
 pub struct Snippet { pub text: SharedString }
@@ -738,41 +738,8 @@ pub enum BreakpointEditAction {
 #[derive(Clone, Debug)]
 pub struct BreakpointStoreEvent;
 
-#[derive(Default)]
-pub struct BreakpointStore;
-
-impl BreakpointStore {
-    pub fn breakpoints(
-        &self,
-        _buffer: &Entity<Buffer>,
-        _range: Option<std::ops::Range<Anchor>>,
-        _buffer_snapshot: &language::BufferSnapshot,
-        _cx: &App,
-    ) -> std::vec::IntoIter<(BreakpointWithPosition, Option<BreakpointSessionState>)> {
-        Vec::new().into_iter()
-    }
-
-    pub fn set_active_debug_pane_id(&mut self, _pane_id: gpui::EntityId) {}
-
-    pub fn active_position(&self) -> Option<project::StackFrame> {
-        None
-    }
-
-    pub fn active_debug_line_pane_id(&self) -> Option<gpui::EntityId> {
-        None
-    }
-
-    pub fn set_active_debug_line_pane_id(&mut self, _pane_id: gpui::EntityId) {}
-
-    pub fn toggle_breakpoint(
-        &mut self,
-        _buffer: Entity<Buffer>,
-        _breakpoint: BreakpointWithPosition,
-        _edit_action: BreakpointEditAction,
-        _cx: &mut gpui::Context<Self>,
-    ) {
-    }
-}
+// Re-export BreakpointStore from project crate
+pub use project::debugger::breakpoint_store::BreakpointStore;
 
 // ---------------------------------------------------------------------------
 // Vim / task variables

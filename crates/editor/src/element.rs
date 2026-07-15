@@ -1,6 +1,31 @@
 mod header;
 mod mouse;
 
+// Stub action types for removed actions
+#[derive(Clone, Copy, Debug)]
+struct ShowSignatureHelp;
+#[derive(Clone, Copy, Debug)]
+struct SignatureHelpPrev;
+#[derive(Clone, Copy, Debug)]
+struct SignatureHelpNext;
+#[derive(Clone, Copy, Debug)]
+struct ShowEditPrediction;
+
+macro_rules! impl_action {
+    ($name:ident, $label:expr) => {
+        impl gpui::Action for $name {
+            fn boxed_clone(&self) -> Box<dyn gpui::Action> { Box::new(*self) }
+            fn partial_eq(&self, _other: &dyn gpui::Action) -> bool { false }
+            fn name(&self) -> &'static str { $label }
+        }
+    };
+}
+impl_action!(ShowSignatureHelp, "ShowSignatureHelp");
+impl_action!(SignatureHelpPrev, "SignatureHelpPrev");
+impl_action!(SignatureHelpNext, "SignatureHelpNext");
+impl_action!(ShowEditPrediction, "ShowEditPrediction");
+
+
 #[cfg(test)]
 pub(crate) use header::StickyHeader;
 pub use header::file_status_label_color;
@@ -516,18 +541,18 @@ impl EditorElement {
                 cx.propagate();
             }
         });
-        register_action(editor, window, Editor::show_signature_help);
-        register_action(editor, window, Editor::signature_help_prev);
-        register_action(editor, window, Editor::signature_help_next);
-        register_action(editor, window, Editor::show_edit_prediction);
-        register_action(editor, window, Editor::context_menu_first);
-        register_action(editor, window, Editor::context_menu_prev);
-        register_action(editor, window, Editor::context_menu_next);
-        register_action(editor, window, Editor::context_menu_last);
-        register_action(editor, window, Editor::display_cursor_names);
-        register_action(editor, window, Editor::open_active_item_in_terminal);
-        register_action(editor, window, Editor::spawn_nearest_task);
-        register_action(editor, window, Editor::open_selections_in_multibuffer);
+        register_action(editor, window, |editor: &mut Editor, action: &ShowSignatureHelp, window, cx| {
+            editor.show_signature_help(action, window, cx);
+        });
+        register_action(editor, window, |editor: &mut Editor, action: &SignatureHelpPrev, window, cx| {
+            editor.signature_help_prev(action, window, cx);
+        });
+        register_action(editor, window, |editor: &mut Editor, action: &SignatureHelpNext, window, cx| {
+            editor.signature_help_next(action, window, cx);
+        });
+        register_action(editor, window, |editor: &mut Editor, action: &ShowEditPrediction, window, cx| {
+            editor.show_edit_prediction(action, window, cx);
+        });
         register_action(editor, window, Editor::edit_bookmark);
         register_action(editor, window, Editor::go_to_next_bookmark);
         register_action(editor, window, Editor::go_to_previous_bookmark);

@@ -334,7 +334,7 @@ pub mod debugger {
         #[derive(Clone, Debug)]
         pub struct BreakpointWithPosition {
             pub bp: Breakpoint,
-            pub position: Point,
+            pub position: text::Anchor,
         }
 
         #[derive(Clone, Debug)]
@@ -561,8 +561,8 @@ pub mod task_store {
             _variables: crate::TaskVariables,
             _location: language::Location,
             _cx: &mut gpui::Context<Self>,
-        ) -> Task<anyhow::Result<crate::TaskVariables>> {
-            Task::ready(Ok(crate::TaskVariables::default()))
+        ) -> Task<anyhow::Result<Option<crate::TaskVariables>>> {
+            Task::ready(Ok(None))
         }
     }
 
@@ -659,6 +659,7 @@ use git::Blame;
 use lsp::LanguageServerId;
 use util::rel_path::RelPath;
 
+#[derive(Clone, Debug)]
 pub struct StackFrame { pub position: text::Point }
 
 impl Project {
@@ -755,6 +756,16 @@ impl Project {
         Task::ready(Ok(None))
     }
 
+    pub fn hover(
+        &mut self,
+        _buffer: &Entity<language::Buffer>,
+        _position: text::Anchor,
+        _cx: &mut gpui::Context<Self>,
+    ) -> Task<anyhow::Result<Option<Vec<super::Hover>>>> {
+        Task::ready(Ok(None))
+    }
+
+
     pub fn definitions(
         &mut self,
         _buffer: &Entity<language::Buffer>,
@@ -770,8 +781,8 @@ impl Project {
         _buffer: &Entity<language::Buffer>,
         _position: text::Anchor,
         _cx: &mut gpui::Context<Self>,
-    ) -> Task<anyhow::Result<Vec<Location>>> {
-        Task::ready(Ok(Vec::new()))
+    ) -> Task<anyhow::Result<Option<Vec<LocationLink>>>> {
+        Task::ready(Ok(None))
     }
 
     pub fn type_definitions(
@@ -779,8 +790,8 @@ impl Project {
         _buffer: &Entity<language::Buffer>,
         _position: text::Anchor,
         _cx: &mut gpui::Context<Self>,
-    ) -> Task<anyhow::Result<Vec<Location>>> {
-        Task::ready(Ok(Vec::new()))
+    ) -> Task<anyhow::Result<Option<Vec<LocationLink>>>> {
+        Task::ready(Ok(None))
     }
 
     pub fn implementations(
@@ -788,8 +799,8 @@ impl Project {
         _buffer: &Entity<language::Buffer>,
         _position: text::Anchor,
         _cx: &mut gpui::Context<Self>,
-    ) -> Task<anyhow::Result<Vec<Location>>> {
-        Task::ready(Ok(Vec::new()))
+    ) -> Task<anyhow::Result<Option<Vec<LocationLink>>>> {
+        Task::ready(Ok(None))
     }
 
     pub fn prepare_rename(

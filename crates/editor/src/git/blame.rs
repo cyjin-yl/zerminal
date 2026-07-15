@@ -551,7 +551,7 @@ impl GitBlame {
                                     project.blame_buffer(&buffer, None, cx)
                                 })
                             } else {
-                                Task::ready(Ok(None::<Entity<Buffer>>))
+                                Task::ready(Err(anyhow::anyhow!("no repository")))
                             };
 
                             Ok(async move {

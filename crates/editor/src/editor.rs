@@ -60,7 +60,7 @@ mod jsx_tag_auto_close {
     /// Stub: jsx tag auto close 模块已删除
     pub fn refresh_enabled_in_any_buffer(
         _editor: &mut crate::Editor,
-        _multibuffer: &multi_buffer::MultiBuffer,
+        _multibuffer: &gpui::Entity<multi_buffer::MultiBuffer>,
         _cx: &gpui::App,
     ) {
     }
@@ -1718,10 +1718,10 @@ impl Editor {
     }
 
     /// Stub: splice inlays (inlay hints 模块已删除)
-    pub fn splice_inlays(
+    pub fn splice_inlays<T>(
         &mut self,
         _ids_to_remove: &[InlayId],
-        _hints_to_insert: Vec<(Anchor, InlayHint)>,
+        _hints_to_insert: Vec<T>,
         _cx: &mut Context<Self>,
     ) {
     }
@@ -2627,7 +2627,7 @@ impl Editor {
     }
 
     fn key_context_internal(
-        &self,
+        &mut self,
         has_active_edit_prediction: bool,
         window: &mut Window,
         cx: &mut App,
@@ -3273,7 +3273,7 @@ impl Editor {
         dismissed |= self.hide_context_menu(window, cx).is_some();
         dismissed |= self.mouse_context_menu.take().is_some();
         dismissed |= is_user_requested
-            && self.discard_edit_prediction(EditPredictionDiscardReason::Rejected, cx);
+            && self.discard_edit_prediction(EditPredictionDiscardReason::Rejected, &mut *cx);
         dismissed |= self.snippet_stack.pop().is_some();
         if self.diff_review_drag_state.is_some() {
             self.cancel_diff_review_drag(cx);
@@ -4459,26 +4459,9 @@ impl Editor {
         buffer_row: u32,
         tasks: &Arc<RunnableTasks>,
         cx: &mut Context<Self>,
-    ) -> Task<Result<Option<task::TaskContext>>> {
-        let position = Point::new(buffer_row, tasks.column);
-        let range_start = buffer.read(cx).anchor_at(position, Bias::Right);
-        let location = Location {
-            buffer: buffer.clone(),
-            range: range_start..range_start,
-        };
-        // Fill in the environmental variables from the tree-sitter captures
-        let mut captured_task_variables = TaskVariables::default();
-        for (capture_name, value) in tasks.extra_variables.clone() {
-            captured_task_variables.insert(
-                VariableName::Custom(capture_name.into()),
-                value.clone(),
-            );
-        }
-        project.update(cx, |project, cx| {
-            project.task_store().update(cx, |task_store, cx| {
-                task_store.task_context_for_location(captured_task_variables, location, cx)
-            })
-        })
+    ) -> Task<Result<Option<stubs::TaskContext>>> {
+        let _ = (project, buffer, buffer_row, tasks, cx);
+        Task::ready(Ok(None))
     }
 
     pub fn context_menu_visible(&self) -> bool {
@@ -5578,7 +5561,7 @@ impl Editor {
 
             let (active_stack_frame, debug_line_pane_id) = {
                 let store = breakpoint_store.read(cx);
-                let active_stack_frame = store.active_position().cloned();
+                let active_stack_frame = store.active_position().clone();
                 let debug_line_pane_id = store.active_debug_line_pane_id();
                 (active_stack_frame, debug_line_pane_id)
             };
@@ -7024,7 +7007,7 @@ impl Editor {
                     log::warn!("timed out waiting for executing code action");
                     None
                 }
-                transaction = apply_action.log_err().fuse() => transaction,
+                transaction = apply_action.log_err().fuse() => transaction.map(Some),
             };
             buffer.update(cx, |buffer, cx| {
                 // check if we need this
@@ -9836,9 +9819,7 @@ impl Editor {
         }
     }
     /// Stub: clear_code_lenses
-    pub fn clear_code_lenses<A, R>(&mut self, _a0: A) -> R {
-        unimplemented!()
-    }
+    pub fn clear_code_lenses(&mut self, _cx: &mut Context<Self>) {}
 
     /// Stub: clear_runnables
     pub fn clear_runnables<A, R>(&mut self, _a0: A) -> R {
@@ -9876,9 +9857,7 @@ impl Editor {
     }
 
     /// Stub: dismiss_diagnostics
-    pub fn dismiss_diagnostics<A, R>(&mut self, _a0: A) -> R {
-        unimplemented!()
-    }
+    pub fn dismiss_diagnostics(&mut self, _cx: &mut Context<Self>) {}
 
     /// Stub: edit_prediction_requires_modifier
     pub fn edit_prediction_requires_modifier<R>(&mut self) -> R {
@@ -9901,19 +9880,13 @@ impl Editor {
     }
 
     /// Stub: invalidate_autoclose_regions
-    pub fn invalidate_autoclose_regions<A, B, R>(&mut self, _a0: A, _a1: B) -> R {
-        unimplemented!()
-    }
+    pub fn invalidate_autoclose_regions(&mut self, _a0: &[Range<Anchor>], _a1: &multi_buffer::MultiBufferSnapshot) {}
 
     /// Stub: is_lsp_relevant
-    pub fn is_lsp_relevant<A, B, R>(&mut self, _a0: A, _a1: B) -> R {
-        unimplemented!()
-    }
+    pub fn is_lsp_relevant(&mut self, _file: Option<&language::File>, _cx: &mut App) -> bool { false }
 
     /// Stub: pull_diagnostics
-    pub fn pull_diagnostics<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn pull_diagnostics(&mut self, _buffer_id: BufferId, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: refresh_active_diagnostics
     pub fn refresh_active_diagnostics<A, R>(&mut self, _a0: A) -> R {
@@ -9951,9 +9924,7 @@ impl Editor {
     }
 
     /// Stub: resolve_visible_code_lenses
-    pub fn resolve_visible_code_lenses<A, R>(&mut self, _a0: A) -> R {
-        unimplemented!()
-    }
+    pub fn resolve_visible_code_lenses(&mut self, _cx: &mut Context<Self>) {}
 
     /// Stub: rewrap
     pub fn rewrap<A, B, R>(&mut self, _a0: A, _a1: B) -> R {
@@ -9991,14 +9962,10 @@ impl Editor {
     }
 
     /// Stub: update_edit_prediction_preview
-    pub fn update_edit_prediction_preview<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn update_edit_prediction_preview(&mut self, _a0: &gpui::Modifiers, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: visible_buffers
-    pub fn visible_buffers<A, R>(&mut self, _a0: A) -> R {
-        unimplemented!()
-    }
+    pub fn visible_buffers(&mut self, _cx: &mut Context<Self>) -> Vec<gpui::Entity<Buffer>> { Vec::new() }
 
     /// Stub: accept_edit_prediction
     pub fn accept_edit_prediction<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
@@ -10159,7 +10126,7 @@ fn process_completion_for_edit(
                 Some(CompletionItemKind::FUNCTION) | Some(CompletionItemKind::METHOD)
             )
         {
-            snippet_source = label;
+            snippet_source = label.to_string().into();
         }
         match Snippet::parse(&snippet_source).log_err() {
             Some(parsed_snippet) => (Some(parsed_snippet.clone()), parsed_snippet.text),
@@ -10265,7 +10232,7 @@ fn process_completion_for_edit(
     }
 
     CompletionEdit {
-        new_text,
+        new_text: new_text.to_string(),
         replace_range: range_to_replace,
         snippet,
     }
@@ -10390,8 +10357,8 @@ impl SemanticsProvider for WeakEntity<Project> {
         position: text::Anchor,
         cx: &mut App,
     ) -> Option<Task<Option<Vec<project::Hover>>>> {
-        self.update(cx, |project, cx| project.hover(buffer, position, cx))
-            .ok()
+        let task = self.update(cx, |project, cx| project.hover(buffer, position, cx)).ok()?;
+        Some(cx.background_spawn(async move { task.await.ok() }))
     }
 
     fn document_highlights(
@@ -10400,10 +10367,10 @@ impl SemanticsProvider for WeakEntity<Project> {
         position: text::Anchor,
         cx: &mut App,
     ) -> Option<Task<Result<Vec<DocumentHighlight>>>> {
-        self.update(cx, |project, cx| {
+        let task = self.update(cx, |project, cx| {
             project.document_highlights(buffer, position, cx)
-        })
-        .ok()
+        }).ok()?;
+        Some(cx.background_spawn(async move { task.await.map_err(|e| e) }))
     }
 
     fn definitions(
@@ -10413,11 +10380,17 @@ impl SemanticsProvider for WeakEntity<Project> {
         kind: GotoDefinitionKind,
         cx: &mut App,
     ) -> Option<Task<Result<Option<Vec<LocationLink>>>>> {
-        self.update(cx, |project, cx| match kind {
-            GotoDefinitionKind::Symbol => project.definitions(buffer, position, kind, cx),
-            GotoDefinitionKind::Declaration => project.declarations(buffer, position, cx),
-            GotoDefinitionKind::Type => project.type_definitions(buffer, position, cx),
-            GotoDefinitionKind::Implementation => project.implementations(buffer, position, cx),
+        let project_kind = match kind {
+            GotoDefinitionKind::Symbol => project::stubs::GotoDefinitionKind::Symbol,
+            GotoDefinitionKind::Declaration => project::stubs::GotoDefinitionKind::Declaration,
+            GotoDefinitionKind::Type => project::stubs::GotoDefinitionKind::Type,
+            GotoDefinitionKind::Implementation => project::stubs::GotoDefinitionKind::Implementation,
+        };
+        self.update(cx, |project, cx| match project_kind {
+            project::stubs::GotoDefinitionKind::Symbol => project.definitions(buffer, position, project_kind, cx),
+            project::stubs::GotoDefinitionKind::Declaration => project.declarations(buffer, position, cx),
+            project::stubs::GotoDefinitionKind::Type => project.type_definitions(buffer, position, cx),
+            project::stubs::GotoDefinitionKind::Implementation => project.implementations(buffer, position, cx),
         })
         .ok()
     }
@@ -10546,6 +10519,7 @@ impl SemanticsProvider for WeakEntity<Project> {
                             )
                         })
                     }
+                    project::PrepareRenameResponse::Ready(range, _) => Some(range),
                 })
             })
         })
