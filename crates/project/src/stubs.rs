@@ -209,10 +209,10 @@ pub mod bookmark_store {
 
         /// Stub: toggle bookmark (bookmark 模块已删除)
         pub fn toggle_bookmark(
-            _store: Entity<BookmarkStore>,
             _buffer: Entity<language::Buffer>,
-            _point: text::Point,
-            _cx: &mut gpui::Context<Entity<BookmarkStore>>,
+            _anchor: text::Anchor,
+            _label: String,
+            _cx: &mut gpui::Context<Self>,
         ) {
         }
 
@@ -305,21 +305,24 @@ pub mod debugger {
                 Vec::new().into_iter()
             }
 
-            pub fn active_position(&self) -> Option<&Point> {
+            pub fn active_position(&self) -> Option<super::super::StackFrame> {
                 None
             }
 
-            pub fn active_debug_line_pane_id(&self) -> Option<usize> {
+            pub fn set_active_debug_pane_id(&mut self, _pane_id: gpui::EntityId) {}
+
+            pub fn active_debug_line_pane_id(&self) -> Option<gpui::EntityId> {
                 None
             }
 
-            pub fn set_active_debug_line_pane_id(&mut self, _pane_id: Option<usize>) {
+            pub fn set_active_debug_line_pane_id(&mut self, _pane_id: gpui::EntityId) {}
             }
 
             pub fn toggle_breakpoint(
                 &mut self,
                 _buffer: Entity<language::Buffer>,
                 _breakpoint: BreakpointWithPosition,
+                _edit_action: BreakpointEditAction,
                 _cx: &mut gpui::Context<Self>,
             ) {
             }
@@ -329,6 +332,15 @@ pub mod debugger {
         pub struct BreakpointWithPosition {
             pub bp: Breakpoint,
             pub position: Point,
+        }
+
+        #[derive(Clone, Debug)]
+        pub enum BreakpointEditAction {
+            Toggle,
+            InvertState,
+            EditLogMessage(String),
+            EditHitCondition(String),
+            EditCondition(String),
         }
     }
 
@@ -600,7 +612,7 @@ pub struct OpenLspBufferHandle;
 
 #[derive(Clone, Debug)]
 pub enum PrepareRenameResponse {
-    Ready,
+    Ready(std::ops::Range<text::Anchor>, bool),
     Success(Range<text::Anchor>),
     OnlyUnpreparedRenameSupported,
     InvalidPosition,
@@ -608,6 +620,12 @@ pub enum PrepareRenameResponse {
 
 #[derive(Default)]
 pub struct DapStore;
+
+impl DapStore {
+    pub fn sessions(&self) -> std::slice::Iter<'_, gpui::Entity<debugger::session::Session>> {
+        [].iter()
+    }
+}
 
 #[derive(Default)]
 pub struct Client;
@@ -638,7 +656,7 @@ use git::Blame;
 use lsp::LanguageServerId;
 use util::rel_path::RelPath;
 
-pub struct StackFrame;
+pub struct StackFrame { pub position: text::Point }
 
 impl Project {
     pub fn open_buffer_by_id(

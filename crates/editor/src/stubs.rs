@@ -45,8 +45,7 @@ pub use project::{
 #[derive(Clone, Debug)]
 pub struct RefreshForServer;
 
-#[derive(Clone, Copy, Debug)]
-pub enum FormatTrigger { Manual }
+pub use project::lsp_store::FormatTrigger;
 
 
 // Re-export debugger session/breakpoint types from project
@@ -366,6 +365,8 @@ pub struct CompletionsMenu;
 
 impl CompletionsMenu {
     pub fn visible(&self) -> bool { false }
+
+    pub fn primary_scroll_handle(&self) -> Option<gpui::ScrollHandle> { None }
 
     pub fn new_snippet_choices(
         _id: CompletionId,
@@ -692,8 +693,11 @@ pub enum MenuEditPredictionsPolicy { #[default] Disabled, ByProvider }
 #[derive(Clone, Copy, Debug, Default)]
 pub enum EditDisplayMode { #[default] Inline, TabAccept }
 
-#[derive(Clone, Debug, Default)]
-pub struct EditPredictionPreview;
+#[derive(Clone, Debug)]
+pub enum EditPredictionPreview {
+    Inactive { released_too_fast: bool },
+    Active,
+}
 
 #[derive(Clone, Debug, Default)]
 pub struct EditPredictionSettings;
@@ -744,21 +748,21 @@ impl BreakpointStore {
         _range: Option<std::ops::Range<Anchor>>,
         _buffer_snapshot: &language::BufferSnapshot,
         _cx: &App,
-    ) -> Vec<(Breakpoint, Option<BreakpointSessionState>)> {
-        Vec::new()
+    ) -> std::vec::IntoIter<(BreakpointWithPosition, Option<BreakpointSessionState>)> {
+        Vec::new().into_iter()
     }
 
-    pub fn set_active_debug_pane_id(&mut self, _pane_id: Option<usize>) {}
+    pub fn set_active_debug_pane_id(&mut self, _pane_id: gpui::EntityId) {}
 
-    pub fn active_position(&self) -> Option<&text::Point> {
+    pub fn active_position(&self) -> Option<project::StackFrame> {
         None
     }
 
-    pub fn active_debug_line_pane_id(&self) -> Option<usize> {
+    pub fn active_debug_line_pane_id(&self) -> Option<gpui::EntityId> {
         None
     }
 
-    pub fn set_active_debug_line_pane_id(&mut self, _pane_id: Option<usize>) {}
+    pub fn set_active_debug_line_pane_id(&mut self, _pane_id: gpui::EntityId) {}
 
     pub fn toggle_breakpoint(
         &mut self,
