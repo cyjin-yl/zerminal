@@ -1,30 +1,7 @@
 mod header;
 mod mouse;
 
-// Stub action types for removed actions
-#[derive(Clone, Copy, Debug)]
-struct ShowSignatureHelp;
-#[derive(Clone, Copy, Debug)]
-struct SignatureHelpPrev;
-#[derive(Clone, Copy, Debug)]
-struct SignatureHelpNext;
-#[derive(Clone, Copy, Debug)]
-struct ShowEditPrediction;
-
-macro_rules! impl_action {
-    ($name:ident, $label:expr) => {
-        impl gpui::Action for $name {
-            fn boxed_clone(&self) -> Box<dyn gpui::Action> { Box::new(*self) }
-            fn partial_eq(&self, _other: &dyn gpui::Action) -> bool { false }
-            fn name(&self) -> &'static str { $label }
-        }
-    };
-}
-impl_action!(ShowSignatureHelp, "ShowSignatureHelp");
-impl_action!(SignatureHelpPrev, "SignatureHelpPrev");
-impl_action!(SignatureHelpNext, "SignatureHelpNext");
-impl_action!(ShowEditPrediction, "ShowEditPrediction");
-
+use crate::actions::{ShowSignatureHelp, SignatureHelpPrevious, SignatureHelpNext, ShowEditPrediction};
 
 #[cfg(test)]
 pub(crate) use header::StickyHeader;
@@ -544,7 +521,7 @@ impl EditorElement {
         register_action(editor, window, |editor: &mut Editor, action: &ShowSignatureHelp, window, cx| {
             editor.show_signature_help(action, window, cx);
         });
-        register_action(editor, window, |editor: &mut Editor, action: &SignatureHelpPrev, window, cx| {
+        register_action(editor, window, |editor: &mut Editor, action: &SignatureHelpPrevious, window, cx| {
             editor.signature_help_prev(action, window, cx);
         });
         register_action(editor, window, |editor: &mut Editor, action: &SignatureHelpNext, window, cx| {
@@ -3880,7 +3857,7 @@ impl EditorElement {
                 );
 
                 let edit_prediction = if edit_prediction_popover_visible {
-                    self.editor.update(cx, move |editor, cx| {
+                    self.editor.update(cx, |editor, cx| {
                         let mut element = editor.render_edit_prediction_cursor_popover::<_, _, _, _, _, _, Option<AnyElement>>(
                             min_width,
                             max_width,

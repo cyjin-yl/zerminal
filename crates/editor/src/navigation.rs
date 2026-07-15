@@ -3,7 +3,7 @@ use crate::stubs::parse_zed_link;
 
 impl Editor {
     pub fn text_layout_details(
-        &mut self,
+        &self,
         window: &mut Window,
         cx: &mut App,
     ) -> movement::TextLayoutDetails {

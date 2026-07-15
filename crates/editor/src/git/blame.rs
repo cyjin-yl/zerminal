@@ -570,11 +570,11 @@ impl GitBlame {
                             let mut errors = vec![];
                             for (id, snapshot, buffer_edits, blame, remote_url) in blame {
                                 match blame {
-                                    Ok(Some(Blame {
+                                    Ok(git::blame::Blame {
                                         entries,
                                         messages,
                                         tag_names,
-                                    })) => {
+                                    }) => {
                                         let entries = build_blame_entry_sum_tree(
                                             entries,
                                             snapshot.max_point().row,
@@ -613,14 +613,6 @@ impl GitBlame {
                                             commit_tag_names,
                                         ));
                                     }
-                                    Ok(None) => res.push((
-                                        id,
-                                        snapshot,
-                                        buffer_edits,
-                                        None,
-                                        Default::default(),
-                                        Default::default(),
-                                    )),
                                     Err(e) => errors.push(e),
                                 }
                             }

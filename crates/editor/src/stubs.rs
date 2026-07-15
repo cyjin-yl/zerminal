@@ -372,7 +372,7 @@ impl CompletionsMenu {
         _id: CompletionId,
         _show_completion_documentation: bool,
         _choices: &Vec<String>,
-        _position: language::Anchor,
+        _position: multi_buffer::Anchor,
         _range: std::ops::Range<multi_buffer::Anchor>,
         _buffer: Entity<Buffer>,
         _scroll_handle: Option<Option<ScrollHandle>>,
@@ -726,14 +726,9 @@ impl Snippet {
 // Breakpoints (define missing variants/types not in project::stubs)
 // ---------------------------------------------------------------------------
 
-#[derive(Clone, Debug)]
-pub enum BreakpointEditAction {
-    Toggle,
-    InvertState,
-    EditLogMessage(SharedString),
-    EditHitCondition(SharedString),
-    EditCondition(SharedString),
-}
+
+// Re-export BreakpointEditAction from project crate (must match project's type)
+pub use project::debugger::breakpoint_store::BreakpointEditAction;
 
 #[derive(Clone, Debug)]
 pub struct BreakpointStoreEvent;

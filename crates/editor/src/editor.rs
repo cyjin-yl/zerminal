@@ -2144,8 +2144,6 @@ impl Editor {
                     // Stub: 原事件处理涉及已删除的编辑模块。
                 },
             ));
-            // Stub: task_inventory 与 breakpoint_store 订阅在只读 + diff 模式下不需要。
-            let _ = (project, window, cx);
             let git_store = project.read(cx).git_store().clone();
             let project = project.clone();
             project_subscriptions.push(cx.subscribe(&git_store, move |this, _, event, cx| {
@@ -2627,7 +2625,7 @@ impl Editor {
     }
 
     fn key_context_internal(
-        &mut self,
+        &self,
         has_active_edit_prediction: bool,
         window: &mut Window,
         cx: &mut App,
@@ -3927,7 +3925,7 @@ impl Editor {
         self.runnables
             .all_runnables()
             .filter_map(|tasks| {
-                let multibuffer_point = tasks.offset.to_point(&snapshot.buffer_snapshot());
+                let multibuffer_point = tasks.offset.to_point(&*snapshot.buffer_snapshot());
                 if multibuffer_point < offset_range_start || multibuffer_point > offset_range_end {
                     return None;
                 }
@@ -5590,9 +5588,10 @@ impl Editor {
             }
 
             let position = active_stack_frame.position;
-
             let snapshot = self.buffer.read(cx).snapshot(cx);
-            let multibuffer_anchor = snapshot.anchor_in_excerpt(position)?;
+            let Some(buffer) = self.buffer.read(cx).buffer(position.buffer_id) else { return false };
+            let text_anchor = buffer.read(cx).snapshot(cx).anchor_before(position);
+            let multibuffer_anchor = snapshot.anchor_in_excerpt(text_anchor)?;
 
             self.clear_row_highlights::<ActiveDebugLine>();
 
@@ -7014,7 +7013,7 @@ impl Editor {
                 if let Some(transaction) = transaction
                     && !buffer.is_singleton()
                 {
-                    buffer.push_transaction(&transaction.0, cx);
+                    buffer.push_transaction(transaction, cx.now());
                 }
                 cx.notify();
             });
@@ -8325,7 +8324,6 @@ impl Editor {
                     editor.splice_inlays(&inlay_ids, new_inlays, cx);
                 })
                 .ok()?;
-            Some(())
         });
     }
 
@@ -9880,28 +9878,22 @@ impl Editor {
     }
 
     /// Stub: invalidate_autoclose_regions
-    pub fn invalidate_autoclose_regions(&mut self, _a0: &[Range<Anchor>], _a1: &multi_buffer::MultiBufferSnapshot) {}
+    pub fn invalidate_autoclose_regions(&mut self, _a0: &Arc<[text::Selection<Anchor>]>, _a1: &multi_buffer::MultiBufferSnapshot) {}
 
     /// Stub: is_lsp_relevant
-    pub fn is_lsp_relevant(&mut self, _file: Option<&language::File>, _cx: &mut App) -> bool { false }
+    pub fn is_lsp_relevant(&mut self, _file: Option<&dyn language::File>, _cx: &mut App) -> bool { false }
 
     /// Stub: pull_diagnostics
     pub fn pull_diagnostics(&mut self, _buffer_id: BufferId, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: refresh_active_diagnostics
-    pub fn refresh_active_diagnostics<A, R>(&mut self, _a0: A) -> R {
-        unimplemented!()
-    }
+    pub fn refresh_active_diagnostics(&mut self, _cx: &mut Context<Self>) {}
 
     /// Stub: refresh_code_lenses
-    pub fn refresh_code_lenses<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn refresh_code_lenses(&mut self, _for_buffer: BufferId, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: refresh_inline_diagnostics
-    pub fn refresh_inline_diagnostics<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
-        unimplemented!()
-    }
+    pub fn refresh_inline_diagnostics(&mut self, _a0: bool, _a1: &mut Window, _a2: &mut Context<Self>) {}
 
     /// Stub: render_edit_prediction_cursor_popover
     pub fn render_edit_prediction_cursor_popover<A, B, C, D, E, F, R>(&mut self, _a0: A, _a1: B, _a2: C, _a3: D, _a4: E, _a5: F) -> R {
@@ -9919,7 +9911,7 @@ impl Editor {
     }
 
     /// Stub: render_run_indicator
-    pub fn render_run_indicator<A, B, C, D, E, R>(&mut self, _a0: A, _a1: B, _a2: C, _a3: D, _a4: E) -> R {
+    pub fn render_run_indicator<A, B, C, D, E, R>(&self, _a0: A, _a1: B, _a2: C, _a3: D, _a4: E) -> R {
         unimplemented!()
     }
 
@@ -9932,19 +9924,15 @@ impl Editor {
     }
 
     /// Stub: set_max_diagnostics_severity
-    pub fn set_max_diagnostics_severity<A, B, R>(&mut self, _a0: A, _a1: B) -> R {
-        unimplemented!()
-    }
+    pub fn set_max_diagnostics_severity(&mut self, _severity: DiagnosticSeverity, _cx: &mut Context<Self>) {}
 
     /// Stub: should_open_signature_help_automatically
-    pub fn should_open_signature_help_automatically<A, B, R>(&mut self, _a0: A, _a1: B) -> R {
-        unimplemented!()
+    pub fn should_open_signature_help_automatically(&mut self, _position: &Anchor, _cx: &mut Context<Self>) -> bool {
+        false
     }
 
     /// Stub: show_signature_help_auto
-    pub fn show_signature_help_auto<A, B, R>(&mut self, _a0: A, _a1: B) -> R {
-        unimplemented!()
-    }
+    pub fn show_signature_help_auto(&mut self, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     /// Stub: toggle_code_lens
     pub fn toggle_code_lens<A, B, C, R>(&mut self, _a0: A, _a1: B, _a2: C) -> R {
@@ -10033,8 +10021,7 @@ impl Editor {
     }
 
     /// Stub: observe_pending_input
-    pub fn observe_pending_input<A, B, R>(&mut self, _a0: A, _a1: B) -> R {
-        unimplemented!()
+    pub fn observe_pending_input(&mut self, _window: &mut Window, _cx: &mut Context<Self>) {
     }
 
     /// Stub: show_edit_prediction
@@ -10083,8 +10070,8 @@ impl Editor {
     }
 
     /// Stub: edit_prediction_preview_is_active
-    pub fn edit_prediction_preview_is_active<R>(&self) -> R {
-        unimplemented!()
+    pub fn edit_prediction_preview_is_active(&self) -> bool {
+        false
     }
 
     /// Stub: edit_prediction_visible_in_cursor_popover
@@ -10126,7 +10113,7 @@ fn process_completion_for_edit(
                 Some(CompletionItemKind::FUNCTION) | Some(CompletionItemKind::METHOD)
             )
         {
-            snippet_source = label.to_string().into();
+            snippet_source = label.text.clone().into();
         }
         match Snippet::parse(&snippet_source).log_err() {
             Some(parsed_snippet) => (Some(parsed_snippet.clone()), parsed_snippet.text),
@@ -10367,9 +10354,9 @@ impl SemanticsProvider for WeakEntity<Project> {
         position: text::Anchor,
         cx: &mut App,
     ) -> Option<Task<Result<Vec<DocumentHighlight>>>> {
-        let task = self.update(cx, |project, cx| {
+        let Some(task) = self.update(cx, |project, cx| {
             project.document_highlights(buffer, position, cx)
-        }).ok()?;
+        }) else { return None };
         Some(cx.background_spawn(async move { task.await.map_err(|e| e) }))
     }
 
@@ -10399,25 +10386,19 @@ impl SemanticsProvider for WeakEntity<Project> {
         self.update(cx, |project, cx| {
             if project
                 .active_debug_session(cx)
-                .is_some_and(|(session, _)| session.read(cx).any_stopped_thread())
+                .is_some_and(|(session, _)| session.read(cx).any_stopped_thread().is_some())
             {
                 return true;
             }
 
-            buffer.update(cx, |buffer, cx| {
-                project.any_language_server_supports_inlay_hints(buffer, cx)
-            })
+            project.any_language_server_supports_inlay_hints(buffer, cx)
         })
-        .unwrap_or(false)
     }
 
     fn supports_semantic_tokens(&self, buffer: &Entity<Buffer>, cx: &mut App) -> bool {
         self.update(cx, |project, cx| {
-            buffer.update(cx, |buffer, cx| {
-                project.any_language_server_supports_semantic_tokens(buffer, cx)
-            })
+            project.any_language_server_supports_semantic_tokens(buffer, cx)
         })
-        .unwrap_or(false)
     }
 
     fn inline_values(
@@ -10451,8 +10432,8 @@ impl SemanticsProvider for WeakEntity<Project> {
 
     fn invalidate_inlay_hints(&self, for_buffers: &HashSet<BufferId>, cx: &mut App) {
         self.update(cx, |project, cx| {
-            project.lsp_store().update(cx, |lsp_store, _| {
-                lsp_store.invalidate_inlay_hints(for_buffers)
+            project.lsp_store().update(cx, |lsp_store, cx| {
+                lsp_store.invalidate_inlay_hints(for_buffers, cx)
             })
         })
         .ok();
@@ -10466,12 +10447,8 @@ impl SemanticsProvider for WeakEntity<Project> {
         known_chunks: Option<(clock::Global, HashSet<Range<BufferRow>>)>,
         cx: &mut App,
     ) -> Option<HashMap<Range<BufferRow>, Task<Result<CacheInlayHints>>>> {
-        self.update(cx, |project, cx| {
-            project.lsp_store().update(cx, |lsp_store, cx| {
-                lsp_store.inlay_hints(invalidate, buffer, ranges, known_chunks, cx)
-            })
-        })
-        .ok()
+        let _ = (invalidate, buffer, ranges, known_chunks);
+        None
     }
 
     fn semantic_tokens(
@@ -10480,12 +10457,8 @@ impl SemanticsProvider for WeakEntity<Project> {
         refresh: Option<RefreshForServer>,
         cx: &mut App,
     ) -> Option<Shared<Task<std::result::Result<BufferSemanticTokens, Arc<anyhow::Error>>>>> {
-        self.update(cx, |this, cx| {
-            this.lsp_store().update(cx, |lsp_store, cx| {
-                lsp_store.semantic_tokens(buffer, refresh, cx)
-            })
-        })
-        .ok()
+        let _ = (buffer, refresh);
+        None
     }
 
     fn range_for_rename(
@@ -10527,15 +10500,12 @@ impl SemanticsProvider for WeakEntity<Project> {
 
     fn perform_rename(
         &self,
-        buffer: &Entity<Buffer>,
-        position: text::Anchor,
-        new_name: String,
-        cx: &mut App,
+        _buffer: &Entity<Buffer>,
+        _position: text::Anchor,
+        _new_name: String,
+        _cx: &mut App,
     ) -> Option<Task<Result<ProjectTransaction>>> {
-        self.update(cx, |project, cx| {
-            project.perform_rename(buffer.clone(), position, new_name, cx)
-        })
-        .ok()
+        None
     }
 }
 
