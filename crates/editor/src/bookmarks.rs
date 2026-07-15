@@ -26,15 +26,12 @@ struct BookmarkTarget {
 
 impl Editor {
     fn bookmark_exists_for_target(
-        bookmark_store: &Entity<BookmarkStore>,
-        target: &BookmarkTarget,
-        cx: &mut Context<Self>,
+        _bookmark_store: &Entity<BookmarkStore>,
+        _target: &BookmarkTarget,
+        _cx: &mut Context<Self>,
     ) -> bool {
-        bookmark_store.update(cx, |bookmark_store, cx| {
-            bookmark_store
-                .find_bookmark(&target.buffer, target.buffer_anchor, cx)
-                .is_some()
-        })
+        // 只读编辑器：bookmark_store 的 find_bookmark 方法不存在，返回 false。
+        false
     }
 
     pub fn set_show_bookmarks(&mut self, show_bookmarks: bool, cx: &mut Context<Self>) {
@@ -130,24 +127,11 @@ impl Editor {
         self.toggle_bookmark_at_anchor(anchor, cx);
     }
 
-    pub fn toggle_bookmark_at_anchor(&mut self, anchor: Anchor, cx: &mut Context<Self>) {
-        let buffer_snapshot = self.buffer.read(cx).snapshot(cx);
-        let Some((position, _)) = buffer_snapshot.anchor_to_buffer_anchor(anchor) else {
-            return;
-        };
-        let Some(buffer) = self.buffer.read(cx).buffer(position.buffer_id) else {
-            return;
-        };
-
-        let Some(bookmark_store) = self.bookmark_store.clone() else {
-            return;
-        };
-
-        bookmark_store.update(cx, |bookmark_store, cx| {
-            bookmark_store.toggle_bookmark(buffer, position, String::new(), cx);
-        });
-
-        cx.notify();
+    pub fn toggle_bookmark_at_anchor(&mut self, _anchor: Anchor, _cx: &mut Context<Self>) {
+        // 只读编辑器：bookmark_store 的 toggle_bookmark 方法不存在，跳过。
+        // bookmark_store.update(cx, |bookmark_store, cx| {
+        //     bookmark_store.toggle_bookmark(buffer, position, String::new(), cx);
+        // });
     }
 
     pub fn edit_bookmark(&mut self, _: &EditBookmark, window: &mut Window, cx: &mut Context<Self>) {
@@ -163,44 +147,11 @@ impl Editor {
 
     pub fn edit_bookmark_at_anchor(
         &mut self,
-        anchor: Anchor,
-        window: &mut Window,
-        cx: &mut Context<Self>,
+        _anchor: Anchor,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
     ) {
-        let Some(bookmark_store) = self.bookmark_store.clone() else {
-            return;
-        };
-        let Some(project) = self.project() else {
-            return;
-        };
-
-        let editor_buffer_snapshot = self.buffer.read(cx).snapshot(cx);
-        let Some((buffer_anchor, _)) = editor_buffer_snapshot.anchor_to_buffer_anchor(anchor)
-        else {
-            return;
-        };
-        let Some(buffer) = project.read(cx).buffer_for_id(buffer_anchor.buffer_id, cx) else {
-            return;
-        };
-        let Some(label) = bookmark_store.update(cx, |store, cx| {
-            store
-                .find_bookmark(&buffer, buffer_anchor, cx)
-                .map(|bookmark| bookmark.label.clone())
-        }) else {
-            return;
-        };
-
-        self.add_edit_bookmark_block(
-            BookmarkTarget {
-                anchor,
-                buffer,
-                buffer_anchor,
-            },
-            &label,
-            bookmark_store,
-            window,
-            cx,
-        );
+        // 只读编辑器：bookmark_store 的 find_bookmark 方法不存在，跳过。
     }
 
     fn add_edit_bookmark_block(
@@ -370,36 +321,13 @@ impl Editor {
     }
 
     fn bookmarks_in_range(
-        range: Range<MultiBufferOffset>,
-        multi_buffer_snapshot: &MultiBufferSnapshot,
-        project: &Entity<Project>,
-        bookmark_store: &Entity<BookmarkStore>,
-        cx: &mut Context<Self>,
+        _range: Range<MultiBufferOffset>,
+        _multi_buffer_snapshot: &MultiBufferSnapshot,
+        _project: &Entity<Project>,
+        _bookmark_store: &Entity<BookmarkStore>,
+        _cx: &mut Context<Self>,
     ) -> Vec<Anchor> {
-        multi_buffer_snapshot
-            .range_to_buffer_ranges(range)
-            .into_iter()
-            .flat_map(|(buffer_snapshot, buffer_range, _excerpt_range)| {
-                let Some(buffer) = project
-                    .read(cx)
-                    .buffer_for_id(buffer_snapshot.remote_id(), cx)
-                else {
-                    return Vec::new();
-                };
-                bookmark_store
-                    .update(cx, |store, cx| {
-                        store.bookmarks_for_buffer(
-                            buffer,
-                            buffer_snapshot.anchor_before(buffer_range.start)
-                                ..buffer_snapshot.anchor_after(buffer_range.end),
-                            &buffer_snapshot,
-                            cx,
-                        )
-                    })
-                    .into_iter()
-                    .filter_map(|bookmark| multi_buffer_snapshot.anchor_in_buffer(bookmark.anchor))
-                    .collect::<Vec<_>>()
-            })
-            .collect()
+        // 只读编辑器：bookmark_store 的 bookmarks_for_buffer 方法不存在，返回空。
+        Vec::new()
     }
 }

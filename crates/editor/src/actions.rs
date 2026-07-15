@@ -652,6 +652,8 @@ actions!(
         MoveRight,
         /// Moves cursor to the beginning of the document.
         MoveToBeginning,
+        /// Moves cursor to the start of the document.
+        MoveToStart,
         /// Moves cursor to the enclosing bracket.
         MoveToEnclosingBracket,
         /// Selects the content within the nearest enclosing delimiters

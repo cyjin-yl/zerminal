@@ -8,12 +8,12 @@ pub(crate) use header::{header_jump_data, render_buffer_header};
 
 use crate::{
     BUFFER_HEADER_PADDING, BlockId, ChunkRendererContext, ChunkReplacement, CodeActionSource,
-    ConflictsOurs, ConflictsOursMarker, ConflictsOuter, ConflictsTheirs, ConflictsTheirsMarker,
+    CodeActionsMenu, ConflictsOurs, ConflictsOursMarker, ConflictsOuter, ConflictsTheirs, ConflictsTheirsMarker,
     ContextMenuPlacement, CursorShape, CustomBlockId, DisplayDiffHunk, DisplayPoint, DisplayRow,
-    Editor, EditorMode, EditorSettings, EditorSnapshot, EditorStyle,
+    EditDisplayMode, Editor, EditorMode, EditorSettings, EditorSnapshot, EditorStyle,
     FILE_HEADER_HEIGHT, FocusedBlock, GutterDimensions, HalfPageDown, HalfPageUp,
-    HOVER_POPOVER_GAP, HoveredCursor, InlayHintRefreshReason, LineDown, LineHighlight, LineUp,
-    MENU_GAP, MIN_POPOVER_CHARACTER_WIDTH, MIN_POPOVER_LINE_HEIGHT, POPOVER_RIGHT_OFFSET,
+    HandleInput, HOVER_POPOVER_GAP, HoveredCursor, InlayHintRefreshReason, LineDown, LineHighlight, LineUp,
+    MENU_GAP, MENU_ASIDE_MIN_WIDTH, MENU_ASIDE_MAX_WIDTH, MIN_POPOVER_CHARACTER_WIDTH, MIN_POPOVER_LINE_HEIGHT, POPOVER_RIGHT_OFFSET,
     MAX_LINE_LEN, MINIMAP_FONT_SIZE, PageDown, PageUp, Point, RowExt, RowRangeExt, Selection,
     SelectionDragState, SizingBehavior, SoftWrap, ToPoint,
     column_pixels,
@@ -31,6 +31,7 @@ use crate::{
         scroll_amount::ScrollAmount,
     },
 };
+use crate::stubs::{hide_hover, inlay_hint_settings};
 use buffer_diff::{DiffHunkStatus, DiffHunkStatusKind};
 use collections::{BTreeMap, HashMap, HashSet};
 use feature_flags::{DiffReviewFeatureFlag, FeatureFlagAppExt as _};
@@ -842,7 +843,7 @@ impl EditorElement {
                                     .color_for_participant(participant_index.0);
                             }
                         }
-                        CollaboratorId::Agent => {
+                        CollaboratorId::Agent(_) => {
                             if let Some((local_selection_style, _)) = selections.first_mut() {
                                 *local_selection_style = cx.theme().players().agent();
                             }

@@ -1597,7 +1597,7 @@ impl Editor {
 
             let mut context_menu = self.context_menu.borrow_mut();
             // 只读编辑器：补全菜单已删除，直接清空任何残留的上下文菜单。
-            if matches!(context_menu.as_ref(), Some(CodeContextMenu::Completions | CodeContextMenu::CodeActions)) {
+            if context_menu.as_ref().is_some() {
                 *context_menu = None;
             }
             drop(context_menu);

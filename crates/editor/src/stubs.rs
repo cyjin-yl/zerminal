@@ -99,8 +99,8 @@ pub enum Direction {
     Next,
 }
 
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
-pub struct CollaboratorId(pub u64);
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub enum CollaboratorId { Agent(u64), PeerId(u64) }
 
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct ViewId(pub u64);
@@ -108,6 +108,7 @@ pub struct ViewId(pub u64);
 #[derive(Clone, Debug)]
 pub struct Collaborator {
     pub user_id: u64,
+    pub peer_id: u64,
     pub replica_id: u16,
 }
 
@@ -200,7 +201,7 @@ pub struct Completion {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub enum CompletionIntent { Add, Replace }
+pub enum CompletionIntent { Add, Replace, Compose, Complete, CompleteWithReplace, CompleteWithInsert }
 
 #[derive(Clone, Debug)]
 pub struct CompletionDisplayOptions;
@@ -263,12 +264,19 @@ impl CodeContextMenu {
 
 #[derive(Clone, Copy, Debug)]
 pub enum ContextMenuOrigin { Cursor, GutterIndicator(u32) }
-
 #[derive(Clone, Debug, Default)]
 pub struct CompletionsMenu;
 
+impl CompletionsMenu {
+    pub fn visible(&self) -> bool { false }
+}
+
 #[derive(Clone, Debug, Default)]
 pub struct CodeActionsMenu;
+
+impl CodeActionsMenu {
+    pub fn visible(&self) -> bool { false }
+}
 
 // ---------------------------------------------------------------------------
 // Signature help / hover / code lens
@@ -295,7 +303,7 @@ pub enum SignatureHelpHiddenBy { Escape }
 pub struct HoverState;
 
 impl HoverState {
-    pub fn focused(&self) -> bool { false }
+    pub fn focused(&self, _window: &Window, _cx: &gpui::Context<crate::Editor>) -> bool { false }
 }
 
 #[derive(Clone, Debug, Default)]
@@ -306,6 +314,8 @@ pub enum HoverLink {
     Url(String),
     InlayHighlight(LocationLink),
     Text(String),
+    LspLocation(language::Location),
+    File(project::ProjectPath),
 }
 
 pub fn find_file(_path: &std::path::Path) -> Option<Entity<Buffer>> { None }
@@ -314,11 +324,12 @@ pub fn find_url(_text: &str) -> Option<String> { None }
 
 pub fn find_url_from_range(_text: &str, _range: std::ops::Range<usize>) -> Option<String> { None }
 
-pub fn hide_hover(_editor: &mut crate::Editor, _window: &mut Window, _cx: &mut gpui::Context<crate::Editor>) {}
+pub fn hide_hover(_editor: &mut crate::Editor, _window: &mut Window, _cx: &mut gpui::Context<crate::Editor>) -> bool { false }
 
 pub fn hover_at(
     _editor: &mut crate::Editor,
     _point: Option<crate::DisplayPoint>,
+    _event_position: Option<gpui::Point<gpui::Pixels>>,
     _window: &mut Window,
     _cx: &mut gpui::Context<crate::Editor>,
 ) {
@@ -354,7 +365,11 @@ pub struct InlineValueCache {
 
 #[derive(Clone, Debug, Default)]
 pub struct LspInlayHintData;
-pub fn inlay_hint_settings(_language: Option<&language::LanguageName>, _cx: &App) -> InlayHintSettings {
+pub fn inlay_hint_settings(
+    _anchor: text::Anchor,
+    _snapshot: &language::BufferSnapshot,
+    _cx: &App,
+) -> InlayHintSettings {
     InlayHintSettings::default()
 }
 
@@ -362,7 +377,7 @@ pub fn inlay_hint_settings(_language: Option<&language::LanguageName>, _cx: &App
 pub struct InlayHintSettings { pub enabled: bool }
 
 #[derive(Clone, Copy, Debug)]
-pub enum InlayHintRefreshReason { RefreshRequested, NewLinesShown, ModifiersChanged(bool) }
+pub enum InlayHintRefreshReason { RefreshRequested, NewLinesShown, ModifiersChanged(bool), SettingsChange, BuffersRemoved, BufferEdited }
 
 #[derive(Clone, Debug)]
 pub struct InlaySplice {
@@ -422,10 +437,10 @@ pub enum SuggestionDisplayType { Inline, Popup }
 pub struct RegisteredEditPredictionDelegate;
 
 #[derive(Clone, Copy, Debug, Default)]
-pub enum MenuEditPredictionsPolicy { #[default] Disabled }
+pub enum MenuEditPredictionsPolicy { #[default] Disabled, ByProvider }
 
 #[derive(Clone, Copy, Debug, Default)]
-pub enum EditDisplayMode { #[default] Inline }
+pub enum EditDisplayMode { #[default] Inline, TabAccept }
 
 #[derive(Clone, Debug, Default)]
 pub struct EditPredictionPreview;
@@ -441,15 +456,19 @@ pub fn make_suggestion_styles(_cx: &App) -> TextStyle { TextStyle::default() }
 #[derive(Clone, Debug)]
 pub struct Snippet { pub text: SharedString }
 
+impl Snippet {
+    pub fn parse(_text: &str) -> Option<Self> { None }
+}
+
 #[derive(Clone, Debug)]
-pub enum PrepareRenameResponse { Ready }
+pub enum PrepareRenameResponse { Ready, Success(std::ops::Range<text::Anchor>), OnlyUnpreparedRenameSupported, InvalidPosition }
 
 // ---------------------------------------------------------------------------
 // Breakpoints (define missing variants/types not in project::stubs)
 // ---------------------------------------------------------------------------
 
 #[derive(Clone, Copy, Debug)]
-pub enum BreakpointEditAction { Toggle, InvertState }
+pub enum BreakpointEditAction { Toggle, InvertState, EditLogMessage, EditHitCondition, EditCondition }
 
 #[derive(Clone, Copy, Debug)]
 pub enum BreakpointState { Enabled, Disabled }
@@ -511,4 +530,48 @@ pub fn refresh_linked_ranges(
     _editor: &mut crate::Editor,
     _cx: &mut gpui::Context<crate::Editor>,
 ) {
+}
+
+// ---------------------------------------------------------------------------
+#[derive(Clone)]
+pub struct Inlay {
+    pub id: project::InlayId,
+    pub position: text::Anchor,
+    text: text::Rope,
+    pub content: InlayContent,
+}
+
+impl std::fmt::Debug for Inlay {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Inlay").field("id", &self.id).field("position", &self.position).field("text", &self.text.to_string()).field("content", &self.content).finish()
+    }
+}
+
+impl Inlay {
+    pub fn text(&self) -> &text::Rope {
+        &self.text
+    }
+
+    pub fn mock_hint(_id: usize, anchor: text::Anchor, hint_text: &str) -> Self {
+        Self { id: project::InlayId::Hint(0), position: anchor, text: text::Rope::from(hint_text), content: InlayContent::Label(gpui::SharedString::from(hint_text)) }
+    }
+
+    pub fn edit_prediction(_id: usize, anchor: text::Anchor, pred_text: &str) -> Self {
+        Self { id: project::InlayId::Hint(0), position: anchor, text: text::Rope::from(pred_text), content: InlayContent::Label(gpui::SharedString::from(pred_text)) }
+    }
+}
+
+// InlayContent stub (inlays 模块已删除)
+#[derive(Clone, Debug)]
+pub enum InlayContent {
+    Label(gpui::SharedString),
+    Color(gpui::Hsla),
+}
+
+// InlayHighlight stub (hover_links 模块已删除)
+#[derive(Clone, Debug)]
+pub struct InlayHighlight {
+    pub inlay: project::InlayId,
+    pub inlay_position: text::Anchor,
+    pub range: std::ops::Range<usize>,
 }

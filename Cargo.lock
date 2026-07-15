@@ -16574,6 +16574,126 @@ dependencies = [
 ]
 
 [[package]]
+name = "z3rm"
+version = "1.12.0"
+dependencies = [
+ "anyhow",
+ "askpass",
+ "assets",
+ "auto_update",
+ "auto_update_ui",
+ "cli",
+ "clock",
+ "collections",
+ "command_palette",
+ "component",
+ "crashes",
+ "db",
+ "diagnostics",
+ "editor",
+ "encoding_selector",
+ "env_logger 0.11.8",
+ "etw_tracing",
+ "extension",
+ "extension_host",
+ "extensions_ui",
+ "feature_flags",
+ "file_finder",
+ "fs",
+ "futures",
+ "git",
+ "git_hosting_providers",
+ "git_ui",
+ "go_to_line",
+ "gpui",
+ "gpui_platform",
+ "gpui_tokio",
+ "hdrhistogram",
+ "http_client",
+ "image",
+ "inventory",
+ "itertools 0.14.0",
+ "json_schema_store",
+ "keymap_editor",
+ "language",
+ "language_extension",
+ "language_selector",
+ "languages",
+ "line_ending_selector",
+ "markdown",
+ "menu",
+ "notifications",
+ "parking_lot",
+ "paths",
+ "picker",
+ "pkg-config",
+ "profiling",
+ "project",
+ "project_panel",
+ "project_symbols",
+ "proto",
+ "rayon",
+ "recent_projects",
+ "release_channel",
+ "remote",
+ "reqwest_client",
+ "rope",
+ "sandbox",
+ "search",
+ "session",
+ "settings",
+ "settings_profile_selector",
+ "settings_ui",
+ "shellexpand",
+ "sidebar",
+ "smol",
+ "sysinfo 0.37.2",
+ "tab_switcher",
+ "telemetry",
+ "telemetry_events",
+ "tempfile",
+ "terminal_view",
+ "theme",
+ "theme_extension",
+ "theme_selector",
+ "theme_settings",
+ "title_bar",
+ "tracing",
+ "ui",
+ "ui_prompt",
+ "url",
+ "urlencoding",
+ "util",
+ "which_key",
+ "workspace",
+ "z3rm_macros",
+ "z3rm_macros_types",
+ "zed_actions",
+ "zed_env_vars",
+ "zlog",
+ "zlog_settings",
+ "ztracing",
+]
+
+[[package]]
+name = "z3rm_macros"
+version = "0.1.0"
+dependencies = [
+ "inventory",
+ "proc-macro2",
+ "quote",
+ "syn 2.0.117",
+ "z3rm_macros_types",
+]
+
+[[package]]
+name = "z3rm_macros_types"
+version = "0.1.0"
+dependencies = [
+ "inventory",
+]
+
+[[package]]
 name = "zbus"
 version = "5.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -16872,126 +16992,6 @@ name = "zeno"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "6df3dc4292935e51816d896edcd52aa30bc297907c26167fec31e2b0c6a32524"
-
-[[package]]
-name = "z3rm"
-version = "1.12.0"
-dependencies = [
- "anyhow",
- "askpass",
- "assets",
- "auto_update",
- "auto_update_ui",
- "cli",
- "clock",
- "collections",
- "command_palette",
- "component",
- "crashes",
- "db",
- "diagnostics",
- "editor",
- "encoding_selector",
- "env_logger 0.11.8",
- "etw_tracing",
- "extension",
- "extension_host",
- "extensions_ui",
- "feature_flags",
- "file_finder",
- "fs",
- "futures",
- "git",
- "git_hosting_providers",
- "git_ui",
- "go_to_line",
- "gpui",
- "gpui_platform",
- "gpui_tokio",
- "hdrhistogram",
- "http_client",
- "image",
- "inventory",
- "itertools 0.14.0",
- "json_schema_store",
- "keymap_editor",
- "language",
- "language_extension",
- "language_selector",
- "languages",
- "line_ending_selector",
- "markdown",
- "menu",
- "notifications",
- "parking_lot",
- "paths",
- "picker",
- "pkg-config",
- "profiling",
- "project",
- "project_panel",
- "project_symbols",
- "proto",
- "rayon",
- "recent_projects",
- "release_channel",
- "remote",
- "reqwest_client",
- "rope",
- "sandbox",
- "search",
- "session",
- "settings",
- "settings_profile_selector",
- "settings_ui",
- "shellexpand",
- "sidebar",
- "smol",
- "sysinfo 0.37.2",
- "tab_switcher",
- "telemetry",
- "telemetry_events",
- "tempfile",
- "terminal_view",
- "theme",
- "theme_extension",
- "theme_selector",
- "theme_settings",
- "title_bar",
- "tracing",
- "ui",
- "ui_prompt",
- "url",
- "urlencoding",
- "util",
- "which_key",
- "workspace",
- "zed_actions",
- "zed_env_vars",
- "z3rm_macros",
- "z3rm_macros_types",
- "zlog",
- "zlog_settings",
- "ztracing",
-]
-
-[[package]]
-name = "z3rm_macros"
-version = "0.1.0"
-dependencies = [
- "inventory",
- "proc-macro2",
- "quote",
- "syn 2.0.117",
- "z3rm_macros_types",
-]
-
-[[package]]
-name = "z3rm_macros_types"
-version = "0.1.0"
-dependencies = [
- "inventory",
-]
 
 [[package]]
 name = "zerocopy"

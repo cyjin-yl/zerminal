@@ -68,19 +68,20 @@ use collections::TypeIdHashMap;
 pub use stubs::{
     AvailableCodeAction, Breakpoint, BreakpointEditAction, BreakpointSessionState, BreakpointState,
     BreakpointStore, BreakpointStoreEvent, BreakpointWithPosition, BufferSemanticTokens,
-    CacheInlayHints, CodeActionProvider, CodeContextMenu, Collaborator, CollaboratorId,
+    CacheInlayHints, CodeActionProvider, CodeActionsMenu, CodeContextMenu, Collaborator, CollaboratorId,
     Completion, CompletionDisplayOptions, CompletionDocumentation, CompletionGroup,
     CompletionIntent, CompletionProvider, CompletionResponse, CompletionSource, CompletionsMenu,
     ContextMenuOrigin, DiagnosticRenderer, Direction, DocumentHighlight, EditDisplayMode,
     EditPredictionDelegate, EditPredictionDelegateHandle, EditPredictionDiscardReason,
     EditPredictionGranularity, EditPredictionPreview, EditPredictionRequestTrigger,
     EditPredictionSettings, EditPredictionState, GlobalDiagnosticRenderer, Hover, HoverLink,
-    HoverState, HoveredLinkState, InlayHint, InlayHintLabel, InlayHintLabelPart,
-    InlayHintLabelPartTooltip, InlayHintTooltip, InlayId, InlaySplice, InlineDiagnostic,
+    HoverState, HoveredLinkState, Inlay, InlayContent, InlayHint, InlayHintLabel, InlayHintLabelPart,
+    InlayHintLabelPartTooltip, InlayHintTooltip, InlayId, InlayHighlight, InlaySplice, InlineDiagnostic,
     InlineValueCache, InvalidationStrategy, LanguageServerToQuery, LinkedEditingRanges,
     LocationLink, LspAction, LspFormatTarget, LspInlayHintData, MenuEditPredictionsPolicy,
     OpenLspBufferHandle, ParticipantIndex, PrepareRenameResponse, ProjectExt, ProjectLspStoreExt,
-    RevealInFileManager, RunnableData, RunnableTasks, ResolvedTasks, Session, SessionEvent,
+    RevealInFileManager, RegisteredEditPredictionDelegate,
+    RunnableData, RunnableTasks, ResolvedTasks, Session, SessionEvent,
     SignatureHelpHiddenBy, SignatureHelpState, Snippet, SuggestionDisplayType, TaskVariables,
     TelemetrySpawnLocation, VariableName, ViewId, VimModeSetting, make_suggestion_styles,
     set_diagnostic_renderer,
@@ -89,6 +90,7 @@ pub(crate) use stubs::{
     ActiveDiagnostic, CodeLensState, CompletionId, CompletionGroup as _, DiagnosticRenderer as _,
     HOVER_POPOVER_GAP, MENU_ASIDE_MAX_WIDTH, MENU_ASIDE_MIN_WIDTH, MENU_GAP,
     MIN_POPOVER_CHARACTER_WIDTH, MIN_POPOVER_LINE_HEIGHT, POPOVER_RIGHT_OFFSET,
+    FormatTrigger, RefreshForServer,
     InlayHintRefreshReason, InlayHintSettings, ProjectBufferExt, ProjectCapabilityExt,
     SignatureHelpPopover, find_file, find_url, find_url_from_range, hide_hover, hover_at,
     hover_markdown_style, inlay_hint_settings, parse_zed_link, refresh_linked_ranges,
@@ -1698,6 +1700,11 @@ impl Editor {
     ) {
     }
 
+    /// Stub: visible_buffer_ranges (collaboration 模块已删除)
+    pub fn visible_buffer_ranges(&mut self, _cx: &App) -> Vec<(language::BufferId, Range<Anchor>)> {
+        Vec::new()
+    }
+
     /// Stub: refresh inlay hints (inlay hints 模块已删除)
     pub fn refresh_inlay_hints(&mut self, _reason: InlayHintRefreshReason, _cx: &mut Context<Self>) {
     }
@@ -1705,7 +1712,10 @@ impl Editor {
     /// Stub: refresh edit prediction (edit prediction 模块已删除)
     pub fn refresh_edit_prediction(
         &mut self,
+        _show_completions: bool,
+        _is_edit: bool,
         _trigger: EditPredictionRequestTrigger,
+        _window: &mut Window,
         _cx: &mut Context<Self>,
     ) {
     }
@@ -1735,6 +1745,9 @@ impl Editor {
     pub fn update_hovered_link(
         &mut self,
         _point: DisplayPoint,
+        _event_position: Option<gpui::Point<Pixels>>,
+        _snapshot: &DisplaySnapshot,
+        _modifiers: gpui::Modifiers,
         _window: &mut Window,
         _cx: &mut Context<Self>,
     ) {
@@ -1754,12 +1767,18 @@ impl Editor {
     }
 
     /// Stub: show edit predictions in menu (edit prediction 模块已删除)
-    pub fn show_edit_predictions_in_menu(&mut self, _enabled: bool, _cx: &mut Context<Self>) {
+    pub fn show_edit_predictions_in_menu(&self) -> bool {
+        false
     }
 
     /// Stub: update inlay link and hover points (inlay/hover 模块已删除)
     pub fn update_inlay_link_and_hover_points(
         &mut self,
+        _snapshot: &DisplaySnapshot,
+        _point: DisplayPoint,
+        _event_position: Option<gpui::Point<Pixels>>,
+        _secondary: bool,
+        _shift: bool,
         _window: &mut Window,
         _cx: &mut Context<Self>,
     ) {
@@ -1773,13 +1792,13 @@ impl Editor {
     ) {
     }
 
-    /// Stub: visible buffer ranges (collaboration 模块已删除)
-    pub fn visible_buffer_ranges(&mut self) -> Vec<(BufferId, Range<Anchor>)> {
-        Vec::new()
-    }
 
     /// Stub: hide signature help (signature help 模块已删除)
-    pub fn hide_signature_help(&mut self, _cx: &mut Context<Self>) {
+    pub fn hide_signature_help(
+        &mut self,
+        _cx: &mut Context<Self>,
+        _hidden_by: SignatureHelpHiddenBy,
+    ) {
     }
 
     /// Stub: has active edit prediction (edit prediction 模块已删除)
@@ -2806,22 +2825,12 @@ impl Editor {
     }
 
     pub fn new_in_workspace(
-        workspace: &mut Workspace,
-        window: &mut Window,
-        cx: &mut Context<Workspace>,
+        _workspace: &mut Workspace,
+        _window: &mut Window,
+        _cx: &mut Context<Workspace>,
     ) -> Task<Result<Entity<Editor>>> {
-        let project = workspace.project().clone();
-        let create = project.update(cx, |project, cx| project.create_buffer(None, true, cx));
-
-        cx.spawn_in(window, async move |workspace, cx| {
-            let buffer = create.await?;
-            workspace.update_in(cx, |workspace, window, cx| {
-                let editor =
-                    cx.new(|cx| Editor::for_buffer(buffer, Some(project.clone()), window, cx));
-                workspace.add_item_to_active_pane(Box::new(editor.clone()), None, true, window, cx);
-                editor
-            })
-        })
+        // 只读编辑器：project.create_buffer 签名不匹配，返回错误。
+        Task::ready(Err(anyhow!("new buffer creation disabled in read-only editor")))
     }
 
     fn new_file_vertical(
@@ -2852,37 +2861,12 @@ impl Editor {
     }
 
     fn new_file_in_direction(
-        workspace: &mut Workspace,
-        direction: SplitDirection,
-        window: &mut Window,
-        cx: &mut Context<Workspace>,
+        _workspace: &mut Workspace,
+        _direction: SplitDirection,
+        _window: &mut Window,
+        _cx: &mut Context<Workspace>,
     ) {
-        let project = workspace.project().clone();
-        let create = project.update(cx, |project, cx| project.create_buffer(None, true, cx));
-
-        cx.spawn_in(window, async move |workspace, cx| {
-            let buffer = create.await?;
-            workspace.update_in(cx, move |workspace, window, cx| {
-                workspace.split_item(
-                    direction,
-                    Box::new(
-                        cx.new(|cx| Editor::for_buffer(buffer, Some(project.clone()), window, cx)),
-                    ),
-                    window,
-                    cx,
-                )
-            })?;
-            anyhow::Ok(())
-        })
-        .detach_and_prompt_err("Failed to create buffer", window, cx, |e, _, _| {
-            match e.error_code() {
-                ErrorCode::RemoteUpgradeRequired => Some(format!(
-                "The remote instance of Zed does not support this yet. It must be upgraded to {}",
-                e.error_tag("required").unwrap_or("the latest version")
-            )),
-                _ => None,
-            }
-        });
+        // 只读编辑器：project.create_buffer 签名不匹配，跳过。
     }
 
     pub fn leader_id(&self) -> Option<CollaboratorId> {
@@ -3280,7 +3264,7 @@ impl Editor {
 
         dismissed |= self.take_rename(false, window, cx).is_some();
         dismissed |= self.hide_blame_popover(true, cx);
-        dismissed |= hide_hover(self, cx);
+        dismissed |= hide_hover(self, window, cx);
         dismissed |= self.hide_signature_help(cx, SignatureHelpHiddenBy::Escape);
         dismissed |= self.hide_context_menu(window, cx).is_some();
         dismissed |= self.mouse_context_menu.take().is_some();
@@ -3975,59 +3959,12 @@ impl Editor {
 
     fn active_bookmarks(
         &self,
-        range: Range<DisplayRow>,
-        window: &mut Window,
-        cx: &mut Context<Self>,
+        _range: Range<DisplayRow>,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
     ) -> HashSet<DisplayRow> {
-        let mut bookmark_display_points = HashSet::default();
-
-        let Some(bookmark_store) = self.bookmark_store.clone() else {
-            return bookmark_display_points;
-        };
-
-        let snapshot = self.snapshot(window, cx);
-
-        let multi_buffer_snapshot = snapshot.buffer_snapshot();
-        let Some(project) = self.project() else {
-            return bookmark_display_points;
-        };
-
-        let range = snapshot.display_point_to_point(DisplayPoint::new(range.start, 0), Bias::Left)
-            ..snapshot.display_point_to_point(DisplayPoint::new(range.end, 0), Bias::Right);
-
-        for (buffer_snapshot, range, _excerpt_range) in
-            multi_buffer_snapshot.range_to_buffer_ranges(range.start..range.end)
-        {
-            let Some(buffer) = project
-                .read(cx)
-                .buffer_for_id(buffer_snapshot.remote_id(), cx)
-            else {
-                continue;
-            };
-            let bookmarks = bookmark_store.update(cx, |store, cx| {
-                store.bookmarks_for_buffer(
-                    buffer,
-                    buffer_snapshot.anchor_before(range.start)
-                        ..buffer_snapshot.anchor_after(range.end),
-                    &buffer_snapshot,
-                    cx,
-                )
-            });
-            for bookmark in bookmarks {
-                let Some(multi_buffer_anchor) =
-                    multi_buffer_snapshot.anchor_in_buffer(bookmark.anchor)
-                else {
-                    continue;
-                };
-                let position = multi_buffer_anchor
-                    .to_point(&multi_buffer_snapshot)
-                    .to_display_point(&snapshot);
-
-                bookmark_display_points.insert(position.row());
-            }
-        }
-
-        bookmark_display_points
+        // 只读编辑器：bookmark_store 的 bookmarks_for_buffer 方法不存在，返回空集。
+        HashSet::default()
     }
 
     fn render_bookmark(&self, row: DisplayRow, cx: &mut Context<Self>) -> IconButton {
@@ -4651,158 +4588,14 @@ impl Editor {
         ));
     }
 
+    /// Stub: insert_snippet (snippet 模块已删除)
     pub fn insert_snippet(
         &mut self,
-        insertion_ranges: &[Range<MultiBufferOffset>],
-        snippet: Snippet,
-        window: &mut Window,
-        cx: &mut Context<Self>,
+        _insertion_ranges: &[Range<MultiBufferOffset>],
+        _snippet: Snippet,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
     ) -> Result<()> {
-        struct Tabstop<T> {
-            is_end_tabstop: bool,
-            ranges: Vec<Range<T>>,
-            choices: Option<Vec<String>>,
-        }
-
-        let tabstops = self.buffer.update(cx, |buffer, cx| {
-            let snippet_text: Arc<str> = snippet.text.clone().into();
-            let edits = insertion_ranges
-                .iter()
-                .cloned()
-                .map(|range| (range, snippet_text.clone()));
-            let autoindent_mode = AutoindentMode::Block {
-                original_indent_columns: Vec::new(),
-            };
-            buffer.edit(edits, Some(autoindent_mode), cx);
-
-            let snapshot = &*buffer.read(cx);
-            let snippet = &snippet;
-            snippet
-                .tabstops
-                .iter()
-                .map(|tabstop| {
-                    let is_end_tabstop = tabstop.ranges.first().is_some_and(|tabstop| {
-                        tabstop.is_empty() && tabstop.start == snippet.text.len() as isize
-                    });
-                    let mut tabstop_ranges = tabstop
-                        .ranges
-                        .iter()
-                        .flat_map(|tabstop_range| {
-                            let mut delta = 0_isize;
-                            insertion_ranges.iter().map(move |insertion_range| {
-                                let insertion_start = insertion_range.start + delta;
-                                delta += snippet.text.len() as isize
-                                    - (insertion_range.end - insertion_range.start) as isize;
-
-                                let start =
-                                    (insertion_start + tabstop_range.start).min(snapshot.len());
-                                let end = (insertion_start + tabstop_range.end).min(snapshot.len());
-                                snapshot.anchor_before(start)..snapshot.anchor_after(end)
-                            })
-                        })
-                        .collect::<Vec<_>>();
-                    tabstop_ranges.sort_unstable_by(|a, b| a.start.cmp(&b.start, snapshot));
-
-                    Tabstop {
-                        is_end_tabstop,
-                        ranges: tabstop_ranges,
-                        choices: tabstop.choices.clone(),
-                    }
-                })
-                .collect::<Vec<_>>()
-        });
-        if let Some(tabstop) = tabstops.first() {
-            self.change_selections(Default::default(), window, cx, |s| {
-                // Reverse order so that the first range is the newest created selection.
-                // Completions will use it and autoscroll will prioritize it.
-                s.select_ranges(tabstop.ranges.iter().rev().cloned());
-            });
-
-            if let Some(choices) = &tabstop.choices
-                && let Some(selection) = tabstop.ranges.first()
-            {
-                self.show_snippet_choices(choices, selection.clone(), cx)
-            }
-
-            // If we're already at the last tabstop and it's at the end of the snippet,
-            // we're done, we don't need to keep the state around.
-            if !tabstop.is_end_tabstop {
-                let choices = tabstops
-                    .iter()
-                    .map(|tabstop| tabstop.choices.clone())
-                    .collect();
-
-                let ranges = tabstops
-                    .into_iter()
-                    .map(|tabstop| tabstop.ranges)
-                    .collect::<Vec<_>>();
-
-                self.snippet_stack.push(SnippetState {
-                    active_index: 0,
-                    ranges,
-                    choices,
-                });
-            }
-
-            // Check whether the just-entered snippet ends with an auto-closable bracket.
-            if self.autoclose_regions.is_empty() {
-                let snapshot = self.buffer.read(cx).snapshot(cx);
-                for selection in &mut self.selections.all::<Point>(&self.display_snapshot(cx)) {
-                    let selection_head = selection.head();
-                    let Some(scope) = snapshot.language_scope_at(selection_head) else {
-                        continue;
-                    };
-
-                    let mut bracket_pair = None;
-                    let max_lookup_length = scope
-                        .brackets()
-                        .map(|(pair, _)| {
-                            pair.start
-                                .as_str()
-                                .chars()
-                                .count()
-                                .max(pair.end.as_str().chars().count())
-                        })
-                        .max();
-                    if let Some(max_lookup_length) = max_lookup_length {
-                        let next_text = snapshot
-                            .chars_at(selection_head)
-                            .take(max_lookup_length)
-                            .collect::<String>();
-                        let prev_text = snapshot
-                            .reversed_chars_at(selection_head)
-                            .take(max_lookup_length)
-                            .collect::<String>();
-
-                        for (pair, enabled) in scope.brackets() {
-                            if enabled
-                                && pair.close
-                                && prev_text.starts_with(pair.start.as_str())
-                                && next_text.starts_with(pair.end.as_str())
-                            {
-                                bracket_pair = Some(pair.clone());
-                                break;
-                            }
-                        }
-                    }
-
-                    if let Some(pair) = bracket_pair {
-                        let snapshot_settings = snapshot.language_settings_at(selection_head, cx);
-                        let autoclose_enabled =
-                            self.use_autoclose && snapshot_settings.use_autoclose;
-                        if autoclose_enabled {
-                            let start = snapshot.anchor_after(selection_head);
-                            let end = snapshot.anchor_after(selection_head);
-                            self.autoclose_regions.push(AutocloseRegion {
-                                selection_id: selection.id,
-                                range: start..end,
-                                pair,
-                            });
-                        }
-                    }
-                }
-            }
-        }
         Ok(())
     }
 
@@ -4871,99 +4664,14 @@ impl Editor {
         false
     }
 
-    pub fn clear(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        self.transact(window, cx, |this, window, cx| {
-            this.select_all(&SelectAll, window, cx);
-            this.insert("", window, cx);
-        });
-    }
+    /// Stub: clear (编辑功能已删除)
+    pub fn clear(&mut self, _window: &mut Window, _cx: &mut Context<Self>) {}
 
-    pub fn backspace(&mut self, _: &Backspace, window: &mut Window, cx: &mut Context<Self>) {
-        if self.read_only(cx) {
-            return;
-        }
-        self.transact(window, cx, |this, window, cx| {
-            this.select_autoclose_pair(window, cx);
+    /// Stub: backspace (编辑功能已删除)
+    pub fn backspace(&mut self, _: &Backspace, _window: &mut Window, _cx: &mut Context<Self>) {}
 
-            let linked_edits = this.linked_edits_for_selections(Arc::from(""), cx);
-
-            let display_map = this.display_map.update(cx, |map, cx| map.snapshot(cx));
-            let mut selections = this.selections.all::<MultiBufferPoint>(&display_map);
-            for selection in &mut selections {
-                if selection.is_empty() {
-                    let old_head = selection.head();
-                    let mut new_head =
-                        movement::left(&display_map, old_head.to_display_point(&display_map))
-                            .to_point(&display_map);
-                    if let Some((buffer, line_buffer_range)) = display_map
-                        .buffer_snapshot()
-                        .buffer_line_for_row(MultiBufferRow(old_head.row))
-                    {
-                        let indent_size = buffer.indent_size_for_line(line_buffer_range.start.row);
-                        let indent_len = match indent_size.kind {
-                            IndentKind::Space => {
-                                buffer.settings_at(line_buffer_range.start, cx).tab_size
-                            }
-                            IndentKind::Tab => NonZeroU32::new(1).unwrap(),
-                        };
-                        if old_head.column <= indent_size.len && old_head.column > 0 {
-                            let indent_len = indent_len.get();
-                            new_head = cmp::min(
-                                new_head,
-                                MultiBufferPoint::new(
-                                    old_head.row,
-                                    ((old_head.column - 1) / indent_len) * indent_len,
-                                ),
-                            );
-                        }
-                    }
-
-                    selection.set_head(new_head, SelectionGoal::None);
-                }
-            }
-
-            this.change_selections(Default::default(), window, cx, |s| s.select(selections));
-            this.insert("", window, cx);
-            linked_edits.apply_with_left_expansion(cx);
-            this.refresh_edit_prediction(
-                true,
-                false,
-                EditPredictionRequestTrigger::BufferEdit,
-                window,
-                cx,
-            );
-            refresh_linked_ranges(this, window, cx);
-        });
-    }
-
-    pub fn delete(&mut self, _: &Delete, window: &mut Window, cx: &mut Context<Self>) {
-        if self.read_only(cx) {
-            return;
-        }
-        self.transact(window, cx, |this, window, cx| {
-            this.change_selections(Default::default(), window, cx, |s| {
-                s.move_with(&mut |map, selection| {
-                    if selection.is_empty() {
-                        let cursor = movement::right(map, selection.head());
-                        selection.end = cursor;
-                        selection.reversed = true;
-                        selection.goal = SelectionGoal::None;
-                    }
-                })
-            });
-            let linked_edits = this.linked_edits_for_selections(Arc::from(""), cx);
-            this.insert("", window, cx);
-            linked_edits.apply(cx);
-            this.refresh_edit_prediction(
-                true,
-                false,
-                EditPredictionRequestTrigger::BufferEdit,
-                window,
-                cx,
-            );
-            refresh_linked_ranges(this, window, cx);
-        });
-    }
+    /// Stub: delete (编辑功能已删除)
+    pub fn delete(&mut self, _: &Delete, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     pub fn backtab(&mut self, _: &Backtab, window: &mut Window, cx: &mut Context<Self>) {
         if self.mode.is_single_line() {
@@ -5011,445 +4719,44 @@ impl Editor {
         cx.propagate();
     }
 
-    pub fn tab(&mut self, _: &Tab, window: &mut Window, cx: &mut Context<Self>) {
-        if self.mode.is_single_line() {
-            cx.propagate();
-            return;
-        }
+    /// Stub: tab (编辑功能已删除)
+    pub fn tab(&mut self, _: &Tab, _window: &mut Window, _cx: &mut Context<Self>) {}
 
-        if self.move_to_next_snippet_tabstop(window, cx) {
-            return;
-        }
-        if self.read_only(cx) {
-            return;
-        }
-        let mut selections = self.selections.all_adjusted(&self.display_snapshot(cx));
-        let buffer = self.buffer.read(cx);
-        let snapshot = buffer.snapshot(cx);
-        let rows_iter = selections.iter().map(|s| s.head().row);
-        let suggested_indents = snapshot.suggested_indents(rows_iter, cx);
+    /// Stub: indent (编辑功能已删除)
+    pub fn indent(&mut self, _: &Indent, _window: &mut Window, _cx: &mut Context<Self>) {}
 
-        let has_some_cursor_in_whitespace = selections
-            .iter()
-            .filter(|selection| selection.is_empty())
-            .any(|selection| {
-                let cursor = selection.head();
-                let current_indent = snapshot.indent_size_for_line(MultiBufferRow(cursor.row));
-                cursor.column < current_indent.len
-            });
-
-        let mut edits = Vec::new();
-        let mut prev_edited_row = 0;
-        let mut row_delta = 0;
-        for selection in &mut selections {
-            if selection.start.row != prev_edited_row {
-                row_delta = 0;
-            }
-            prev_edited_row = selection.end.row;
-
-            // If cursor is after a list prefix, make selection non-empty to trigger line indent
-            if selection.is_empty() {
-                let cursor = selection.head();
-                let settings = buffer.language_settings_at(cursor, cx);
-                if settings.indent_list_on_tab {
-                    if let Some(language) = snapshot.language_scope_at(Point::new(cursor.row, 0)) {
-                        if input::is_list_prefix_row(
-                            MultiBufferRow(cursor.row),
-                            &snapshot,
-                            &language,
-                        ) {
-                            row_delta = Self::indent_selection(
-                                buffer, &snapshot, selection, &mut edits, row_delta, cx,
-                            );
-                            continue;
-                        }
-                    }
-                }
-            }
-
-            // If the selection is non-empty, then increase the indentation of the selected lines.
-            if !selection.is_empty() {
-                row_delta =
-                    Self::indent_selection(buffer, &snapshot, selection, &mut edits, row_delta, cx);
-                continue;
-            }
-
-            let cursor = selection.head();
-            let current_indent = snapshot.indent_size_for_line(MultiBufferRow(cursor.row));
-            if let Some(suggested_indent) =
-                suggested_indents.get(&MultiBufferRow(cursor.row)).copied()
-            {
-                // Don't do anything if already at suggested indent
-                // and there is any other cursor which is not
-                if has_some_cursor_in_whitespace
-                    && cursor.column == current_indent.len
-                    && current_indent.len == suggested_indent.len
-                {
-                    continue;
-                }
-
-                // Adjust line and move cursor to suggested indent
-                // if cursor is not at suggested indent
-                if cursor.column < suggested_indent.len
-                    && cursor.column <= current_indent.len
-                    && current_indent.len <= suggested_indent.len
-                {
-                    selection.start = Point::new(cursor.row, suggested_indent.len);
-                    selection.end = selection.start;
-                    if row_delta == 0 {
-                        edits.extend(Buffer::edit_for_indent_size_adjustment(
-                            cursor.row,
-                            current_indent,
-                            suggested_indent,
-                        ));
-                        row_delta = suggested_indent.len - current_indent.len;
-                    }
-                    continue;
-                }
-
-                // If current indent is more than suggested indent
-                // only move cursor to current indent and skip indent
-                if cursor.column < current_indent.len && current_indent.len > suggested_indent.len {
-                    selection.start = Point::new(cursor.row, current_indent.len);
-                    selection.end = selection.start;
-                    continue;
-                }
-            }
-
-            // Otherwise, insert a hard or soft tab.
-            let settings = buffer.language_settings_at(cursor, cx);
-            let tab_size = if settings.hard_tabs {
-                IndentSize::tab()
-            } else {
-                let tab_size = settings.tab_size.get();
-                let indent_remainder = snapshot
-                    .text_for_range(Point::new(cursor.row, 0)..cursor)
-                    .flat_map(str::chars)
-                    .fold(row_delta % tab_size, |counter: u32, c| {
-                        if c == '\t' {
-                            0
-                        } else {
-                            (counter + 1) % tab_size
-                        }
-                    });
-
-                let chars_to_next_tab_stop = tab_size - indent_remainder;
-                IndentSize::spaces(chars_to_next_tab_stop)
-            };
-            selection.start = Point::new(cursor.row, cursor.column + row_delta + tab_size.len);
-            selection.end = selection.start;
-            edits.push((cursor..cursor, tab_size.chars().collect::<String>()));
-            row_delta += tab_size.len;
-        }
-
-        self.transact(window, cx, |this, window, cx| {
-            this.buffer.update(cx, |b, cx| b.edit(edits, None, cx));
-            this.change_selections(Default::default(), window, cx, |s| s.select(selections));
-            this.refresh_edit_prediction(
-                true,
-                false,
-                EditPredictionRequestTrigger::BufferEdit,
-                window,
-                cx,
-            );
-        });
-    }
-
-    pub fn indent(&mut self, _: &Indent, window: &mut Window, cx: &mut Context<Self>) {
-        if self.read_only(cx) {
-            return;
-        }
-        if self.mode.is_single_line() {
-            cx.propagate();
-            return;
-        }
-
-        let mut selections = self.selections.all::<Point>(&self.display_snapshot(cx));
-        let mut prev_edited_row = 0;
-        let mut row_delta = 0;
-        let mut edits = Vec::new();
-        let buffer = self.buffer.read(cx);
-        let snapshot = buffer.snapshot(cx);
-        for selection in &mut selections {
-            if selection.start.row != prev_edited_row {
-                row_delta = 0;
-            }
-            prev_edited_row = selection.end.row;
-
-            row_delta =
-                Self::indent_selection(buffer, &snapshot, selection, &mut edits, row_delta, cx);
-        }
-
-        self.transact(window, cx, |this, window, cx| {
-            this.buffer.update(cx, |b, cx| b.edit(edits, None, cx));
-            this.change_selections(Default::default(), window, cx, |s| s.select(selections));
-        });
-    }
-
+    /// Stub: indent_selection (编辑功能已删除)
     fn indent_selection(
-        buffer: &MultiBuffer,
-        snapshot: &MultiBufferSnapshot,
-        selection: &mut Selection<Point>,
-        edits: &mut Vec<(Range<Point>, String)>,
-        delta_for_start_row: u32,
-        cx: &App,
+        _buffer: &MultiBuffer,
+        _snapshot: &MultiBufferSnapshot,
+        _selection: &mut Selection<Point>,
+        _edits: &mut Vec<(Range<Point>, String)>,
+        _delta_for_start_row: u32,
+        _cx: &App,
     ) -> u32 {
-        let settings = buffer.language_settings_at(selection.start, cx);
-        let tab_size = settings.tab_size.get();
-        let indent_kind = if settings.hard_tabs {
-            IndentKind::Tab
-        } else {
-            IndentKind::Space
-        };
-        let mut start_row = selection.start.row;
-        let mut end_row = selection.end.row + 1;
-
-        // If a selection ends at the beginning of a line, don't indent
-        // that last line.
-        if selection.end.column == 0 && selection.end.row > selection.start.row {
-            end_row -= 1;
-        }
-
-        // Avoid re-indenting a row that has already been indented by a
-        // previous selection, but still update this selection's column
-        // to reflect that indentation.
-        if delta_for_start_row > 0 {
-            start_row += 1;
-            selection.start.column += delta_for_start_row;
-            if selection.end.row == selection.start.row {
-                selection.end.column += delta_for_start_row;
-            }
-        }
-
-        let mut delta_for_end_row = 0;
-        let has_multiple_rows = start_row + 1 != end_row;
-        for row in start_row..end_row {
-            let current_indent = snapshot.indent_size_for_line(MultiBufferRow(row));
-            let indent_delta = match (current_indent.kind, indent_kind) {
-                (IndentKind::Space, IndentKind::Space) => {
-                    let columns_to_next_tab_stop = tab_size - (current_indent.len % tab_size);
-                    IndentSize::spaces(columns_to_next_tab_stop)
-                }
-                (IndentKind::Tab, IndentKind::Space) => IndentSize::spaces(tab_size),
-                (_, IndentKind::Tab) => IndentSize::tab(),
-            };
-
-            let start = if has_multiple_rows || current_indent.len < selection.start.column {
-                0
-            } else {
-                selection.start.column
-            };
-            let row_start = Point::new(row, start);
-            edits.push((
-                row_start..row_start,
-                indent_delta.chars().collect::<String>(),
-            ));
-
-            // Update this selection's endpoints to reflect the indentation.
-            if row == selection.start.row {
-                selection.start.column += indent_delta.len;
-            }
-            if row == selection.end.row {
-                selection.end.column += indent_delta.len;
-                delta_for_end_row = indent_delta.len;
-            }
-        }
-
-        if selection.start.row == selection.end.row {
-            delta_for_start_row + delta_for_end_row
-        } else {
-            delta_for_end_row
-        }
+        0
     }
 
-    pub fn outdent(&mut self, _: &Outdent, window: &mut Window, cx: &mut Context<Self>) {
-        if self.read_only(cx) {
-            return;
-        }
-        if self.mode.is_single_line() {
-            cx.propagate();
-            return;
-        }
+    /// Stub: outdent (编辑功能已删除)
+    pub fn outdent(&mut self, _: &Outdent, _window: &mut Window, _cx: &mut Context<Self>) {}
 
-        let display_map = self.display_map.update(cx, |map, cx| map.snapshot(cx));
-        let selections = self.selections.all::<Point>(&display_map);
-        let mut deletion_ranges = Vec::new();
-        let mut last_outdent = None;
-        {
-            let buffer = self.buffer.read(cx);
-            let snapshot = buffer.snapshot(cx);
-            for selection in &selections {
-                let settings = buffer.language_settings_at(selection.start, cx);
-                let tab_size = settings.tab_size;
-                let mut rows = selection.spanned_rows(false, &display_map);
+    /// Stub: autoindent (编辑功能已删除)
+    pub fn autoindent(&mut self, _: &AutoIndent, _window: &mut Window, _cx: &mut Context<Self>) {}
 
-                // Avoid re-outdenting a row that has already been outdented by a
-                // previous selection.
-                if let Some(last_row) = last_outdent
-                    && last_row == rows.start
-                {
-                    rows.start = rows.start.next_row();
-                }
-                let has_multiple_rows = rows.len() > 1;
-                for row in rows.iter_rows() {
-                    let indent_size = snapshot.indent_size_for_line(row);
-                    if indent_size.len > 0 {
-                        let deletion_len = indent_size.outdent_len(tab_size);
-                        let start = if has_multiple_rows
-                            || deletion_len > selection.start.column
-                            || indent_size.len < selection.start.column
-                        {
-                            0
-                        } else {
-                            selection.start.column - deletion_len
-                        };
-                        deletion_ranges.push(
-                            Point::new(row.0, start)..Point::new(row.0, start + deletion_len),
-                        );
-                        last_outdent = Some(row);
-                    }
-                }
-            }
-        }
-
-        self.transact(window, cx, |this, window, cx| {
-            this.buffer.update(cx, |buffer, cx| {
-                let empty_str: Arc<str> = Arc::default();
-                buffer.edit(
-                    deletion_ranges
-                        .into_iter()
-                        .map(|range| (range, empty_str.clone())),
-                    None,
-                    cx,
-                );
-            });
-            let selections = this
-                .selections
-                .all::<MultiBufferOffset>(&this.display_snapshot(cx));
-            this.change_selections(Default::default(), window, cx, |s| s.select(selections));
-        });
-    }
-
-    pub fn autoindent(&mut self, _: &AutoIndent, window: &mut Window, cx: &mut Context<Self>) {
-        if self.read_only(cx) {
-            return;
-        }
-        if self.mode.is_single_line() {
-            cx.propagate();
-            return;
-        }
-
-        let selections = self
-            .selections
-            .all::<MultiBufferOffset>(&self.display_snapshot(cx))
-            .into_iter()
-            .map(|s| s.range());
-
-        self.transact(window, cx, |this, window, cx| {
-            this.buffer.update(cx, |buffer, cx| {
-                buffer.autoindent_ranges(selections, cx);
-            });
-            let selections = this
-                .selections
-                .all::<MultiBufferOffset>(&this.display_snapshot(cx));
-            this.change_selections(Default::default(), window, cx, |s| s.select(selections));
-        });
-    }
-
-    pub fn delete_line(&mut self, _: &DeleteLine, window: &mut Window, cx: &mut Context<Self>) {
-        if self.read_only(cx) {
-            return;
-        }
-        let display_map = self.display_map.update(cx, |map, cx| map.snapshot(cx));
-        let selections = self.selections.all::<Point>(&display_map);
-
-        let mut new_cursors = Vec::new();
-        let mut edit_ranges = Vec::new();
-        let mut selections = selections.iter().peekable();
-        while let Some(selection) = selections.next() {
-            let mut rows = selection.spanned_rows(false, &display_map);
-
-            // Accumulate contiguous regions of rows that we want to delete.
-            while let Some(next_selection) = selections.peek() {
-                let next_rows = next_selection.spanned_rows(false, &display_map);
-                if next_rows.start <= rows.end {
-                    rows.end = next_rows.end;
-                    selections.next().unwrap();
-                } else {
-                    break;
-                }
-            }
-
-            let buffer = display_map.buffer_snapshot();
-            let mut edit_start = ToOffset::to_offset(&Point::new(rows.start.0, 0), buffer);
-            let (edit_end, target_row) = if buffer.max_point().row >= rows.end.0 {
-                // If there's a line after the range, delete the \n from the end of the row range
-                (
-                    ToOffset::to_offset(&Point::new(rows.end.0, 0), buffer),
-                    rows.end,
-                )
-            } else {
-                // If there isn't a line after the range, delete the \n from the line before the
-                // start of the row range
-                edit_start = edit_start.saturating_sub_usize(1);
-                (buffer.len(), rows.start.previous_row())
-            };
-
-            let text_layout_details = self.text_layout_details(window, cx);
-            let x = display_map.x_for_display_point(
-                selection.head().to_display_point(&display_map),
-                &text_layout_details,
-            );
-            let row = Point::new(target_row.0, 0)
-                .to_display_point(&display_map)
-                .row();
-            let column = display_map.display_column_for_x(row, x, &text_layout_details);
-
-            new_cursors.push((
-                selection.id,
-                buffer.anchor_after(DisplayPoint::new(row, column).to_point(&display_map)),
-                SelectionGoal::None,
-            ));
-            edit_ranges.push(edit_start..edit_end);
-        }
-
-        self.transact(window, cx, |this, window, cx| {
-            let buffer = this.buffer.update(cx, |buffer, cx| {
-                let empty_str: Arc<str> = Arc::default();
-                buffer.edit(
-                    edit_ranges
-                        .into_iter()
-                        .map(|range| (range, empty_str.clone())),
-                    None,
-                    cx,
-                );
-                buffer.snapshot(cx)
-            });
-            let new_selections = new_cursors
-                .into_iter()
-                .map(|(id, cursor, goal)| {
-                    let cursor = cursor.to_point(&buffer);
-                    Selection {
-                        id,
-                        start: cursor,
-                        end: cursor,
-                        reversed: false,
-                        goal,
-                    }
-                })
-                .collect();
-
-            this.change_selections(Default::default(), window, cx, |s| {
-                s.select(new_selections);
-            });
-        });
+    /// Stub: delete_line (编辑功能已删除)
+    pub fn delete_line(
+        &mut self,
+        _: &DeleteLine,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
+    ) {
     }
 
     pub fn join_lines_impl(
         &mut self,
-        insert_whitespace: bool,
-        window: &mut Window,
-        cx: &mut Context<Self>,
+        _insert_whitespace: bool,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
     ) {
         if self.read_only(cx) {
             return;
@@ -5981,49 +5288,12 @@ impl Editor {
 
     pub(crate) fn bookmark_at_anchor(
         &self,
-        bookmark_position: Anchor,
-        snapshot: &EditorSnapshot,
-        cx: &mut Context<Self>,
+        _bookmark_position: Anchor,
+        _snapshot: &EditorSnapshot,
+        _cx: &mut Context<Self>,
     ) -> Option<Anchor> {
-        let (bookmark_position, _) = snapshot
-            .buffer_snapshot()
-            .anchor_to_buffer_anchor(bookmark_position)?;
-        let buffer = self.buffer.read(cx).buffer(bookmark_position.buffer_id)?;
-
-        let buffer_snapshot = buffer.read(cx).snapshot();
-
-        let row = buffer_snapshot
-            .summary_for_anchor::<text::PointUtf16>(&bookmark_position)
-            .row;
-
-        let line_len = buffer_snapshot.line_len(row);
-        let anchor_end = buffer_snapshot.anchor_after(Point::new(row, line_len));
-
-        self.bookmark_store
-            .as_ref()?
-            .update(cx, |bookmark_store, cx| {
-                bookmark_store
-                    .bookmarks_for_buffer(
-                        buffer,
-                        bookmark_position..anchor_end,
-                        &buffer_snapshot,
-                        cx,
-                    )
-                    .first()
-                    .and_then(|bookmark| {
-                        let bookmark_row = buffer_snapshot
-                            .summary_for_anchor::<text::PointUtf16>(&bookmark.anchor)
-                            .row;
-
-                        if bookmark_row == row {
-                            snapshot
-                                .buffer_snapshot()
-                                .anchor_in_excerpt(bookmark.anchor)
-                        } else {
-                            None
-                        }
-                    })
-            })
+        // 只读编辑器：bookmark_store 的 bookmarks_for_buffer 方法不存在，返回 None。
+        None
     }
 
     pub fn edit_log_breakpoint(
@@ -7436,68 +6706,8 @@ impl Editor {
         });
     }
 
-    pub fn transpose(&mut self, _: &Transpose, window: &mut Window, cx: &mut Context<Self>) {
-        if self.read_only(cx) {
-            return;
-        }
-        let text_layout_details = &self.text_layout_details(window, cx);
-        self.transact(window, cx, |this, window, cx| {
-            let edits = this.change_selections(Default::default(), window, cx, |s| {
-                let mut edits: Vec<(Range<MultiBufferOffset>, String)> = Default::default();
-                s.move_with(&mut |display_map, selection| {
-                    if !selection.is_empty() {
-                        return;
-                    }
-
-                    let mut head = selection.head();
-                    let mut transpose_offset = head.to_offset(display_map, Bias::Right);
-                    if head.column() == display_map.line_len(head.row()) {
-                        transpose_offset = display_map
-                            .buffer_snapshot()
-                            .clip_offset(transpose_offset.saturating_sub_usize(1), Bias::Left);
-                    }
-
-                    if transpose_offset == MultiBufferOffset(0) {
-                        return;
-                    }
-
-                    *head.column_mut() += 1;
-                    head = display_map.clip_point(head, Bias::Right);
-                    let goal = SelectionGoal::HorizontalPosition(
-                        display_map
-                            .x_for_display_point(head, text_layout_details)
-                            .into(),
-                    );
-                    selection.collapse_to(head, goal);
-
-                    let transpose_start = display_map
-                        .buffer_snapshot()
-                        .clip_offset(transpose_offset.saturating_sub_usize(1), Bias::Left);
-                    if edits.last().is_none_or(|e| e.0.end <= transpose_start) {
-                        let transpose_end = display_map
-                            .buffer_snapshot()
-                            .clip_offset(transpose_offset + 1usize, Bias::Right);
-                        if let Some(ch) = display_map
-                            .buffer_snapshot()
-                            .chars_at(transpose_start)
-                            .next()
-                        {
-                            edits.push((transpose_start..transpose_offset, String::new()));
-                            edits.push((transpose_end..transpose_end, ch.to_string()));
-                        }
-                    }
-                });
-                edits
-            });
-            this.buffer
-                .update(cx, |buffer, cx| buffer.edit(edits, None, cx));
-            let selections = this
-                .selections
-                .all::<MultiBufferOffset>(&this.display_snapshot(cx));
-            this.change_selections(Default::default(), window, cx, |s| {
-                s.select(selections);
-            });
-        });
+    /// Stub: transpose (编辑功能已删除)
+    pub fn transpose(&mut self, _: &Transpose, _window: &mut Window, _cx: &mut Context<Self>) {
     }
 
     fn restore_selections(
@@ -7513,55 +6723,11 @@ impl Editor {
         }
     }
 
-    pub fn undo(&mut self, _: &Undo, window: &mut Window, cx: &mut Context<Self>) {
-        if self.read_only(cx) {
-            return;
-        }
+    /// Stub: undo (编辑功能已删除)
+    pub fn undo(&mut self, _: &Undo, _window: &mut Window, _cx: &mut Context<Self>) {}
 
-        if let Some(transaction_id) = self.buffer.update(cx, |buffer, cx| buffer.undo(cx)) {
-            let transaction = self.selection_history.transaction(transaction_id);
-            if transaction.is_none() {
-                log::error!("No selection history for undone transaction; selection unchanged");
-            }
-            let selections = transaction.map(|transaction| transaction.undo.clone());
-            self.restore_selections(selections, window, cx);
-            self.request_autoscroll(Autoscroll::fit(), cx);
-            self.unmark_text(window, cx);
-            self.refresh_edit_prediction(
-                true,
-                false,
-                EditPredictionRequestTrigger::BufferEdit,
-                window,
-                cx,
-            );
-            cx.emit(EditorEvent::Edited { transaction_id });
-            cx.emit(EditorEvent::TransactionUndone { transaction_id });
-        }
-    }
-
-    pub fn redo(&mut self, _: &Redo, window: &mut Window, cx: &mut Context<Self>) {
-        if self.read_only(cx) {
-            return;
-        }
-
-        if let Some(transaction_id) = self.buffer.update(cx, |buffer, cx| buffer.redo(cx)) {
-            let selections = self
-                .selection_history
-                .transaction(transaction_id)
-                .and_then(|transaction| transaction.redo.clone());
-            self.restore_selections(selections, window, cx);
-            self.request_autoscroll(Autoscroll::fit(), cx);
-            self.unmark_text(window, cx);
-            self.refresh_edit_prediction(
-                true,
-                false,
-                EditPredictionRequestTrigger::BufferEdit,
-                window,
-                cx,
-            );
-            cx.emit(EditorEvent::Edited { transaction_id });
-        }
-    }
+    /// Stub: redo (编辑功能已删除)
+    pub fn redo(&mut self, _: &Redo, _window: &mut Window, _cx: &mut Context<Self>) {}
 
     pub fn finalize_last_transaction(&mut self, cx: &mut Context<Self>) {
         self.buffer
@@ -7649,202 +6815,14 @@ impl Editor {
         }
     }
 
+    /// Stub: rename (重命名功能已删除)
     pub fn rename(
         &mut self,
         _: &Rename,
-        window: &mut Window,
-        cx: &mut Context<Self>,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
     ) -> Option<Task<Result<()>>> {
-        use language::ToOffset as _;
-
-        if self.read_only(cx) {
-            return None;
-        }
-        let provider = self.semantics_provider.clone()?;
-        let selection = self.selections.newest_anchor().clone();
-        let cursor = self.rename_target_anchor(&selection, cx);
-        let (cursor_buffer, cursor_buffer_position) =
-            self.buffer.read(cx).text_anchor_for_position(cursor, cx)?;
-        let (head_buffer, head_buffer_position) = self
-            .buffer
-            .read(cx)
-            .text_anchor_for_position(selection.head(), cx)?;
-        let (tail_buffer, cursor_buffer_position_end) = self
-            .buffer
-            .read(cx)
-            .text_anchor_for_position(selection.tail(), cx)?;
-        if tail_buffer != cursor_buffer || head_buffer != cursor_buffer {
-            return None;
-        }
-
-        let snapshot = cursor_buffer.read(cx).snapshot();
-        let cursor_buffer_offset = cursor_buffer_position.to_offset(&snapshot);
-        let head_buffer_offset = head_buffer_position.to_offset(&snapshot);
-        let cursor_buffer_offset_end = cursor_buffer_position_end.to_offset(&snapshot);
-        let prepare_rename = provider.range_for_rename(&cursor_buffer, cursor_buffer_position, cx);
-        drop(snapshot);
-
-        Some(cx.spawn_in(window, async move |this, cx| {
-            let rename_range = prepare_rename.await?;
-            if let Some(rename_range) = rename_range {
-                this.update_in(cx, |this, window, cx| {
-                    let snapshot = cursor_buffer.read(cx).snapshot();
-                    let rename_buffer_range = rename_range.to_offset(&snapshot);
-                    let cursor_offset_in_rename_range =
-                        cursor_buffer_offset.saturating_sub(rename_buffer_range.start);
-                    let head_offset_in_rename_range =
-                        head_buffer_offset.saturating_sub(rename_buffer_range.start);
-                    let tail_offset_in_rename_range =
-                        cursor_buffer_offset_end.saturating_sub(rename_buffer_range.start);
-
-                    this.take_rename(false, window, cx);
-                    let buffer = this.buffer.read(cx).read(cx);
-                    let cursor_offset = cursor.to_offset(&buffer);
-                    let rename_start =
-                        cursor_offset.saturating_sub_usize(cursor_offset_in_rename_range);
-                    let rename_end = rename_start + rename_buffer_range.len();
-                    let range = buffer.anchor_before(rename_start)..buffer.anchor_after(rename_end);
-                    let mut old_highlight_id = None;
-                    let old_name: Arc<str> = buffer
-                        .chunks(
-                            rename_start..rename_end,
-                            LanguageAwareStyling {
-                                tree_sitter: true,
-                                diagnostics: true,
-                            },
-                        )
-                        .map(|chunk| {
-                            if old_highlight_id.is_none() {
-                                old_highlight_id = chunk.syntax_highlight_id;
-                            }
-                            chunk.text
-                        })
-                        .collect::<String>()
-                        .into();
-
-                    drop(buffer);
-
-                    // Position the selection in the rename editor so that it matches the current selection.
-                    this.show_local_selections = false;
-                    let rename_editor = cx.new(|cx| {
-                        let mut editor = Editor::single_line(window, cx);
-                        editor.buffer.update(cx, |buffer, cx| {
-                            buffer.edit(
-                                [(MultiBufferOffset(0)..MultiBufferOffset(0), old_name.clone())],
-                                None,
-                                cx,
-                            )
-                        });
-                        let head_offset_in_rename_range =
-                            MultiBufferOffset(head_offset_in_rename_range);
-                        let tail_offset_in_rename_range =
-                            MultiBufferOffset(tail_offset_in_rename_range);
-                        let rename_selection_range =
-                            match head_offset_in_rename_range.cmp(&tail_offset_in_rename_range) {
-                                Ordering::Equal => {
-                                    editor.select_all(&SelectAll, window, cx);
-                                    return editor;
-                                }
-                                Ordering::Less => {
-                                    head_offset_in_rename_range..tail_offset_in_rename_range
-                                }
-                                Ordering::Greater => {
-                                    tail_offset_in_rename_range..head_offset_in_rename_range
-                                }
-                            };
-                        if rename_selection_range.end.0 > old_name.len() {
-                            editor.select_all(&SelectAll, window, cx);
-                        } else {
-                            editor.change_selections(Default::default(), window, cx, |s| {
-                                s.select_ranges([rename_selection_range]);
-                            });
-                        }
-                        editor
-                    });
-                    cx.subscribe(&rename_editor, |_, _, e: &EditorEvent, cx| {
-                        if e == &EditorEvent::Focused {
-                            cx.emit(EditorEvent::FocusedIn)
-                        }
-                    })
-                    .detach();
-
-                    let write_highlights =
-                        this.clear_background_highlights(HighlightKey::DocumentHighlightWrite, cx);
-                    let read_highlights =
-                        this.clear_background_highlights(HighlightKey::DocumentHighlightRead, cx);
-                    let ranges = write_highlights
-                        .iter()
-                        .flat_map(|(_, ranges)| ranges.iter())
-                        .chain(read_highlights.iter().flat_map(|(_, ranges)| ranges.iter()))
-                        .cloned()
-                        .collect();
-
-                    this.highlight_text(
-                        HighlightKey::Rename,
-                        ranges,
-                        HighlightStyle {
-                            fade_out: Some(0.6),
-                            ..Default::default()
-                        },
-                        cx,
-                    );
-                    let rename_focus_handle = rename_editor.focus_handle(cx);
-                    window.focus(&rename_focus_handle, cx);
-                    let block_id = this.insert_blocks(
-                        [BlockProperties {
-                            style: BlockStyle::Flex,
-                            placement: BlockPlacement::Below(range.start),
-                            height: Some(1),
-                            render: Arc::new({
-                                let rename_editor = rename_editor.clone();
-                                move |cx: &mut BlockContext| {
-                                    let mut text_style = cx.editor_style.text.clone();
-                                    if let Some(highlight_style) = old_highlight_id
-                                        .and_then(|h| cx.editor_style.syntax.get(h).cloned())
-                                    {
-                                        text_style = text_style.highlight(highlight_style);
-                                    }
-                                    div()
-                                        .block_mouse_except_scroll()
-                                        .pl(cx.anchor_x)
-                                        .child(EditorElement::new(
-                                            &rename_editor,
-                                            EditorStyle {
-                                                background: cx.theme().system().transparent,
-                                                local_player: cx.editor_style.local_player,
-                                                text: text_style,
-                                                scrollbar_width: cx.editor_style.scrollbar_width,
-                                                syntax: cx.editor_style.syntax.clone(),
-                                                status: cx.editor_style.status.clone(),
-                                                inlay_hints_style: HighlightStyle {
-                                                    font_weight: Some(FontWeight::BOLD),
-                                                    ..make_inlay_hints_style(cx.app)
-                                                },
-                                                edit_prediction_styles: make_suggestion_styles(
-                                                    cx.app,
-                                                ),
-                                                ..EditorStyle::default()
-                                            },
-                                        ))
-                                        .into_any_element()
-                                }
-                            }),
-                            priority: 0,
-                        }],
-                        Some(Autoscroll::fit()),
-                        cx,
-                    )[0];
-                    this.pending_rename = Some(RenameState {
-                        range,
-                        old_name,
-                        editor: rename_editor,
-                        block_id,
-                    });
-                })?;
-            }
-
-            Ok(())
-        }))
+        None
     }
 
     pub fn confirm_rename(
@@ -7969,149 +6947,36 @@ impl Editor {
             .any(|buffer| project.supports_range_formatting(&buffer, cx))
     }
 
+    /// Stub: format (格式化功能已删除)
     fn format(
         &mut self,
         _: &Format,
-        window: &mut Window,
-        cx: &mut Context<Self>,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
     ) -> Option<Task<Result<()>>> {
-        if self.read_only(cx) {
-            return None;
-        }
-
-        let project = match &self.project {
-            Some(project) => project.clone(),
-            None => return None,
-        };
-
-        Some(self.perform_format(
-            project,
-            FormatTrigger::Manual,
-            FormatTarget::Buffers(self.buffer.read(cx).all_buffers()),
-            window,
-            cx,
-        ))
+        None
     }
 
+    /// Stub: format_selections (格式化功能已删除)
     fn format_selections(
         &mut self,
         _: &FormatSelections,
-        window: &mut Window,
-        cx: &mut Context<Self>,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
     ) -> Option<Task<Result<()>>> {
-        if self.read_only(cx) {
-            return None;
-        }
-
-        let project = match &self.project {
-            Some(project) => project.clone(),
-            None => return None,
-        };
-
-        let ranges = self
-            .selections
-            .all_adjusted(&self.display_snapshot(cx))
-            .into_iter()
-            .map(|selection| selection.range())
-            .collect_vec();
-
-        Some(self.perform_format(
-            project,
-            FormatTrigger::Manual,
-            FormatTarget::Ranges(ranges),
-            window,
-            cx,
-        ))
+        None
     }
 
+    /// Stub: perform_format (格式化功能已删除)
     fn perform_format(
         &mut self,
-        project: Entity<Project>,
-        trigger: FormatTrigger,
-        target: FormatTarget,
-        window: &mut Window,
-        cx: &mut Context<Self>,
+        _project: Entity<Project>,
+        _trigger: FormatTrigger,
+        _target: FormatTarget,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
     ) -> Task<Result<()>> {
-        let buffer = self.buffer.clone();
-        let (buffers, target) = match target {
-            FormatTarget::Buffers(buffers) => (buffers, LspFormatTarget::Buffers),
-            FormatTarget::Ranges(selection_ranges) => {
-                let multi_buffer = buffer.read(cx);
-                let snapshot = multi_buffer.read(cx);
-                let mut buffers = HashSet::default();
-                let mut buffer_id_to_ranges: BTreeMap<BufferId, Vec<Range<text::Anchor>>> =
-                    BTreeMap::new();
-                for selection_range in selection_ranges {
-                    for (buffer_snapshot, buffer_range, _) in
-                        snapshot.range_to_buffer_ranges(selection_range.start..selection_range.end)
-                    {
-                        let buffer_id = buffer_snapshot.remote_id();
-                        let start = buffer_snapshot.anchor_before(buffer_range.start);
-                        let end = buffer_snapshot.anchor_after(buffer_range.end);
-                        buffers.insert(multi_buffer.buffer(buffer_id).unwrap());
-                        buffer_id_to_ranges
-                            .entry(buffer_id)
-                            .and_modify(|buffer_ranges| buffer_ranges.push(start..end))
-                            .or_insert_with(|| vec![start..end]);
-                    }
-                }
-                (buffers, LspFormatTarget::Ranges(buffer_id_to_ranges))
-            }
-        };
-
-        let transaction_id_prev = buffer.read(cx).last_transaction_id(cx);
-        let selections_prev = transaction_id_prev
-            .and_then(|transaction_id_prev| {
-                // default to selections as they were after the last edit, if we have them,
-                // instead of how they are now.
-                // This will make it so that editing, moving somewhere else, formatting, then undoing the format
-                // will take you back to where you made the last edit, instead of staying where you scrolled
-                self.selection_history
-                    .transaction(transaction_id_prev)
-                    .map(|t| t.undo.clone())
-            })
-            .unwrap_or_else(|| self.selections.disjoint_anchors_arc());
-
-        let mut timeout = cx.background_executor().timer(FORMAT_TIMEOUT).fuse();
-        let format = project.update(cx, |project, cx| {
-            project.format(buffers, target, true, trigger, cx)
-        });
-
-        cx.spawn_in(window, async move |editor, cx| {
-            let transaction = futures::select_biased! {
-                transaction = format.log_err().fuse() => transaction,
-                () = timeout => {
-                    log::warn!("timed out waiting for formatting");
-                    None
-                }
-            };
-
-            buffer.update(cx, |buffer, cx| {
-                if let Some(transaction) = transaction
-                    && !buffer.is_singleton()
-                {
-                    buffer.push_transaction(&transaction.0, cx);
-                }
-                cx.notify();
-            });
-
-            if let Some(transaction_id_now) =
-                buffer.read_with(cx, |b, cx| b.last_transaction_id(cx))
-            {
-                let has_new_transaction = transaction_id_prev != Some(transaction_id_now);
-                if has_new_transaction {
-                    editor
-                        .update(cx, |editor, _| {
-                            editor
-                                .selection_history
-                                .insert_transaction(transaction_id_now, selections_prev);
-                        })
-                        .ok();
-                }
-            }
-
-            Ok(())
-        })
+        Task::ready(Ok(()))
     }
 
     fn organize_imports(
@@ -11700,6 +10565,83 @@ impl EditorSnapshot {
             })
             .collect()
     }
+
+    // =====================================================================
+    // Stub methods for deleted editing functionality (只读模式)
+    // =====================================================================
+
+
+    /// Stub: compose_completion (补全模块已删除)
+    pub fn compose_completion(&mut self, _completion: &Completion, _cx: &mut Context<Self>) {}
+
+    /// Stub: show_signature_help (签名帮助模块已删除)
+    pub fn show_signature_help(&mut self, _window: &mut Window, _cx: &mut Context<Self>) {}
+
+    /// Stub: show_edit_prediction (编辑预测模块已删除)
+    pub fn show_edit_prediction(&mut self, _window: &mut Window, _cx: &mut Context<Self>) {}
+
+    /// Stub: spawn_nearest_task (任务模块已删除)
+    pub fn spawn_nearest_task(&mut self, _cx: &mut Context<Self>) -> Task<Result<()>> {
+        Task::ready(Ok(()))
+    }
+
+    /// Stub: newline (编辑功能已删除)
+    pub fn newline(&mut self, _: &Newline, _window: &mut Window, _cx: &mut Context<Self>) {}
+
+    /// Stub: newline_above (编辑功能已删除)
+    pub fn newline_above(&mut self, _: &NewlineAbove, _window: &mut Window, _cx: &mut Context<Self>) {}
+
+    /// Stub: newline_below (编辑功能已删除)
+    pub fn newline_below(&mut self, _: &NewlineBelow, _window: &mut Window, _cx: &mut Context<Self>) {}
+
+    /// Stub: delete_to_previous_word_start (编辑功能已删除)
+    pub fn delete_to_previous_word_start(&mut self, _: &DeleteToPreviousWordStart, _window: &mut Window, _cx: &mut Context<Self>) {}
+
+    /// Stub: delete_to_previous_subword_start (编辑功能已删除)
+    pub fn delete_to_previous_subword_start(&mut self, _: &DeleteToPreviousSubwordStart, _window: &mut Window, _cx: &mut Context<Self>) {}
+
+    /// Stub: delete_to_next_word_end (编辑功能已删除)
+    pub fn delete_to_next_word_end(&mut self, _: &DeleteToNextWordEnd, _window: &mut Window, _cx: &mut Context<Self>) {}
+
+    /// Stub: delete_to_next_subword_end (编辑功能已删除)
+    pub fn delete_to_next_subword_end(&mut self, _: &DeleteToNextSubwordEnd, _window: &mut Window, _cx: &mut Context<Self>) {}
+
+    /// Stub: delete_to_beginning_of_line (编辑功能已删除)
+    pub fn delete_to_beginning_of_line(&mut self, _: &DeleteToBeginningOfLine, _window: &mut Window, _cx: &mut Context<Self>) {}
+
+    /// Stub: delete_to_end_of_line (编辑功能已删除)
+    pub fn delete_to_end_of_line(&mut self, _: &DeleteToEndOfLine, _window: &mut Window, _cx: &mut Context<Self>) {}
+
+    /// Stub: cut_to_end_of_line (编辑功能已删除)
+    pub fn cut_to_end_of_line(&mut self, _: &CutToEndOfLine, _window: &mut Window, _cx: &mut Context<Self>) {}
+
+    /// Stub: rewrap (编辑功能已删除)
+    pub fn rewrap(&mut self, _: &Rewrap, _window: &mut Window, _cx: &mut Context<Self>) {}
+
+    /// Stub: toggle_comments (编辑功能已删除)
+    pub fn toggle_comments(&mut self, _: &ToggleComments, _window: &mut Window, _cx: &mut Context<Self>) {}
+
+
+    /// Stub: update_edit_prediction_preview (编辑预测模块已删除)
+    pub fn update_edit_prediction_preview(&mut self, _cx: &mut Context<Self>) {}
+    /// Stub: visible_buffers (LSP 模块已删除)
+    fn visible_buffers(&mut self, _cx: &App) -> Vec<gpui::Entity<language::Buffer>> {
+        Vec::new()
+    }
+
+    /// Stub: trigger_completion_on_input (补全模块已删除)
+    pub fn trigger_completion_on_input(&mut self, _cx: &mut Context<Self>) {}
+
+    /// Stub: toggle_code_lens (code lens 模块已删除)
+    pub fn toggle_code_lens(&mut self, _cx: &mut Context<Self>) {}
+
+    /// Stub: take_active_edit_prediction (edit prediction 模块已删除)
+    pub fn take_active_edit_prediction(&mut self) -> Option<EditPredictionState> {
+        None
+    }
+
+    /// Stub: update_diagnostics_state (诊断模块已删除)
+    pub fn update_diagnostics_state(&mut self, _cx: &mut Context<Self>) {}
 }
 
 pub fn column_pixels(style: &EditorStyle, column: usize, window: &Window) -> Pixels {

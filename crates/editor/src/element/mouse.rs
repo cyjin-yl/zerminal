@@ -23,7 +23,7 @@ use crate::{
     EditorSettings, EditorSnapshot, GutterHoverButton, HoveredCursor, JumpData,
     PhantomDiffReviewIndicator, SelectPhase, Selection, SelectionDragState,
     display_map::ToDisplayPoint, editor_settings::DoubleClickInMultibuffer,
-    hover_popover::hover_at, mouse_context_menu, scroll::ScrollPixelOffset,
+    hover_at, mouse_context_menu, scroll::ScrollPixelOffset,
 };
 
 impl EditorElement {

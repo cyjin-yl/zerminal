@@ -9,6 +9,7 @@ use crate::{
     display_map::{DisplaySnapshot, ToDisplayPoint},
     persistence::EditorDb,
 };
+use crate::stubs::hide_hover;
 pub use autoscroll::{Autoscroll, AutoscrollStrategy};
 use core::fmt::Debug;
 use gpui::{

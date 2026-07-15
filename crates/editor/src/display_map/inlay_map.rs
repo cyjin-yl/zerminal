@@ -6,8 +6,7 @@
 //! [`InlaySnapshot`], which holds a sum tree of [`Transform`]s.
 
 use crate::{
-    ChunkRenderer, HighlightStyles,
-    inlays::{Inlay, InlayContent},
+    ChunkRenderer, HighlightStyles, Inlay, InlayContent,
 };
 use collections::BTreeSet;
 use language::{Chunk, Edit, LanguageAwareStyling, Point, TextSummary};
@@ -947,7 +946,7 @@ impl InlaySnapshot {
                 Some(Transform::Isomorphic(_)) => {
                     if offset == cursor.end().0 {
                         while let Some(Transform::Inlay(inlay)) = cursor.next_item() {
-                            if inlay.position.bias() == Bias::Right {
+                            if inlay.position.bias == Bias::Right {
                                 break;
                             } else {
                                 cursor.next();
@@ -960,7 +959,7 @@ impl InlaySnapshot {
                     }
                 }
                 Some(Transform::Inlay(inlay)) => {
-                    if inlay.position.bias() == Bias::Left {
+                    if inlay.position.bias == Bias::Left {
                         cursor.next();
                     } else {
                         return cursor.start().1;
@@ -1050,7 +1049,7 @@ impl InlaySnapshot {
                 Some(Transform::Isomorphic(transform)) => {
                     if cursor.start().0 == point {
                         if let Some(Transform::Inlay(inlay)) = cursor.prev_item() {
-                            if inlay.position.bias() == Bias::Left {
+                            if inlay.position.bias == Bias::Left {
                                 return point;
                             } else if bias == Bias::Left {
                                 cursor.prev();
@@ -1064,7 +1063,7 @@ impl InlaySnapshot {
                         }
                     } else if cursor.end().0 == point {
                         if let Some(Transform::Inlay(inlay)) = cursor.next_item() {
-                            if inlay.position.bias() == Bias::Right {
+                            if inlay.position.bias == Bias::Right {
                                 return point;
                             } else if bias == Bias::Right {
                                 cursor.next();
@@ -1091,19 +1090,19 @@ impl InlaySnapshot {
                     }
                 }
                 Some(Transform::Inlay(inlay)) => {
-                    if point == cursor.start().0 && inlay.position.bias() == Bias::Right {
+                    if point == cursor.start().0 && inlay.position.bias == Bias::Right {
                         match cursor.prev_item() {
                             Some(Transform::Inlay(inlay)) => {
-                                if inlay.position.bias() == Bias::Left {
+                                if inlay.position.bias == Bias::Left {
                                     return point;
                                 }
                             }
                             _ => return point,
                         }
-                    } else if point == cursor.end().0 && inlay.position.bias() == Bias::Left {
+                    } else if point == cursor.end().0 && inlay.position.bias == Bias::Left {
                         match cursor.next_item() {
                             Some(Transform::Inlay(inlay)) => {
-                                if inlay.position.bias() == Bias::Right {
+                                if inlay.position.bias == Bias::Right {
                                     return point;
                                 }
                             }
@@ -1137,7 +1136,7 @@ impl InlaySnapshot {
         let mut cursor = self.transforms.cursor::<Dimensions<InlayPoint, Point>>(());
         cursor.seek(&point, Bias::Left);
         match cursor.item() {
-            Some(Transform::Inlay(inlay)) => Some(inlay.position.bias()),
+            Some(Transform::Inlay(inlay)) => Some(inlay.position.bias),
             _ => None,
         }
     }
@@ -1334,7 +1333,7 @@ impl InlayPointCursor<'_> {
                 Some(Transform::Isomorphic(_)) => {
                     if point == cursor.end().0 {
                         while let Some(Transform::Inlay(inlay)) = cursor.next_item() {
-                            if bias == Bias::Left && inlay.position.bias() == Bias::Right {
+                            if bias == Bias::Left && inlay.position.bias == Bias::Right {
                                 break;
                             } else {
                                 cursor.next();
@@ -1347,7 +1346,7 @@ impl InlayPointCursor<'_> {
                     }
                 }
                 Some(Transform::Inlay(inlay)) => {
-                    if inlay.position.bias() == Bias::Left || bias == Bias::Right {
+                    if inlay.position.bias == Bias::Left || bias == Bias::Right {
                         cursor.next();
                     } else {
                         return cursor.start().1;
