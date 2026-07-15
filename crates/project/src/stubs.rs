@@ -103,6 +103,12 @@ pub struct Hover {
     pub range: Option<Range<Anchor>>,
 }
 
+#[derive(Clone, Debug)]
+pub struct DocumentHighlight {
+    pub range: std::ops::Range<text::Anchor>,
+    pub kind: lsp::DocumentHighlightKind,
+}
+
 // ---------------------------------------------------------------------------
 // Links / paths
 // ---------------------------------------------------------------------------
@@ -655,7 +661,7 @@ use crate::{
     debugger::breakpoint_store::BreakpointStore,
     Location, Project, ProjectPath, ProjectTransaction, Worktree, WorktreeId,
 };
-use git::Blame;
+use git::blame::Blame;
 use lsp::LanguageServerId;
 use util::rel_path::RelPath;
 
@@ -763,6 +769,15 @@ impl Project {
         _cx: &mut gpui::Context<Self>,
     ) -> Task<anyhow::Result<Option<Vec<super::Hover>>>> {
         Task::ready(Ok(None))
+    }
+
+    pub fn document_highlights(
+        &mut self,
+        _buffer: &Entity<language::Buffer>,
+        _position: text::Anchor,
+        _cx: &mut gpui::Context<Self>,
+    ) -> Task<anyhow::Result<Vec<DocumentHighlight>>> {
+        Task::ready(Ok(Vec::new()))
     }
 
 

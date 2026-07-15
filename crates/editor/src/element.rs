@@ -3856,22 +3856,7 @@ impl EditorElement {
                         .map_or(px(0.), |(_, _, size)| size.width),
                 );
 
-                let edit_prediction = if edit_prediction_popover_visible {
-                    self.editor.update(cx, |editor, cx| {
-                        let mut element = editor.render_edit_prediction_cursor_popover::<_, _, _, _, _, _, Option<AnyElement>>(
-                            min_width,
-                            max_width,
-                            cursor_point,
-                            style,
-                            window,
-                            cx,
-                        )?;
-                        let size = element.layout_as_root(AvailableSpace::min_size(), window, cx);
-                        Some((CursorPopoverType::EditPrediction, element, size))
-                    })
-                } else {
-                    None
-                };
+                let edit_prediction = None;
                 vec![edit_prediction, context_menu]
                     .into_iter()
                     .flatten()
@@ -4302,7 +4287,9 @@ impl EditorElement {
             return;
         }
 
-        let text_layout_details = self.editor.read(cx).text_layout_details(window, cx);
+        let text_layout_details = self.editor.update(cx, |editor, cx| {
+            editor.text_layout_details(window, cx)
+        });
         let hover_popovers = self.editor.update(cx, |editor, cx| {
             editor.hover_state.render(
                 snapshot,
@@ -8798,7 +8785,7 @@ impl Element for EditorElement {
 
                     let (edit_prediction_popover, edit_prediction_popover_origin) = self
                         .editor
-                        .update(cx, |editor, cx| -> (Option<AnyElement>, gpui::Point<Pixels>) {
+                        .update(cx, |editor, _cx| -> (Option<AnyElement>, gpui::Point<Pixels>) {
                             editor.render_edit_prediction_popover(
                                 &text_hitbox.bounds,
                                 content_origin,
@@ -8814,8 +8801,8 @@ impl Element for EditorElement {
                                 newest_selection_head,
                                 editor_width,
                                 style,
-                                window,
-                                cx,
+                                (),
+                                (),
                             )
                         });
 
