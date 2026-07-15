@@ -316,7 +316,6 @@ pub mod debugger {
             }
 
             pub fn set_active_debug_line_pane_id(&mut self, _pane_id: gpui::EntityId) {}
-            }
 
             pub fn toggle_breakpoint(
                 &mut self,
