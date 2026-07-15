@@ -983,13 +983,8 @@ impl Project {
         Task::ready(Ok(BTreeMap::new()))
     }
 
-    pub fn capability(
-        &self,
-        _server_id: LanguageServerId,
-        _capability: language::Capability,
-        _cx: &App,
-    ) -> bool {
-        false
+    pub fn capability(&self) -> language::Capability {
+        language::Capability::ReadWrite
     }
 
     pub fn is_local(&self, _cx: &App) -> bool {
@@ -1049,18 +1044,11 @@ impl Project {
 
     pub fn create_buffer(
         &mut self,
-        _language: Arc<language::Language>,
-        cx: &mut gpui::Context<Self>,
-    ) -> gpui::Task<Entity<language::Buffer>> {
-        gpui::Task::ready(panic!("stub: create_buffer"))
-    }
-
-    pub fn set_language_for_buffer(
-        &mut self,
-        _buffer: &Entity<language::Buffer>,
-        _language: Arc<language::Language>,
+        _language: Option<Arc<language::Language>>,
+        _is_empty: bool,
         _cx: &mut gpui::Context<Self>,
-    ) {
+    ) -> gpui::Task<anyhow::Result<Entity<language::Buffer>>> {
+        gpui::Task::ready(Err(anyhow::anyhow!("stub: create_buffer")))
     }
 }
 
