@@ -641,7 +641,7 @@ fn maybe_propagate_worktree_trust(
             return;
         }
 
-        let worktree_store = new_workspace.read(cx).project().read(cx).worktree_store();
+        let worktree_store = new_workspace.read(cx).project().read(cx).worktree_store().clone();
         let paths_to_trust: HashSet<_> = paths
             .iter()
             .filter_map(|path| {

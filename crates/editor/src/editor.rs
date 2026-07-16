@@ -87,8 +87,9 @@ pub use stubs::{
     LocationLink, LspAction, LspFormatTarget, LspInlayHintData, MenuEditPredictionsPolicy,
     OpenLspBufferHandle, ParticipantIndex, PrepareRenameResponse, ProjectExt, ProjectLspStoreExt,
     RevealInFileManager, RegisteredEditPredictionDelegate,
-    RunnableData, RunnableTasks, ResolvedTasks, Session, SessionEvent,
-    SignatureHelpHiddenBy, SignatureHelpState, Snippet, SuggestionDisplayType, TaskVariables,
+    RunnableData, RunnableTasks, ResolvedTask, ResolvedTasks, Session, SessionEvent,
+    SignatureHelpHiddenBy, SignatureHelpState, Snippet, SuggestionDisplayType, TaskContext,
+    TaskSourceKind, TaskTemplate, TaskVariables,
     TelemetrySpawnLocation, VariableName, ViewId, VimModeSetting, make_suggestion_styles,
     set_diagnostic_renderer,
 };

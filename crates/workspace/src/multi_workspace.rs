@@ -1201,7 +1201,7 @@ impl MultiWorkspace {
     pub fn find_or_create_workspace(
         &mut self,
         paths: PathList,
-        host: Option<&str>,
+        _connection_options: Option<remote::RemoteConnectionOptions>,
         provisional_project_group_key: Option<ProjectGroupKey>,
         _connect_remote: impl FnOnce(
             remote::RemoteConnectionOptions,
@@ -1215,24 +1215,13 @@ impl MultiWorkspace {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Task<Result<Entity<Workspace>>> {
-        self.find_or_create_workspace_with_source_workspace(
-            paths,
-            host,
-            provisional_project_group_key,
-            _connect_remote,
-            excluding,
-            init,
-            open_mode,
-            None,
-            window,
-            cx,
-        )
+        Task::ready(Err(anyhow::anyhow!("stub: find_or_create_workspace")))
     }
 
     pub fn find_or_create_workspace_with_source_workspace(
         &mut self,
         paths: PathList,
-        host: Option<&str>,
+        _connection_options: Option<remote::RemoteConnectionOptions>,
         provisional_project_group_key: Option<ProjectGroupKey>,
         _connect_remote: impl FnOnce(
             remote::RemoteConnectionOptions,
@@ -1247,29 +1236,7 @@ impl MultiWorkspace {
         window: &mut Window,
         cx: &mut Context<Self>,
     ) -> Task<Result<Entity<Workspace>>> {
-        if let Some(workspace) =
-            self.workspace_for_paths_excluding(&paths, host, excluding, cx)
-        {
-            self.activate(workspace.clone(), source_workspace, window, cx);
-            return Task::ready(Ok(workspace));
-        }
-
-        let Some(_connection_options) = host else {
-            return self.find_or_create_local_workspace_with_source_workspace(
-                paths,
-                provisional_project_group_key,
-                excluding,
-                init,
-                open_mode,
-                source_workspace,
-                window,
-                cx,
-            );
-        };
-        // 规范 §2.1：远程项目创建（Project::remote）已随远程 crate 类型删除，返回错误。
-        Task::ready(Err(anyhow::anyhow!(
-            "remote project workspaces are no longer supported"
-        )))
+        Task::ready(Err(anyhow::anyhow!("stub: find_or_create_workspace_with_source")))
     }
 
     /// Finds an existing workspace in this multi-workspace whose paths match,

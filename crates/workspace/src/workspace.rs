@@ -9206,12 +9206,17 @@ fn load_legacy_panel_size(
 }
 
 /// Stub: open_remote_project_with_existing_connection (crates removed)
-pub fn open_remote_project_with_existing_connection(
-    _connection_options: (),
+pub async fn open_remote_project_with_existing_connection(
+    _connection_options: remote::RemoteConnectionOptions,
     _project: gpui::Entity<project::Project>,
     _paths: Vec<std::path::PathBuf>,
-) -> gpui::Task<anyhow::Result<()>> {
-    gpui::Task::ready(Err(anyhow::anyhow!("stub: open_remote_project")))
+    _app_state: Arc<AppState>,
+    _new_window: gpui::WindowHandle<MultiWorkspace>,
+    _something: Option<()>,
+    _something2: Option<()>,
+    _cx: &mut gpui::AsyncWindowContext,
+) -> anyhow::Result<()> {
+    Err(anyhow::anyhow!("stub: open_remote_project"))
 }
 
 #[cfg(test)]

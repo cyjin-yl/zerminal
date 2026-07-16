@@ -751,10 +751,10 @@ impl Repository {
         self
     }
 
-    /// Stub: update
-    pub fn update<F, R>(&self, _cx: &mut gpui::App, f: F) -> R
+    /// Stub: update — generic over context type for async callers
+    pub fn update<C, F, R>(&self, _cx: &mut C, f: F) -> R
     where
-        F: FnOnce(&mut Self, &mut gpui::App) -> R,
+        F: FnOnce(&mut Self, &mut C) -> R,
     {
         // Stub: cannot mutate through Arc, call with dummy
         let mut dummy = self.clone();
@@ -764,8 +764,8 @@ impl Repository {
     /// Stub: remove_worktree
     pub fn remove_worktree(
         &mut self,
-        _worktree_id: u64,
-        _cx: &mut gpui::App,
+        _path: std::path::PathBuf,
+        _force: bool,
     ) -> gpui::Task<anyhow::Result<()>> {
         gpui::Task::ready(Err(anyhow::anyhow!("stub")))
     }
@@ -779,7 +779,7 @@ impl Repository {
     }
 
     /// Stub: worktrees
-    pub fn worktrees(&mut self) -> gpui::Task<anyhow::Result<Vec<u64>>> {
+    pub fn worktrees(&mut self) -> gpui::Task<anyhow::Result<Vec<git::repository::Worktree>>> {
         gpui::Task::ready(Ok(Vec::new()))
     }
 
@@ -1117,11 +1117,11 @@ impl Project {
         Task::ready(Ok(()))
     }
 
-    pub fn repositories(&self, _cx: &App) -> Vec<Arc<Repository>> {
+    pub fn repositories(&self, _cx: &App) -> Vec<Entity<crate::git_store::Repository>> {
         Vec::new()
     }
 
-    pub fn active_repository(&self, _cx: &App) -> Option<Arc<Repository>> {
+    pub fn active_repository(&self, _cx: &App) -> Option<Entity<crate::git_store::Repository>> {
         None
     }
 

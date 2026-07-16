@@ -271,6 +271,20 @@ impl Project {
         })
     }
 
+    /// Stub: remote project creation (spec §8.2 M2)
+    pub fn remote(
+        _session: Arc<dyn remote::RemoteConnection>,
+        _client: Arc<stubs::Client>,
+        _node_runtime: (),
+        _user_store: (),
+        _languages: Entity<language::LanguageRegistry>,
+        _fs: Arc<dyn fs::Fs>,
+        _is_read_only: bool,
+        cx: &mut Context<Self>,
+    ) -> Entity<Self> {
+        cx.new(|_| panic!("stub: Project::remote"))
+    }
+
     pub fn fs(&self) -> &Arc<dyn Fs> {
         &self.fs
     }
@@ -584,8 +598,9 @@ impl Project {
     /// Stub: git_init
     pub fn git_init(
         &self,
-        _worktree: gpui::Entity<Worktree>,
-        _cx: &App,
+        _path: Arc<std::path::Path>,
+        _fallback_branch_name: String,
+        _cx: &mut gpui::Context<Self>,
     ) -> Task<anyhow::Result<()>> {
         Task::ready(Err(anyhow::anyhow!("stub: git_init")))
     }
@@ -593,8 +608,8 @@ impl Project {
     /// Stub: git_config
     pub fn git_config(
         &self,
-        _worktree: gpui::Entity<Worktree>,
-        _cx: &App,
+        _path: Arc<std::path::Path>,
+        _args: Vec<String>,
     ) -> Task<anyhow::Result<std::collections::HashMap<String, String>>> {
         Task::ready(Err(anyhow::anyhow!("stub: git_config")))
     }

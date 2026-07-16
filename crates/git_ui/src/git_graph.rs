@@ -2471,8 +2471,8 @@ impl GitGraph {
         &self,
         _commit_sha: Oid,
         _ref_name: Option<&str>,
-    ) -> () {
-        ()
+    ) -> Option<editor::TaskContext> {
+        None
     }
 
     fn git_context_menu_tasks(

@@ -931,7 +931,6 @@ pub(crate) fn commit_message_editor(
         cx,
     );
     commit_editor.set_collaboration_hub(Box::new(project));
-    commit_editor;
     commit_editor.set_show_gutter(false, cx);
     commit_editor.set_use_modal_editing(true);
     commit_editor.set_show_wrap_guides(false, cx);

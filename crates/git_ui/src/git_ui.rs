@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use std::sync::Arc;
 use editor::{Editor, actions::DiffClipboardWithSelectionData};
 
 use workspace::{Toast, notifications::NotificationId};
@@ -120,7 +121,7 @@ pub fn init(cx: &mut App) {
 
                 if is_remote {
                     let connection_options =
-                        workspace.project().read(cx).remote_connection_options(cx);
+                        workspace.project().read(cx).remote_connection_options();
                     let app_state = workspace.app_state().clone();
                     let workspace_handle = workspace.weak_handle();
                     cx.spawn_in(window, async move |_, cx| {
@@ -146,7 +147,7 @@ pub fn init(cx: &mut App) {
         );
 
         let project = workspace.project().read(cx);
-        if project.is_read_only(cx) {
+        if project.is_read_only() {
             return;
         }
         if !project.is_via_collab() {

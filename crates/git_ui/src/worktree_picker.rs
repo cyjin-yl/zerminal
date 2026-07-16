@@ -166,7 +166,7 @@ impl WorktreePicker {
                 picker_handle.update_in(cx, |picker, window, cx| {
                     picker.delegate.all_worktrees = all_worktrees;
                     picker.delegate.default_branch =
-                        default_branch.and_then(|branch| RemoteBranchName::parse(&branch));
+                        default_branch.as_deref().and_then(RemoteBranchName::parse);
                     picker.delegate.refresh_project_worktree_paths(window, cx);
                     picker.refresh(window, cx);
                 })?;
