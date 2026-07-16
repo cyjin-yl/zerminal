@@ -1698,7 +1698,7 @@ impl Item for TerminalView {
                 .collect::<Vec<_>>();
 
             if !paths.is_empty() {
-                self.add_paths_to_terminal(&paths.iter().map(|p| p.path.to_rel_path_buf()).collect::<Vec<_>>(), window, cx);
+                self.add_paths_to_terminal(&paths.iter().map(|p| p.path.as_std_path().to_path_buf()).collect::<Vec<_>>(), window, cx);
             }
 
             return true;
@@ -1707,7 +1707,7 @@ impl Item for TerminalView {
             if let Some(path) = project
                 .path_for_entry(entry_id, cx)
             {
-                self.add_paths_to_terminal(&[path], window, cx);
+                self.add_paths_to_terminal(&[path.path.as_std_path().to_path_buf()], window, cx);
             }
 
             return true;
