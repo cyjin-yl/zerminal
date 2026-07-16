@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-const GLOBAL_SKILLS_DIR_DISPLAY: &str = "~/.config/zerminal/skills";
+const GLOBAL_SKILLS_DIR_DISPLAY: &str = "~/.config/z3rm/skills";
 use auto_update::{AutoUpdater, release_notes_url};
 use db::kvp::Dismissable;
 use editor::{Editor, MultiBuffer};
@@ -152,7 +152,7 @@ fn announcement_for_version(version: &Version, cx: &App) -> Option<AnnouncementC
                 window.dispatch_action(Box::new(zed_actions::assistant::FocusAgent), cx);
             })),
             on_dismiss: Some(Arc::new(|cx| SkillsAnnouncement::set_dismissed(true, cx))),
-            secondary_action_url: Some("https://zerminal.dev/docs/skills".into()),
+            secondary_action_url: Some("https://z3rm.dev/docs/skills".into()),
         })
     } else {
         None
