@@ -83,13 +83,13 @@ let
   gpu-lib = if withGLES then libglvnd else vulkan-loader;
   commonArgs =
     let
-      zerminalCargoLock = builtins.fromTOML (builtins.readFile ../crates/zerminal/Cargo.toml);
+      z3rmCargoLock = builtins.fromTOML (builtins.readFile ../crates/z3rm/Cargo.toml);
       stdenv' = stdenv;
     in
     rec {
-      pname = "zerminal";
+      pname = "z3rm";
       version =
-        zerminalCargoLock.package.version
+        z3rmCargoLock.package.version
         + "-nightly"
         + lib.optionalString (commitSha != null) "+${builtins.substring 0 7 commitSha}";
       src = builtins.path {
@@ -202,7 +202,7 @@ let
         (darwinMinVersionHook "10.15")
       ];
 
-      cargoExtraArgs = "-p zerminal -p cli --locked --features=gpui_platform/runtime_shaders";
+      cargoExtraArgs = "-p z3rm -p cli --locked --features=gpui_platform/runtime_shaders";
 
       stdenv =
         pkgs:
@@ -228,9 +228,9 @@ let
             ../assets/fonts/ibm-plex-sans
           ];
         };
-        ZERMINAL_UPDATE_EXPLANATION = "Zed has been installed using Nix. Auto-updates have thus been disabled.";
+        Z3RM_UPDATE_EXPLANATION = "Zed has been installed using Nix. Auto-updates have thus been disabled.";
         RELEASE_VERSION = version;
-        ZERMINAL_COMMIT_SHA = lib.optionalString (commitSha != null) "${commitSha}";
+        Z3RM_COMMIT_SHA = lib.optionalString (commitSha != null) "${commitSha}";
         LK_CUSTOM_WEBRTC = pkgs.callPackage ./livekit-libwebrtc/package.nix { };
         PROTOC = "${protobuf}/bin/protoc";
 
@@ -325,7 +325,7 @@ craneLib.buildPackage (
     # TODO: put this in a separate derivation that depends on src to avoid running it on every build
     preBuild = ''
       ALLOW_MISSING_LICENSES=yes bash script/generate-licenses
-      echo nightly > crates/zerminal/RELEASE_CHANNEL
+      echo nightly > crates/z3rm/RELEASE_CHANNEL
     '';
 
     installPhase =
@@ -333,7 +333,7 @@ craneLib.buildPackage (
         ''
           runHook preInstall
 
-          pushd crates/zerminal
+          pushd crates/z3rm
           sed -i "s/package.metadata.bundle-nightly/package.metadata.bundle/" Cargo.toml
           export CARGO_BUNDLE_SKIP_BUILD=true
           app_path="$(cargo bundle --profile $CARGO_PROFILE | xargs)"
@@ -347,7 +347,7 @@ craneLib.buildPackage (
 
           # Physical location of the CLI must be inside the app bundle as this is used
           # to determine which app to start
-          ln -s "$out/Applications/Zerminal Nightly.app/Contents/MacOS/cli" $out/bin/zerminal
+          ln -s "$out/Applications/Z3rm Nightly.app/Contents/MacOS/cli" $out/bin/z3rm
 
           runHook postInstall
         ''
@@ -356,26 +356,26 @@ craneLib.buildPackage (
           runHook preInstall
 
           mkdir -p $out/bin $out/libexec
-          cp $TARGET_DIR/zerminal $out/libexec/zerminal
-          cp $TARGET_DIR/cli  $out/bin/zerminal
-          ln -s $out/bin/zerminal $out/bin/zeditor  # home-manager expects the CLI binary to be here
+          cp $TARGET_DIR/z3rm $out/libexec/z3rm
+          cp $TARGET_DIR/cli  $out/bin/z3rm
+          ln -s $out/bin/z3rm $out/bin/zeditor  # home-manager expects the CLI binary to be here
 
 
-          install -D "crates/zerminal/resources/app-icon-nightly@2x.png" \
-            "$out/share/icons/hicolor/1024x1024@2x/apps/zerminal.png"
-          install -D crates/zerminal/resources/app-icon-nightly.png \
-            $out/share/icons/hicolor/512x512/apps/zerminal.png
+          install -D "crates/z3rm/resources/app-icon-nightly@2x.png" \
+            "$out/share/icons/hicolor/1024x1024@2x/apps/z3rm.png"
+          install -D crates/z3rm/resources/app-icon-nightly.png \
+            $out/share/icons/hicolor/512x512/apps/z3rm.png
 
           # TODO: icons should probably be named "zed-nightly"
           (
             export DO_STARTUP_NOTIFY="true"
-            export APP_CLI="zerminal"
-            export APP_ICON="zerminal"
+            export APP_CLI="z3rm"
+            export APP_ICON="z3rm"
             export APP_NAME="Zed Nightly"
             export APP_ARGS="%U"
             mkdir -p "$out/share/applications"
-            ${lib.getExe envsubst} < "crates/zerminal/resources/zerminal.desktop.in" > "$out/share/applications/dev.zerminal.Zerminal-Nightly.desktop"
-            chmod +x "$out/share/applications/dev.zerminal.Zerminal-Nightly.desktop"
+            ${lib.getExe envsubst} < "crates/z3rm/resources/z3rm.desktop.in" > "$out/share/applications/dev.z3rm.Z3rm-Nightly.desktop"
+            chmod +x "$out/share/applications/dev.z3rm.Z3rm-Nightly.desktop"
           )
 
           runHook postInstall
@@ -383,7 +383,7 @@ craneLib.buildPackage (
 
     # TODO: why isn't this also done on macOS?
     postFixup = lib.optionalString stdenv.hostPlatform.isLinux ''
-      wrapProgram $out/libexec/zerminal --suffix PATH : ${lib.makeBinPath [ nodejs_22 ]}
+      wrapProgram $out/libexec/z3rm --suffix PATH : ${lib.makeBinPath [ nodejs_22 ]}
     '';
 
     meta = {
@@ -391,7 +391,7 @@ craneLib.buildPackage (
       homepage = "https://zed.dev";
       changelog = "https://zed.dev/releases/preview";
       license = lib.licenses.gpl3Only;
-      mainProgram = "zerminal";
+      mainProgram = "z3rm";
       platforms = lib.platforms.linux ++ lib.platforms.darwin;
     };
   }

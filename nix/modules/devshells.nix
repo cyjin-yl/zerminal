@@ -99,7 +99,7 @@
         env =
           (removeAttrs baseEnv [
             "LK_CUSTOM_WEBRTC" # download the staticlib during the build as usual
-            "ZERMINAL_UPDATE_EXPLANATION" # allow auto-updates
+            "Z3RM_UPDATE_EXPLANATION" # allow auto-updates
             "CARGO_PROFILE" # let you specify the profile
             "TARGET_DIR"
           ])
@@ -116,12 +116,12 @@
 
             # Point mdBook at the prebuilt preprocessor/postprocessor binary
             # instead of `cargo run`. mdBook lowercases these keys and turns `_`
-            # into `-`, so they map to `preprocessor.zerminal-docs-preprocessor.command`
-            # and `output.zerminal-html.command` in `docs/book.toml`.
-            MDBOOK_PREPROCESSOR__ZERMINAL_DOCS_PREPROCESSOR__COMMAND = "${docs-preprocessor}/bin/docs_preprocessor";
-            MDBOOK_OUTPUT__ZERMINAL_HTML__COMMAND = "${docs-preprocessor}/bin/docs_preprocessor postprocess";
+            # into `-`, so they map to `preprocessor.z3rm-docs-preprocessor.command`
+            # and `output.z3rm-html.command` in `docs/book.toml`.
+            MDBOOK_PREPROCESSOR__Z3RM_DOCS_PREPROCESSOR__COMMAND = "${docs-preprocessor}/bin/docs_preprocessor";
+            MDBOOK_OUTPUT__Z3RM_HTML__COMMAND = "${docs-preprocessor}/bin/docs_preprocessor postprocess";
 
-            ZERMINAL_ZSTD_MUSL_LIB = "${pkgs.pkgsCross.musl64.pkgsStatic.zstd.out}/lib";
+            Z3RM_ZSTD_MUSL_LIB = "${pkgs.pkgsCross.musl64.pkgsStatic.zstd.out}/lib";
             # For aws-lc-sys musl cross-compilation
             CC_x86_64_unknown_linux_musl = "${muslCross.stdenv.cc}/bin/x86_64-unknown-linux-musl-gcc";
           };

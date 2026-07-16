@@ -143,7 +143,7 @@ mod tests {
     #[test]
     fn test_delta_apply_replace() {
         let mut rope = Rope::from("Hello, World!");
-        let new_text = Arc::new(Rope::from("Zerminal"));
+        let new_text = Arc::new(Rope::from("Z3rm"));
         DeltaReplay::apply_delta(
             &mut rope,
             &[DeltaOp::Replace {
@@ -152,7 +152,7 @@ mod tests {
                 text: new_text,
             }],
         );
-        assert_eq!(rope.to_string(), "Hello, Zerminal!");
+        assert_eq!(rope.to_string(), "Hello, Z3rm!");
     }
 
     #[test]
