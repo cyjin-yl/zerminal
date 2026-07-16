@@ -452,6 +452,8 @@ pub struct Pane {
     welcome_page: Option<Entity<crate::welcome::WelcomePage>>,
 
     pub in_center_group: bool,
+    /// §16.9 tabbar 样式: top (横排) 或 stacked (左侧堆叠)
+    pub tabbar_style: crate::layout_projection::TabBarStyle,
 }
 
 pub struct ActivationHistoryEntry {
@@ -621,6 +623,8 @@ impl Pane {
             project_item_restoration_data: HashMap::default(),
             welcome_page: None,
             in_center_group: false,
+            // §16.9 tabbar 样式默认 top (横排)
+            tabbar_style: crate::layout_projection::TabBarStyle::default(),
         }
     }
 
@@ -804,6 +808,16 @@ impl Pane {
         self.toolbar.update(cx, |toolbar, cx| {
             toolbar.set_can_navigate(can_navigate, cx);
         });
+        cx.notify();
+    }
+
+    /// §16.9 设置 tabbar 样式 (运行时切换)
+    pub fn set_tabbar_style(
+        &mut self,
+        style: crate::layout_projection::TabBarStyle,
+        cx: &mut Context<Self>,
+    ) {
+        self.tabbar_style = style;
         cx.notify();
     }
 
@@ -3282,7 +3296,18 @@ impl Pane {
         let tab_bar_settings = TabBarSettings::get_global(cx);
         let use_separate_rows = tab_bar_settings.show_pinned_tabs_in_separate_row;
 
-        if use_separate_rows && !pinned_tabs.is_empty() && !unpinned_tabs.is_empty() {
+        // §16.9 根据 tabbar 样式选择渲染方式
+        if self.tabbar_style.is_stacked() {
+            self.render_stacked_tab_bar(
+                pinned_tabs,
+                unpinned_tabs,
+                tab_count,
+                navigate_backward,
+                navigate_forward,
+                window,
+                cx,
+            )
+        } else if use_separate_rows && !pinned_tabs.is_empty() && !unpinned_tabs.is_empty() {
             self.render_two_row_tab_bar(
                 pinned_tabs,
                 unpinned_tabs,
@@ -3303,8 +3328,50 @@ impl Pane {
                 cx,
             )
         }
+
     }
 
+    // §16.9 堆叠式 tabbar: 垂直排列的 tab 列表 (左侧堆叠)
+    fn render_stacked_tab_bar(
+        &mut self,
+        pinned_tabs: Vec<gpui::AnyElement>,
+        unpinned_tabs: Vec<gpui::AnyElement>,
+        tab_count: usize,
+        navigate_backward: IconButton,
+        navigate_forward: IconButton,
+        window: &mut Window,
+        cx: &mut Context<Pane>,
+    ) -> AnyElement {
+        use gpui::prelude::*;
+
+        // §16.9 堆叠模式使用垂直 flex 容器, 不使用 TabBar 组件
+        let mut tabs = Vec::new();
+        if !pinned_tabs.is_empty() {
+            tabs.extend(pinned_tabs);
+        }
+        tabs.extend(unpinned_tabs);
+
+        v_flex()
+            .id("stacked-tab-bar")
+            .h_full()
+            .w_32()
+            .bg(cx.theme().colors().tab_bar_background)
+            .border_r_1()
+            .border_color(cx.theme().colors().border)
+            .overflow_scroll()
+            .child(
+                h_flex()
+                    .items_center()
+                    .justify_center()
+                    .gap_1()
+                    .p_1()
+                    .child(navigate_backward)
+                    .child(navigate_forward),
+            )
+            .children(tabs)
+            .child(self.render_tab_bar_drop_target(tab_count, cx))
+            .into_any_element()
+    }
     fn configure_tab_bar_start(
         &mut self,
         tab_bar: TabBar,

@@ -16546,6 +16546,8 @@ dependencies = [
  "log",
  "markdown",
  "menu",
+ "mux",
+ "mux_protocol",
  "parking_lot",
  "postage",
  "pretty_assertions",

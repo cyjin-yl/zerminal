@@ -10,6 +10,7 @@ mod multi_workspace_tests;
 pub mod notifications;
 pub mod pane;
 pub mod pane_group;
+pub mod layout_projection;
 pub mod path_list {
     pub use util::path_list::{PathList, SerializedPathList};
 }
@@ -56,6 +57,10 @@ use anyhow::{Context as _, Result, anyhow};
 use collections::{BTreeMap, HashMap, HashSet, TypeIdHashMap, hash_map};
 use dock::{Dock, DockPosition, PanelButtons, PanelHandle, RESIZE_HANDLE_SIZE};
 use fs::Fs;
+// §15.1 导入 mux_protocol 用于 LayoutTree 类型转换
+use mux_protocol;
+// §15.1 导入 mux client 用于 RPC 转发
+use mux;
 use futures::{
     Future, FutureExt, StreamExt,
     channel::{
@@ -1245,6 +1250,10 @@ pub struct Workspace {
     active_workspace_id: Option<Rc<Cell<EntityId>>>,
     active_worktree_creation: ActiveWorktreeCreation,
     deferred_save_items: Vec<Box<dyn WeakItemHandle>>,
+    // §15.1 / §16.9 服务端布局树 (server-side layout tree)
+    server_layout: Option<crate::layout_projection::LayoutTree>,
+    // §16.9 tabbar 样式: top 或 stacked (运行时可切换)
+    tabbar_style: crate::layout_projection::TabBarStyle,
 }
 
 impl EventEmitter<Event> for Workspace {}
@@ -1536,6 +1545,10 @@ impl Workspace {
             open_in_dev_container: false,
             _dev_container_task: None,
             deferred_save_items: Vec::new(),
+            // §15.1 服务端布局树初始为空 (等待 server push)
+            server_layout: None,
+            // §16.9 tabbar 样式默认 top
+            tabbar_style: crate::layout_projection::TabBarStyle::default(),
         }
     }
 
@@ -6285,6 +6298,90 @@ impl Workspace {
     #[cfg(any(test, feature = "test-support"))]
     pub fn set_random_database_id(&mut self) {
         self.database_id = Some(WorkspaceId(Uuid::new_v4().as_u64_pair().0 as i64));
+    }
+
+    // §16.9 设置 tabbar 样式 (运行时可切换)
+    pub fn set_tabbar_style(
+        &mut self,
+        style: crate::layout_projection::TabBarStyle,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        self.tabbar_style = style;
+        // §16.9 将 tabbar 样式传播到所有 pane
+        for pane in &self.panes {
+            pane.update(cx, |p, cx| p.set_tabbar_style(style, cx));
+        }
+        cx.notify();
+    }
+    /// §16.9 获取当前 tabbar 样式
+    pub fn get_tabbar_style(&self) -> crate::layout_projection::TabBarStyle {
+        self.tabbar_style
+    }
+
+    /// §15.1 设置服务端布局树 (从 server push 接收)
+    pub fn set_server_layout(&mut self, layout: crate::layout_projection::LayoutTree) {
+        self.server_layout = Some(layout);
+    }
+
+    /// §15.1 获取服务端布局树
+    pub fn get_server_layout(&self) -> Option<&crate::layout_projection::LayoutTree> {
+        self.server_layout.as_ref()
+    }
+
+    /// §15.1 接收服务端 LayoutTree (从 mux_protocol proto 转换)
+    pub fn apply_layout_snapshot(
+        &mut self,
+        proto_tree: &mux_protocol::LayoutTree,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) {
+        let layout = crate::layout_projection::LayoutTree::from_proto(proto_tree);
+        self.server_layout = Some(layout);
+        cx.notify();
+    }
+
+    // ========================================================================
+    // §15.1 / §16.9 布局交互 RPC 转发 — 将用户操作转发到 mux_server
+    // ========================================================================
+
+    /// §16.9 转发分割请求到 server
+    pub async fn rpc_split_pane(
+        &self,
+        mux: &mux::MuxDomain,
+        pane_id: &str,
+        direction: mux_protocol::split_node::SplitDirection,
+    ) -> anyhow::Result<String> {
+        mux.split_pane(pane_id, direction).await
+    }
+
+    /// §16.9 转发关闭请求到 server
+    pub async fn rpc_close_pane(
+        &self,
+        mux: &mux::MuxDomain,
+        pane_id: &str,
+    ) -> anyhow::Result<()> {
+        mux.close_pane(pane_id).await
+    }
+
+    /// §16.9 转发聚焦请求到 server
+    pub async fn rpc_focus_pane(
+        &self,
+        mux: &mux::MuxDomain,
+        pane_id: &str,
+    ) -> anyhow::Result<()> {
+        mux.focus_pane(pane_id).await
+    }
+
+    /// §16.9 转发调整大小请求到 server
+    pub async fn rpc_resize_pane(
+        &self,
+        mux: &mux::MuxDomain,
+        pane_id: &str,
+        cols: u32,
+        rows: u32,
+    ) -> anyhow::Result<()> {
+        mux.resize_pane(pane_id, cols, rows).await
     }
 
     #[cfg(any(test, feature = "test-support"))]
