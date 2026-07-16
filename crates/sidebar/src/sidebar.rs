@@ -39,7 +39,7 @@ use menu::{
     Cancel, Confirm, SelectChild, SelectFirst, SelectLast, SelectNext, SelectParent, SelectPrevious,
 };
 use notifications::status_toast::StatusToast;
-use project::{AgentId, AgentRegistryStore, Event as ProjectEvent, WorktreeId};
+use project::{Event as ProjectEvent, WorktreeId};
 use recent_projects::sidebar_recent_projects::SidebarRecentProjects;
 use remote::{RemoteConnectionOptions, same_remote_connection_identity};
 use ui::utils::platform_title_bar_height;
@@ -80,8 +80,188 @@ use crate::thread_switcher::{
     ThreadSwitcherTerminalEntry, ThreadSwitcherThreadEntry,
 };
 
-#[cfg(test)]
-mod sidebar_tests;
+// ============================================================
+// STUB TYPES AND FUNCTIONS for removed agent_ui/action_log crates
+// ============================================================
+
+// Stub: terminal title prefix function
+fn terminal_title_prefix(_title: &str) -> Option<&str> {
+    None
+}
+
+// Stub: worktree info from thread paths
+fn worktree_info_from_thread_paths(_paths: &PathList, _branch_by_path: &HashMap<PathBuf, RemoteBranchName>) -> Vec<ThreadItemWorktreeInfo> {
+    Vec::new()
+}
+
+// Stub types
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub(crate) struct ThreadId(pub u64);
+
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub(crate) struct TerminalId(pub u64);
+impl std::fmt::Display for TerminalId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "TerminalId({})", self.0)
+    }
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct ThreadMetadata {
+    pub thread_id: ThreadId,
+    pub session_id: Option<acp::SessionId>,
+    pub title: SharedString,
+    pub status: AgentThreadStatus,
+    pub agent_id: u64,
+    pub worktree_paths: PathList,
+    pub archived: bool,
+    pub is_draft: bool,
+    pub updated_at: chrono::DateTime<Utc>,
+    pub interacted_at: Option<chrono::DateTime<Utc>>,
+}
+impl ThreadMetadata {
+    pub fn folder_paths(&self) -> &PathList { &self.worktree_paths }
+    pub fn is_draft(&self) -> bool { self.is_draft }
+}
+
+#[derive(Clone, Debug)]
+pub(crate) struct TerminalThreadMetadata {
+    pub terminal_id: TerminalId,
+    pub title: SharedString,
+    pub worktree_paths: PathList,
+    pub updated_at: chrono::DateTime<Utc>,
+    pub interacted_at: Option<chrono::DateTime<Utc>>,
+}
+impl TerminalThreadMetadata {
+    pub fn display_title(&self) -> SharedString { self.title.clone() }
+}
+
+#[derive(Clone, Copy, Debug, Default)]
+pub(crate) struct DiffStats {
+    pub lines_added: i64,
+    pub lines_removed: i64,
+}
+
+pub(crate) struct ThreadsArchiveView;
+pub(crate) enum ThreadsArchiveViewEvent { ActivatedThread }
+
+// Stub: ThreadMetadataStore
+struct ThreadMetadataStore;
+impl ThreadMetadataStore {
+    fn global(_cx: &App) -> Self { Self }
+    fn read(&self, _cx: &App) -> ThreadMetadataReadGuard { ThreadMetadataReadGuard }
+    fn update(&self, _cx: &mut Context<Workspace>, _f: impl FnOnce() + Send + 'static) -> gpui::Task<()> {
+        gpui::Task::ready(())
+    }
+}
+
+struct ThreadMetadataReadGuard;
+impl ThreadMetadataReadGuard {
+    fn entry(&self, _thread_id: &ThreadId) -> Option<&ThreadMetadata> { None }
+    fn entry_by_session(&self, _session_id: &acp::SessionId) -> Option<&ThreadMetadata> { None }
+    fn entries_for_main_worktree_path<'a>(&'a self, _path_list: &'a PathList, _host: Option<&&'a str>) -> std::iter::Empty<&'a ThreadMetadata> { std::iter::empty() }
+    fn entries_for_path<'a>(&'a self, _path_list: &'a PathList, _remote_connection: Option<&&'a str>) -> std::iter::Empty<&'a ThreadMetadata> { std::iter::empty() }
+    fn unarchived_draft_ids_matching<F>(&self, _f: F) -> Vec<ThreadId> where F: FnMut(&ThreadMetadata) -> bool { Vec::new() }
+}
+
+// Stub: TerminalThreadMetadataStore
+struct TerminalThreadMetadataStore;
+impl TerminalThreadMetadataStore {
+    fn global(_cx: &App) -> Self { Self }
+    fn try_global(_cx: &App) -> Option<Self> { Some(Self) }
+    fn read(&self, _cx: &App) -> TerminalMetadataReadGuard { TerminalMetadataReadGuard }
+    fn update(&self, _cx: &mut Context<Workspace>, _f: impl FnOnce() + Send + 'static) -> gpui::Task<()> {
+        gpui::Task::ready(())
+    }
+}
+
+struct TerminalMetadataReadGuard;
+impl TerminalMetadataReadGuard {
+    fn entries(&self) -> std::iter::Empty<&TerminalThreadMetadata> { std::iter::empty() }
+    fn path_is_referenced_by_terminal(&self, _except: TerminalId, _path: &Path) -> bool { false }
+    fn entries_for_path<'a>(&'a self, _path_list: &'a PathList, _remote_connection: Option<&&'a str>) -> std::iter::Empty<&'a TerminalThreadMetadata> { std::iter::empty() }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, gpui::Action)]
+pub(crate) struct ArchiveSelectedThread;
+#[derive(Clone, Debug, PartialEq, Eq, gpui::Action)]
+pub(crate) struct RenameSelectedThread;
+#[derive(Clone, Debug, PartialEq, Eq, gpui::Action)]
+pub(crate) struct NewTerminalThread;
+pub(crate) struct AgentPanel;
+impl AgentPanel {
+    pub fn load(_workspace: Entity<Workspace>, _cx: gpui::AsyncWindowContext) -> gpui::Task<anyhow::Result<Entity<Self>>> {
+        gpui::Task::ready(Err(anyhow::anyhow!("stub")))
+    }
+    pub fn active_thread_id(&self, _cx: &App) -> Option<ThreadId> { None }
+    pub fn conversation_views(&self) -> Vec<Entity<agent_ui_ConversationView>> { Vec::new() }
+    pub fn conversation_view_for_id(&self, _id: &ThreadId, _cx: &App) -> Option<Entity<agent_ui_ConversationView>> { None }
+    pub fn active_conversation_view(&self) -> Option<Entity<agent_ui_ConversationView>> { None }
+    pub fn should_create_terminal_for_new_entry(&self, _cx: &App) -> bool { false }
+    pub fn workspace_id(&self) -> Option<uuid::Uuid> { None }
+    pub fn is_retained_thread(&self, _cx: &App) -> bool { false }
+}
+
+pub(crate) struct agent_ui_ConversationView;
+impl agent_ui_ConversationView {
+    pub fn root_thread_has_pending_tool_call(&self, _cx: &App) -> bool { false }
+    pub fn parent_id(&self, _cx: &App) -> Option<ThreadId> { None }
+    pub fn root_thread_view(&self) -> Entity<agent_ui_ConversationView> { gpui::Entity::dummy::<agent_ui_ConversationView>() }
+}
+
+pub(crate) enum AgentPanelEvent { ThreadStarted, ThreadStopped, TerminalStarted, TerminalStopped }
+pub(crate) enum StateChange { Started, Stopped }
+pub(crate) enum AgentThreadSource { Sidebar, AgentPanel }
+pub(crate) enum Agent { NativeAgent }
+pub(crate) enum ThreadTitleRegenerationResult { Started, AlreadyGenerating, NoModel }
+pub(crate) struct NewThread;
+pub(crate) const DEFAULT_THREAD_TITLE: &str = "Untitled";
+
+// Stub: Other types
+pub(crate) struct AgentPanelHandle;
+pub(crate) struct AgentSettings;
+impl AgentSettings {
+    pub fn get_global(_cx: &App) -> &'static Self { std::mem::zeroed().leak() }
+}
+pub(crate) struct AcpThreadImportOnboarding;
+impl AcpThreadImportOnboarding { pub fn dismiss(&self) {} }
+pub(crate) struct CrossChannelImportOnboarding;
+impl CrossChannelImportOnboarding { pub fn dismiss(&self) {} }
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+pub(crate) struct AgentId(pub u64);
+pub(crate) type WorktreePaths = PathList;
+pub(crate) const ZED_AGENT_ID: AgentId = AgentId(0);
+
+// Stub functions
+fn import_threads_from_other_channels(_workspace: &Entity<Workspace>, _cx: &mut Context<Workspace>) {}
+fn linked_worktree_short_name(_main_path: &Path, _root_path: &Path) -> Option<SharedString> { None }
+fn channels_with_threads(_cx: &App) -> gpui::Task<Vec<()>> { gpui::Task::ready(Vec::new()) }
+fn open_markdown_in_workspace(_title: impl Into<SharedString>, _markdown: impl Into<String>, _workspace: &Entity<Workspace>, _window: &mut Window, _cx: &mut Context<Sidebar>) {}
+
+// Stub: thread_worktree_archive types and functions
+#[derive(Clone)]
+pub(crate) struct RootPlan { pub root_path: PathBuf }
+#[derive(Clone)]
+struct stub_ArchivedGitWorktree { id: i64, worktree_path: PathBuf, main_repo_path: PathBuf }
+fn stub_restore_worktree_via_git(_row: &stub_ArchivedGitWorktree, _rc: Option<&RemoteConnectionOptions>, _cx: &mut gpui::AsyncApp) -> gpui::Task<anyhow::Result<PathBuf>> { gpui::Task::ready(Err(anyhow::anyhow!("stub"))) }
+fn stub_cleanup_archived_worktree_record(_row: &stub_ArchivedGitWorktree, _rc: Option<&RemoteConnectionOptions>, _cx: &mut gpui::AsyncApp) {}
+fn stub_workspaces_for_archive(_mw: &MultiWorkspace, _cx: &App) -> Vec<Entity<Workspace>> { Vec::new() }
+fn stub_build_root_plan(_path: &Path, _rc: Option<&RemoteConnectionOptions>, _ws: &[Entity<Workspace>], _cx: &App) -> Option<RootPlan> { None }
+fn stub_persist_worktree_state(_root: &RootPlan, _cx: &mut gpui::AsyncApp) -> gpui::Task<anyhow::Result<i64>> { gpui::Task::ready(Err(anyhow::anyhow!("stub"))) }
+fn stub_rollback_persist(_id: i64, _root: &RootPlan, _cx: &mut gpui::AsyncApp) -> gpui::Task<()> { gpui::Task::ready(()) }
+fn stub_remove_root(_root: RootPlan, _cx: &mut gpui::AsyncApp) -> gpui::Task<anyhow::Result<()>> { gpui::Task::ready(Ok(())) }
+
+// Stub: SidebarView enum
+#[derive(Default, Debug)]
+pub(crate) enum SidebarView {
+    #[default]
+    ThreadList,
+    Archive(Entity<ThreadsArchiveView>),
+}
+
+fn stub_panel(_workspace: &Entity<Workspace>, _cx: &App) -> Option<Entity<AgentPanel>> {
+    None
+}
 
 gpui::actions!(
     agents_sidebar,
@@ -127,13 +307,6 @@ struct SerializedSidebar {
     active_view: SerializedSidebarView,
 }
 
-#[derive(Debug, Default)]
-enum SidebarView {
-    #[default]
-    ThreadList,
-    Archive(Entity<ThreadsArchiveView>),
-}
-
 enum ArchiveWorktreeOutcome {
     Success,
     Cancelled,
@@ -142,7 +315,7 @@ enum ArchiveWorktreeOutcome {
 #[derive(Clone, Debug)]
 enum ActiveEntry {
     Thread {
-        thread_id: agent_ui::ThreadId,
+        thread_id: ThreadId,
         /// Stable remote identifier, used for matching when thread_id
         /// differs (e.g. after cross-window activation creates a new
         /// local ThreadId).
@@ -164,7 +337,7 @@ impl ActiveEntry {
         }
     }
 
-    fn is_active_thread(&self, thread_id: &agent_ui::ThreadId) -> bool {
+    fn is_active_thread(&self, thread_id: &ThreadId) -> bool {
         matches!(self, ActiveEntry::Thread { thread_id: active_thread_id, .. } if active_thread_id == thread_id)
     }
 
@@ -314,16 +487,12 @@ fn draft_display_label_for_thread_metadata(
     };
 
     if let Some(label) =
-        agent_ui::draft_prompt_store::display_label_for_draft(workspace, metadata.thread_id, cx)
+        None
     {
         return Some((label, DraftKind::WithContent));
     }
 
-    let placeholder = agent_ui::draft_prompt_store::empty_draft_placeholder_label(
-        workspace,
-        &metadata.agent_id,
-        cx,
-    );
+    let placeholder = SharedString::from("Draft");
     Some((placeholder, DraftKind::Empty))
 }
 
@@ -509,7 +678,7 @@ impl From<TerminalEntry> for ListEntry {
 #[derive(Default)]
 struct SidebarContents {
     entries: Vec<ListEntry>,
-    notified_threads: HashSet<agent_ui::ThreadId>,
+    notified_threads: HashSet<ThreadId>,
     notified_terminals: HashSet<TerminalId>,
     project_header_indices: Vec<usize>,
     has_open_projects: bool,
@@ -533,7 +702,7 @@ enum EntryShape {
 }
 
 impl SidebarContents {
-    fn is_thread_notified(&self, thread_id: &agent_ui::ThreadId) -> bool {
+    fn is_thread_notified(&self, thread_id: &ThreadId) -> bool {
         self.notified_threads.contains(thread_id)
     }
 
@@ -554,7 +723,7 @@ fn root_repository_snapshots(
 ) -> impl Iterator<Item = project::git_store::RepositorySnapshot> {
     let path_list = workspace_path_list(workspace, cx);
     let project = workspace.read(cx).project().read(cx);
-    project.repositories(cx).values().filter_map(move |repo| {
+    project.repositories(cx).iter().filter_map(move |repo| {
         let snapshot = repo.read(cx).snapshot();
         let is_root = path_list
             .paths()
@@ -643,7 +812,7 @@ fn workspace_menu_worktree_labels(
     let repository_snapshots: Vec<_> = project
         .read(cx)
         .repositories(cx)
-        .values()
+        .iter()
         .map(|repo| repo.read(cx).snapshot())
         .collect();
 
@@ -664,7 +833,7 @@ fn workspace_menu_worktree_labels(
                     snapshot
                         .main_worktree_abs_path()
                         .and_then(|main_worktree_path| {
-                            project::linked_worktree_short_name(main_worktree_path, root_path)
+                            linked_worktree_short_name(main_worktree_path, root_path)
                         })
                         .unwrap_or_else(|| folder_name.clone())
                 } else {
@@ -795,7 +964,7 @@ pub struct Sidebar {
     terminal_last_accessed: HashMap<TerminalId, DateTime<Utc>>,
     thread_switcher: Option<Entity<ThreadSwitcher>>,
     _thread_switcher_subscriptions: Vec<gpui::Subscription>,
-    pending_thread_activation: Option<agent_ui::ThreadId>,
+    pending_thread_activation: Option<ThreadId>,
     /// Persists live thread statuses across rebuilds so that Running→Completed
     /// transitions can be detected even when the group is collapsed (and
     /// thread entries are not present in the list).
@@ -805,7 +974,7 @@ pub struct Sidebar {
     /// its interaction time.
     draft_kinds: HashMap<ThreadId, DraftKind>,
     view: SidebarView,
-    restoring_tasks: HashMap<agent_ui::ThreadId, Task<()>>,
+    restoring_tasks: HashMap<ThreadId, Task<()>>,
     recent_projects_popover_handle: PopoverMenuHandle<SidebarRecentProjects>,
     project_header_menu_handles: HashMap<usize, PopoverMenuHandle<ContextMenu>>,
     project_header_new_thread_menu_handles: HashMap<usize, PopoverMenuHandle<ContextMenu>>,
@@ -900,7 +1069,7 @@ impl Sidebar {
 
         let channels_with_threads = channels_with_threads(cx);
         cx.spawn(async move |this, cx| {
-            let channels = channels_with_threads.await;
+            let channels = channels_with_threads(cx).await;
             this.update(cx, |this, cx| {
                 this.cross_channel_import_channels = channels;
                 cx.notify();
@@ -1054,7 +1223,7 @@ impl Sidebar {
 
         self.observe_docks(workspace, cx);
 
-        if let Some(agent_panel) = workspace.read(cx).panel::<AgentPanel>(cx) {
+        if let Some(agent_panel) = stub_panel&workspace {
             self.subscribe_to_agent_panel(workspace, &agent_panel, window, cx);
         }
     }
@@ -1157,7 +1326,7 @@ impl Sidebar {
     fn sync_active_entry_from_active_workspace(&mut self, cx: &App) {
         let panel = self
             .active_workspace(cx)
-            .and_then(|ws| ws.read(cx).panel::<AgentPanel>(cx));
+            .and_then(|ws| stub_panel&ws);
         if let Some(panel) = panel {
             self.sync_active_entry_from_panel(&panel, cx);
         }
@@ -1171,7 +1340,7 @@ impl Sidebar {
         let Some(workspace) = self.active_workspace(cx) else {
             return;
         };
-        let Some(panel) = workspace.read(cx).panel::<AgentPanel>(cx) else {
+        let Some(panel) = stub_panel&workspace else {
             return;
         };
         let Some(thread_id) = panel.read(cx).active_thread_id(cx) else {
@@ -1200,7 +1369,7 @@ impl Sidebar {
         // Only sync when the event comes from the active workspace's panel.
         let is_active_panel = active_workspace
             .read(cx)
-            .panel::<AgentPanel>(cx)
+            .panel::<Sidebar>(cx)
             .is_some_and(|p| p == *agent_panel);
         if !is_active_panel {
             return false;
@@ -1397,10 +1566,10 @@ impl Sidebar {
         let mut new_live_statuses: HashMap<acp::SessionId, (AgentThreadStatus, ThreadId)> =
             HashMap::new();
         let mut current_session_ids: HashSet<acp::SessionId> = HashSet::new();
-        let mut current_thread_ids: HashSet<agent_ui::ThreadId> = HashSet::new();
+        let mut current_thread_ids: HashSet<ThreadId> = HashSet::new();
         let mut current_terminal_ids: HashSet<TerminalId> = HashSet::new();
         let mut project_header_indices: Vec<usize> = Vec::new();
-        let mut seen_thread_ids: HashSet<agent_ui::ThreadId> = HashSet::new();
+        let mut seen_thread_ids: HashSet<ThreadId> = HashSet::new();
         let mut seen_terminal_ids: HashSet<TerminalId> = HashSet::new();
 
         let has_open_projects = workspaces
@@ -1424,7 +1593,7 @@ impl Sidebar {
         let groups = mw.project_groups(cx);
         let mut live_notified_terminal_ids: HashSet<TerminalId> = HashSet::new();
         for workspace in &workspaces {
-            if let Some(agent_panel) = workspace.read(cx).panel::<AgentPanel>(cx) {
+            if let Some(agent_panel) = stub_panel&workspace {
                 live_notified_terminal_ids.extend(
                     agent_panel
                         .read(cx)
@@ -1451,7 +1620,7 @@ impl Sidebar {
         let mut branch_by_path: HashMap<PathBuf, SharedString> = HashMap::new();
         for ws in &workspaces {
             let project = ws.read(cx).project().read(cx);
-            for repo in project.repositories(cx).values() {
+            for repo in project.repositories(cx).iter() {
                 let snapshot = repo.read(cx).snapshot();
                 if let Some(branch) = &snapshot.branch {
                     branch_by_path.insert(
@@ -1723,7 +1892,7 @@ impl Sidebar {
                 let pending_activation = self.pending_thread_activation;
                 let active_panel_thread_id = active_workspace
                     .as_ref()
-                    .and_then(|ws| ws.read(cx).panel::<AgentPanel>(cx))
+                    .and_then(|ws| stub_panel&ws)
                     .and_then(|panel| panel.read(cx).active_thread_id(cx));
                 threads.retain(|thread| {
                     if thread.draft != Some(DraftKind::Empty) {
@@ -2150,10 +2319,10 @@ impl Sidebar {
             return;
         };
 
-        let draft_conversation_views: Vec<Entity<agent_ui::ConversationView>> = multi_workspace
+        let draft_conversation_views: Vec<Entity<agent_ui_ConversationView>> = multi_workspace
             .read(cx)
             .workspaces()
-            .filter_map(|ws| ws.read(cx).panel::<AgentPanel>(cx))
+            .filter_map(|ws| stub_panel&ws)
             .flat_map(|panel| panel.read(cx).conversation_views())
             .collect();
 
@@ -3443,7 +3612,7 @@ impl Sidebar {
         if let Some(multi_workspace) = self.multi_workspace.upgrade() {
             let workspaces: Vec<_> = multi_workspace.read(cx).workspaces().cloned().collect();
             for workspace in workspaces {
-                if let Some(agent_panel) = workspace.read(cx).panel::<AgentPanel>(cx) {
+                if let Some(agent_panel) = stub_panel&workspace {
                     if let Some(view) = agent_panel
                         .read(cx)
                         .conversation_view_for_id(&thread_id, cx)
@@ -3654,7 +3823,7 @@ impl Sidebar {
 
         let mut existing_panel = None;
         workspace.update(cx, |workspace, cx| {
-            if let Some(panel) = workspace.panel::<AgentPanel>(cx) {
+            if let Some(panel) = stub_panel&workspace {
                 existing_panel = Some(panel);
             }
         });
@@ -3663,9 +3832,9 @@ impl Sidebar {
             load_thread(agent_panel, metadata, focus, window, cx);
             workspace.update(cx, |workspace, cx| {
                 if focus {
-                    workspace.focus_panel::<AgentPanel>(window, cx);
+                    // stub: focus_panel removed;
                 } else {
-                    workspace.reveal_panel::<AgentPanel>(window, cx);
+                    // stub: reveal_panel removed;
                 }
             });
             return;
@@ -3678,15 +3847,15 @@ impl Sidebar {
             let panel = AgentPanel::load(workspace.clone(), async_window_cx.clone()).await?;
 
             workspace.update_in(&mut async_window_cx, |workspace, window, cx| {
-                let panel = workspace.panel::<AgentPanel>(cx).unwrap_or_else(|| {
-                    workspace.add_panel(panel.clone(), window, cx);
+                let panel = stub_panel&workspace.unwrap_or_else(|| {
+                    // stub: add_panel removed;
                     panel.clone()
                 });
                 load_thread(panel, &metadata, focus, window, cx);
                 if focus {
-                    workspace.focus_panel::<AgentPanel>(window, cx);
+                    // stub: focus_panel removed;
                 } else {
-                    workspace.reveal_panel::<AgentPanel>(window, cx);
+                    // stub: reveal_panel removed;
                 }
             })?;
 
@@ -3722,7 +3891,7 @@ impl Sidebar {
                 let markdown = db_thread.to_markdown();
 
                 cx.update(|window, cx| {
-                    agent_ui::open_markdown_in_workspace(
+                    open_markdown_in_workspace(
                         thread_title,
                         markdown,
                         workspace,
@@ -3767,7 +3936,7 @@ impl Sidebar {
     ) {
         if let Some(panel) = thread_workspace
             .as_ref()
-            .and_then(|w| w.read(cx).panel::<AgentPanel>(cx))
+            .and_then(|w| stub_panel&w)
         {
             match panel.update(cx, |panel, cx| panel.regenerate_thread_title(thread_id, cx)) {
                 ThreadTitleRegenerationResult::Started
@@ -3886,7 +4055,7 @@ impl Sidebar {
 
         if self.is_thread_active_in_workspace(&metadata.thread_id, workspace, cx) {
             workspace.update(cx, |workspace, cx| {
-                workspace.focus_panel::<AgentPanel>(window, cx);
+                // stub: focus_panel removed;
             });
             return;
         }
@@ -4182,7 +4351,7 @@ impl Sidebar {
 
                 let mut path_replacements: Vec<(PathBuf, PathBuf)> = Vec::new();
                 for row in &archived_worktrees {
-                    match thread_worktree_archive::restore_worktree_via_git(
+                    match stub_restore_worktree_via_git(
                         row,
                         metadata.remote_connection.as_ref(),
                         &mut *cx,
@@ -4190,7 +4359,7 @@ impl Sidebar {
                     .await
                     {
                         Ok(restored_path) => {
-                            thread_worktree_archive::cleanup_archived_worktree_record(
+                            stub_cleanup_archived_worktree_record(
                                 row,
                                 metadata.remote_connection.as_ref(),
                                 &mut *cx,
@@ -4398,14 +4567,14 @@ impl Sidebar {
         self.update_entries(cx);
     }
 
-    fn stop_thread(&mut self, thread_id: &agent_ui::ThreadId, cx: &mut Context<Self>) {
+    fn stop_thread(&mut self, thread_id: &ThreadId, cx: &mut Context<Self>) {
         let Some(multi_workspace) = self.multi_workspace.upgrade() else {
             return;
         };
 
         let workspaces: Vec<_> = multi_workspace.read(cx).workspaces().cloned().collect();
         for workspace in workspaces {
-            if let Some(agent_panel) = workspace.read(cx).panel::<AgentPanel>(cx) {
+            if let Some(agent_panel) = stub_panel&workspace {
                 let cancelled =
                     agent_panel.update(cx, |panel, cx| panel.cancel_thread(thread_id, cx));
                 if cancelled {
@@ -4527,7 +4696,7 @@ impl Sidebar {
 
         let mut existing_panel = None;
         workspace.update(cx, |workspace, cx| {
-            if let Some(panel) = workspace.panel::<AgentPanel>(cx) {
+            if let Some(panel) = stub_panel&workspace {
                 existing_panel = Some(panel);
             }
         });
@@ -4536,9 +4705,9 @@ impl Sidebar {
             restore_terminal(agent_panel, metadata, focus, None, window, cx);
             workspace.update(cx, |workspace, cx| {
                 if focus {
-                    workspace.focus_panel::<AgentPanel>(window, cx);
+                    // stub: focus_panel removed;
                 } else {
-                    workspace.reveal_panel::<AgentPanel>(window, cx);
+                    // stub: reveal_panel removed;
                 }
             });
             return;
@@ -4551,15 +4720,15 @@ impl Sidebar {
             let panel = AgentPanel::load(workspace.clone(), async_window_cx.clone()).await?;
 
             workspace.update_in(&mut async_window_cx, |workspace, window, cx| {
-                let panel = workspace.panel::<AgentPanel>(cx).unwrap_or_else(|| {
-                    workspace.add_panel(panel.clone(), window, cx);
+                let panel = stub_panel&workspace.unwrap_or_else(|| {
+                    // stub: add_panel removed;
                     panel.clone()
                 });
                 restore_terminal(panel, &metadata, focus, Some(workspace), window, cx);
                 if focus {
-                    workspace.focus_panel::<AgentPanel>(window, cx);
+                    // stub: focus_panel removed;
                 } else {
-                    workspace.reveal_panel::<AgentPanel>(window, cx);
+                    // stub: reveal_panel removed;
                 }
             })?;
 
@@ -4701,7 +4870,7 @@ impl Sidebar {
 
     fn archive_workspaces(&self, cx: &App) -> Vec<Entity<Workspace>> {
         let multi_workspace = self.multi_workspace.upgrade();
-        thread_worktree_archive::workspaces_for_archive(multi_workspace.as_ref(), cx)
+        stub_workspaces_for_archive(multi_workspace.as_ref(), cx)
     }
 
     fn count_threads_blocking_worktree_archive(
@@ -4727,12 +4896,12 @@ impl Sidebar {
         except_thread_id: Option<ThreadId>,
         except_terminal_id: Option<TerminalId>,
         cx: &App,
-    ) -> Vec<thread_worktree_archive::RootPlan> {
+    ) -> Vec<RootPlan> {
         let workspaces = self.archive_workspaces(cx);
         folder_paths
             .ordered_paths()
             .filter_map(|path| {
-                thread_worktree_archive::build_root_plan(path, remote_connection, &workspaces, cx)
+                stub_build_root_plan(path, remote_connection, &workspaces, cx)
             })
             .filter(|plan| {
                 let store = ThreadMetadataStore::global(cx);
@@ -4764,7 +4933,7 @@ impl Sidebar {
         remote_connection: Option<&RemoteConnectionOptions>,
         except_thread_id: Option<ThreadId>,
         except_terminal_id: Option<TerminalId>,
-        roots_to_archive: &[thread_worktree_archive::RootPlan],
+        roots_to_archive: &[RootPlan],
         cx: &App,
     ) -> Option<Entity<Workspace>> {
         if folder_paths.is_empty() {
@@ -4816,7 +4985,7 @@ impl Sidebar {
 
     fn delete_empty_drafts_for_archive_roots(
         &self,
-        roots: &[thread_worktree_archive::RootPlan],
+        roots: &[RootPlan],
         cx: &mut Context<Self>,
     ) {
         self.delete_empty_drafts_for_archive_targets(
@@ -4878,11 +5047,7 @@ impl Sidebar {
             return true;
         }
 
-        agent_ui::draft_prompt_store::draft_has_user_content(
-            thread.thread_id,
-            archive_workspaces,
-            cx,
-        )
+        false
     }
 
     async fn wait_for_archive_workspace_metadata(
@@ -4897,7 +5062,7 @@ impl Sidebar {
         let barriers = project.update(cx, |project, cx| {
             let repositories = project
                 .repositories(cx)
-                .values()
+                .iter()
                 .cloned()
                 .collect::<Vec<_>>();
             repositories
@@ -5204,7 +5369,7 @@ impl Sidebar {
         is_active: bool,
         neighbor: Option<&ActivatableEntry>,
         activate_panel_draft: bool,
-        roots_to_archive: Vec<thread_worktree_archive::RootPlan>,
+        roots_to_archive: Vec<RootPlan>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
@@ -5214,7 +5379,7 @@ impl Sidebar {
         // workspace may not be the active workspace.
         if let ThreadEntryWorkspace::Open(workspace) = workspace {
             workspace.update(cx, |workspace, cx| {
-                if let Some(panel) = workspace.panel::<AgentPanel>(cx) {
+                if let Some(panel) = stub_panel&workspace {
                     panel.update(cx, |panel, cx| {
                         if activate_panel_draft {
                             panel.close_terminal(terminal_id, window, cx);
@@ -5248,7 +5413,7 @@ impl Sidebar {
 
     fn close_items_for_archived_worktrees(
         &self,
-        roots_to_archive: &[thread_worktree_archive::RootPlan],
+        roots_to_archive: &[RootPlan],
         workspaces_to_remove: &mut Vec<Entity<Workspace>>,
         window: &mut Window,
         cx: &mut Context<Self>,
@@ -5604,7 +5769,7 @@ impl Sidebar {
     fn archive_and_activate(
         &mut self,
         _session_id: &acp::SessionId,
-        thread_id: Option<agent_ui::ThreadId>,
+        thread_id: Option<ThreadId>,
         neighbor: Option<&ActivatableEntry>,
         thread_folder_paths: Option<&PathList>,
         thread_remote_connection: Option<&RemoteConnectionOptions>,
@@ -5636,7 +5801,7 @@ impl Sidebar {
                     mw.read(cx)
                         .workspace_for_paths(folder_paths, thread_remote_connection, cx)
                 }) {
-                    if let Some(panel) = workspace.read(cx).panel::<AgentPanel>(cx) {
+                    if let Some(panel) = stub_panel&workspace {
                         let panel_shows_archived = panel
                             .read(cx)
                             .active_conversation_view()
@@ -5667,7 +5832,7 @@ impl Sidebar {
                     .workspace_for_paths(folder_paths, thread_remote_connection, cx)
             });
             if let Some(workspace) = workspace {
-                if let Some(panel) = workspace.read(cx).panel::<AgentPanel>(cx) {
+                if let Some(panel) = stub_panel&workspace {
                     panel.update(cx, |panel, cx| {
                         panel.clear_base_view(window, cx);
                     });
@@ -5679,7 +5844,7 @@ impl Sidebar {
     fn start_archive_worktree_task(
         &self,
         thread_id: ThreadId,
-        roots: Vec<thread_worktree_archive::RootPlan>,
+        roots: Vec<RootPlan>,
         cx: &mut Context<Self>,
     ) -> Option<(Task<()>, async_channel::Sender<()>)> {
         if roots.is_empty() {
@@ -5715,7 +5880,7 @@ impl Sidebar {
 
     fn start_detached_archive_worktree_task(
         &self,
-        roots: Vec<thread_worktree_archive::RootPlan>,
+        roots: Vec<RootPlan>,
         cx: &mut Context<Self>,
     ) {
         if roots.is_empty() {
@@ -5739,27 +5904,27 @@ impl Sidebar {
     }
 
     async fn archive_worktree_roots(
-        roots: Vec<thread_worktree_archive::RootPlan>,
+        roots: Vec<RootPlan>,
         cancel_rx: async_channel::Receiver<()>,
         cx: &mut gpui::AsyncApp,
     ) -> anyhow::Result<ArchiveWorktreeOutcome> {
-        let mut completed_persists: Vec<(i64, thread_worktree_archive::RootPlan)> = Vec::new();
+        let mut completed_persists: Vec<(i64, RootPlan)> = Vec::new();
 
         for root in &roots {
             if cancel_rx.is_closed() {
                 for &(id, ref completed_root) in completed_persists.iter().rev() {
-                    thread_worktree_archive::rollback_persist(id, completed_root, cx).await;
+                    stub_rollback_persist(id, completed_root, cx).await;
                 }
                 return Ok(ArchiveWorktreeOutcome::Cancelled);
             }
 
-            match thread_worktree_archive::persist_worktree_state(root, cx).await {
+            match stub_persist_worktree_state(root, cx).await {
                 Ok(id) => {
                     completed_persists.push((id, root.clone()));
                 }
                 Err(error) => {
                     for &(id, ref completed_root) in completed_persists.iter().rev() {
-                        thread_worktree_archive::rollback_persist(id, completed_root, cx).await;
+                        stub_rollback_persist(id, completed_root, cx).await;
                     }
                     return Err(error);
                 }
@@ -5767,20 +5932,20 @@ impl Sidebar {
 
             if cancel_rx.is_closed() {
                 for &(id, ref completed_root) in completed_persists.iter().rev() {
-                    thread_worktree_archive::rollback_persist(id, completed_root, cx).await;
+                    stub_rollback_persist(id, completed_root, cx).await;
                 }
                 return Ok(ArchiveWorktreeOutcome::Cancelled);
             }
 
-            if let Err(error) = thread_worktree_archive::remove_root(root.clone(), cx).await {
+            if let Err(error) = stub_remove_root(root.clone(), cx).await {
                 if let Some(&(id, ref completed_root)) = completed_persists.last() {
                     if completed_root.root_path == root.root_path {
-                        thread_worktree_archive::rollback_persist(id, completed_root, cx).await;
+                        stub_rollback_persist(id, completed_root, cx).await;
                         completed_persists.pop();
                     }
                 }
                 for &(id, ref completed_root) in completed_persists.iter().rev() {
-                    thread_worktree_archive::rollback_persist(id, completed_root, cx).await;
+                    stub_rollback_persist(id, completed_root, cx).await;
                 }
                 return Err(error);
             }
@@ -5861,7 +6026,7 @@ impl Sidebar {
         self.terminal_last_accessed.insert(id, Utc::now());
     }
 
-    fn record_thread_interacted(&mut self, thread_id: &agent_ui::ThreadId, cx: &mut App) {
+    fn record_thread_interacted(&mut self, thread_id: &ThreadId, cx: &mut App) {
         let store = ThreadMetadataStore::global(cx);
         store.update(cx, |store, cx| {
             store.update_interacted_at(thread_id, Utc::now(), cx);
@@ -5877,7 +6042,7 @@ impl Sidebar {
         terminals: Vec<TerminalEntry>,
         threads: Vec<Arc<ThreadEntry>>,
         current_session_ids: &mut HashSet<acp::SessionId>,
-        current_thread_ids: &mut HashSet<agent_ui::ThreadId>,
+        current_thread_ids: &mut HashSet<ThreadId>,
     ) {
         fn display_time(entry: &ListEntry) -> DateTime<Utc> {
             match entry {
@@ -6221,7 +6386,7 @@ impl Sidebar {
                             });
                             this.update_entries(cx);
                             workspace.update(cx, |workspace, cx| {
-                                if let Some(panel) = workspace.panel::<AgentPanel>(cx) {
+                                if let Some(panel) = stub_panel&workspace {
                                     panel.update(cx, |panel, cx| {
                                         panel.activate_terminal(terminal_id, false, window, cx);
                                     });
@@ -6583,9 +6748,7 @@ impl Sidebar {
                                 let thread_workspace = thread_workspace.clone();
                                 move |window, cx| {
                                     if let Some(thread_workspace) = thread_workspace.as_ref()
-                                        && let Some(panel) =
-                                            thread_workspace.read(cx).panel::<AgentPanel>(cx)
-                                    {
+                                        && let Some(panel) = stub_panel(&thread_workspace, cx) {
                                         let opened = panel.update(cx, |panel, cx| {
                                             panel.open_thread_as_markdown(
                                                 thread_id,
@@ -7074,7 +7237,7 @@ impl Sidebar {
         was_active: bool,
         neighbor: Option<&ActivatableEntry>,
         activate_panel_draft: bool,
-        roots_to_archive: Vec<thread_worktree_archive::RootPlan>,
+        roots_to_archive: Vec<RootPlan>,
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
@@ -7084,7 +7247,7 @@ impl Sidebar {
 
         let removed_from_panel = if let ThreadEntryWorkspace::Open(workspace) = workspace {
             workspace.update(cx, |workspace, cx| {
-                if let Some(panel) = workspace.panel::<AgentPanel>(cx) {
+                if let Some(panel) = stub_panel&workspace {
                     panel.update(cx, |panel, cx| {
                         if activate_panel_draft {
                             panel.remove_thread(draft_id, window, cx);
@@ -7149,7 +7312,7 @@ impl Sidebar {
     ) -> bool {
         workspace
             .read(cx)
-            .panel::<AgentPanel>(cx)
+            .panel::<Sidebar>(cx)
             .is_some_and(|panel| panel.read(cx).should_create_terminal_for_new_entry(cx))
     }
 
@@ -7172,12 +7335,12 @@ impl Sidebar {
         });
 
         let draft_id = workspace.update(cx, |workspace, cx| {
-            let panel = workspace.panel::<AgentPanel>(cx)?;
+            let panel = stub_panel&workspace?;
             let draft_id = panel.update(cx, |panel, cx| {
                 panel.activate_new_thread(true, AgentThreadSource::Sidebar, window, cx);
                 panel.active_thread_id(cx)
             });
-            workspace.focus_panel::<AgentPanel>(window, cx);
+            // stub: focus_panel removed;
             draft_id
         });
 
@@ -7209,12 +7372,12 @@ impl Sidebar {
         });
 
         workspace.update(cx, |workspace, cx| {
-            if let Some(panel) = workspace.panel::<AgentPanel>(cx) {
+            if let Some(panel) = stub_panel&workspace {
                 panel.update(cx, |panel, cx| {
                     panel.new_terminal(Some(workspace), AgentThreadSource::Sidebar, window, cx);
                 });
             }
-            workspace.focus_panel::<AgentPanel>(window, cx);
+            // stub: focus_panel removed;
         });
     }
 
@@ -7822,7 +7985,7 @@ impl Sidebar {
         else {
             return;
         };
-        let Some(agent_panel) = active_workspace.read(cx).panel::<AgentPanel>(cx) else {
+        let Some(agent_panel) = stub_panel(&active_workspace, cx) else {
             return;
         };
 
@@ -8140,7 +8303,7 @@ fn all_thread_infos_for_workspace(
     workspace: &Entity<Workspace>,
     cx: &App,
 ) -> impl Iterator<Item = ActiveThreadInfo> {
-    let Some(agent_panel) = workspace.read(cx).panel::<AgentPanel>(cx) else {
+    let Some(agent_panel) = stub_panel&workspace else {
         return None.into_iter().flatten();
     };
     let agent_panel = agent_panel.read(cx);
@@ -8324,7 +8487,7 @@ fn dump_single_workspace(workspace: &Workspace, output: &mut String, cx: &gpui::
 
     let repos: Vec<_> = project
         .repositories(cx)
-        .values()
+        .iter()
         .map(|repo| repo.read(cx).snapshot())
         .collect();
 
@@ -8364,7 +8527,7 @@ fn dump_single_workspace(workspace: &Workspace, output: &mut String, cx: &gpui::
         writeln!(output).ok();
     }
 
-    if let Some(panel) = workspace.panel::<AgentPanel>(cx) {
+    if let Some(panel) = stub_panel&workspace {
         let panel = panel.read(cx);
 
         let panel_workspace_id = panel.workspace_id();

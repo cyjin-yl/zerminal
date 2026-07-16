@@ -1,5 +1,5 @@
 // use action_log::DiffStats;  // removed-crate: action_log
-#[cfg(test)]
+use super::{DiffStats, ThreadId, ThreadMetadata, TerminalId, TerminalThreadMetadata};
 // use agent_ui::TerminalId;  // removed-crate: agent_ui
 // use agent_ui::{
 // terminal_thread_metadata_store::TerminalThreadMetadata, thread_metadata_store::ThreadMetadata,
