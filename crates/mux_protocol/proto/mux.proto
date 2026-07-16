@@ -173,6 +173,18 @@ message FocusPaneRequest {
     string pane_id = 1;
 }
 
+// §3.10 重命名会话。
+message RenameSessionRequest {
+    string id = 1;
+    string name = 2;
+}
+
+// §3.10 设置 Pane 标题。
+message SetPaneTitleRequest {
+    string pane_id = 1;
+    string title = 2;
+}
+
 // §3.10 调整 Pane 尺寸。
 message ResizePaneRequest {
     string pane_id = 1;
@@ -444,6 +456,8 @@ message Request {
         StatFileRequest stat_file = 18;
         SetClipboardRequest set_clipboard = 19;
         GetClipboardRequest get_clipboard = 20;
+        RenameSessionRequest rename_session = 21;
+        SetPaneTitleRequest set_pane_title = 22;
     }
 }
 

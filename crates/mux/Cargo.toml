@@ -1,0 +1,22 @@
+[package]
+name = "mux"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "Apache-2.0"
+
+[lib]
+path = "src/mux.rs"
+
+[dependencies]
+mux_protocol = { workspace = true }
+interprocess = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+prost = { workspace = true }
+anyhow = { workspace = true }
+parking_lot = { workspace = true }
+tracing = { workspace = true }
+
+[dev-dependencies]
+tempfile = { workspace = true }
+interprocess = { workspace = true, features = ["tokio"] }

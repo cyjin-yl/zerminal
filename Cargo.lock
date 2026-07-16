@@ -5998,8 +5998,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "069323743400cb7ab06a8fe5c1ed911d36b6919ec531661d034c89083629595b"
 dependencies = [
  "doctest-file",
+ "futures-core",
  "libc",
  "recvmsg",
+ "tokio",
  "widestring",
  "windows-sys 0.61.2",
 ]
@@ -7372,6 +7374,20 @@ name = "multimap"
 version = "0.8.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "e5ce46fe64a9d73be07dcbe690a38ce1b293be448fd8ce1e6c1b8062c9f72c6a"
+
+[[package]]
+name = "mux"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "interprocess",
+ "mux_protocol",
+ "parking_lot",
+ "prost",
+ "tempfile",
+ "tokio",
+ "tracing",
+]
 
 [[package]]
 name = "mux_protocol"
