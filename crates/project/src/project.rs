@@ -666,6 +666,53 @@ pub fn repo_identity_path(_common_dir: &Path) -> PathBuf {
     PathBuf::new()
 }
 
-// 存根: file finder 相关类型 (来源: spec §2.1 — file_finder 保留)
-pub struct PathMatchCandidateSet;
+// file finder 相关类型 (来源: spec §2.1 — file_finder 保留)
+#[derive(Clone)]
+pub struct PathMatchCandidateSet {
+    pub snapshot: worktree::Snapshot,
+    pub include_ignored: bool,
+    pub include_root_name: bool,
+    pub candidates: Candidates,
+}
+
+#[derive(Clone, Copy, Debug)]
 pub enum Candidates { Files }
+
+impl<'a> fuzzy_nucleo::PathMatchCandidateSet<'a> for PathMatchCandidateSet {
+    type Candidates = std::iter::Map<
+        worktree::Traversal<'a>,
+        fn(&'a worktree::Entry) -> fuzzy_nucleo::PathMatchCandidate<'a>,
+    >;
+
+    fn id(&self) -> usize {
+        self.snapshot.id().to_usize()
+    }
+
+    fn len(&self) -> usize {
+        self.snapshot.file_count() + self.snapshot.dir_count()
+    }
+
+    fn root_is_file(&self) -> bool {
+        self.snapshot
+            .root_entry()
+            .map_or(false, |entry| !entry.is_dir())
+    }
+
+    fn prefix(&self) -> std::sync::Arc<util::rel_path::RelPath> {
+        self.snapshot.root_name().clone().into()
+    }
+
+    fn candidates(&'a self, start: usize) -> Self::Candidates {
+        self.snapshot.entries(self.include_ignored, start).map(|entry| {
+            fuzzy_nucleo::PathMatchCandidate {
+                is_dir: entry.is_dir(),
+                path: entry.path.as_ref(),
+                char_bag: entry.char_bag.clone(),
+            }
+        })
+    }
+
+    fn path_style(&self) -> util::paths::PathStyle {
+        self.snapshot.path_style()
+    }
+}

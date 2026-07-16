@@ -67,7 +67,8 @@ pub struct FileFinderSettings {
 
 impl Settings for FileFinderSettings {
     fn from_settings(content: &settings::SettingsContent) -> Self {
-        let cf = content.file_finder.as_ref().unwrap_or_default();
+        let default_cf = settings_content::FileFinderSettingsContent::default();
+        let cf = content.file_finder.as_ref().unwrap_or(&default_cf);
         Self {
             file_icons: cf.file_icons.unwrap_or(true),
             modal_max_width: match cf.modal_max_width {
@@ -567,7 +568,7 @@ impl Matches {
 
     fn push_new_matches<'a>(
         &'a mut self,
-        worktree_store: Entity<WorktreeStore>,
+        worktree_store: &Entity<WorktreeStore>,
         cx: &'a App,
         history_items: impl IntoIterator<Item = &'a FoundPath> + Clone,
         currently_opened: Option<&'a FoundPath>,
@@ -589,7 +590,7 @@ impl Matches {
             return;
         };
 
-        let worktree_name_by_id = worktree_names_for_history_matching(&worktree_store, cx);
+        let worktree_name_by_id = worktree_names_for_history_matching(worktree_store, cx);
         let new_history_matches = matching_history_items(
             history_items,
             currently_opened,

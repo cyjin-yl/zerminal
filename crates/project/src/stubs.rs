@@ -851,6 +851,15 @@ impl Project {
         None
     }
 
+    /// 存根: 解析绝对文件路径 (来源: spec §8.2 M3)
+    pub fn resolve_abs_file_path(
+        &mut self,
+        _abs_path: &str,
+        _cx: &mut gpui::Context<Self>,
+    ) -> Task<Option<ProjectPath>> {
+        Task::ready(None)
+    }
+
     pub fn save_buffers(
         &mut self,
         _buffers: collections::HashSet<Entity<language::Buffer>>,
