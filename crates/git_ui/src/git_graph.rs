@@ -2507,7 +2507,7 @@ impl GitGraph {
         let sha = commit.data.sha;
         let sha_short = sha.display_short();
         let git_tasks = self
-            .git_task_context(sha, ref_name.as_deref(), cx)
+            .git_task_context(sha, ref_name.as_deref())
             .map(|task_context| self.git_context_menu_tasks(&task_context, cx))
             .unwrap_or_default();
 
@@ -3872,7 +3872,7 @@ impl GitGraph {
                             .size_full()
                             .overflow_y_scroll()
                             .track_scroll(scroll_handle)
-                            .child(MarkdownElement::new(message.clone(), message_style)),
+                            .child(MarkdownElement::new(message.clone(), markdown::MarkdownStyle::default())),
                     )
                     .vertical_scrollbar_for(scroll_handle, window, cx),
             )
@@ -4403,7 +4403,7 @@ impl workspace::SerializableItem for GitGraph {
         let window_handle = window.window_handle();
         let project = project.read(cx);
         let git_store = project.git_store().clone();
-        let wait = project.wait_for_initial_scan(cx);
+        let wait = project.wait_for_initial_scan();
 
         cx.spawn(async move |cx| {
             wait.await;

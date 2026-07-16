@@ -1,5 +1,4 @@
 use anyhow::anyhow;
-use commit_modal::CommitModal;
 use editor::{Editor, actions::DiffClipboardWithSelectionData};
 
 use workspace::{Toast, notifications::NotificationId};
@@ -34,12 +33,9 @@ use crate::{
 };
 
 mod askpass_modal;
-pub mod branch_diff;
 pub mod branch_picker;
-mod commit_modal;
 pub mod commit_tooltip;
 pub mod commit_view;
-mod conflict_view;
 pub mod created_worktrees;
 mod diff_multibuffer;
 pub mod file_diff_view;
@@ -63,7 +59,6 @@ pub mod worktree_picker;
 pub mod worktree_service;
 
 pub use blame_ui::GitBlameStatus;
-pub use conflict_view::MergeConflictIndicator;
 
 pub fn get_provider_icon(name: &str) -> IconName {
     match name {
@@ -84,17 +79,10 @@ pub fn init(cx: &mut App) {
     commit_view::init(cx);
     git_graph::init(cx);
 
-    cx.observe_new(|editor: &mut Editor, _, cx| {
-        conflict_view::register_editor(editor, editor.buffer().clone(), cx);
-    })
-    .detach();
 
     cx.observe_new(|workspace: &mut Workspace, _, cx| {
         ProjectDiff::register(workspace, cx);
         staged_diff::StagedDiff::register(workspace, cx);
-        unstaged_diff::UnstagedDiff::register(workspace, cx);
-        branch_diff::BranchDiff::register(workspace, cx);
-        CommitModal::register(workspace);
         git_panel::register(workspace);
         repository_selector::register(workspace);
         git_picker::register(workspace);
@@ -354,7 +342,7 @@ fn file_diff_entry(
         .project()
         .read(cx)
         .repositories(cx)
-        .values()
+        .iter()
         .find_map(|repository| {
             let repo_path = repository
                 .read(cx)
@@ -696,7 +684,7 @@ impl Render for RefPickerModal {
             let formatted_time = util::time::format_localized_timestamp(
                 commit_time,
                 OffsetDateTime::now_utc(),
-                local_offset,
+                Some(local_offset),
                 util::time::TimestampFormat::Relative,
             );
 

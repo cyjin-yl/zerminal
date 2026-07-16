@@ -58,20 +58,6 @@ actions!(
 #[action(namespace = git, name = "BranchDiff")]
 pub(crate) struct DeployBranchDiff;
 
-/// Stub: ReviewBranchDiff (crates removed)
-#[derive(PartialEq, Clone, Deserialize, Default, JsonSchema, Action)]
-#[action(namespace = git, name = "ReviewBranchDiff")]
-pub(crate) struct ReviewBranchDiff {
-    pub diff_text: SharedString,
-    pub base_ref: Option<SharedString>,
-}
-
-/// Stub: SendReviewToAgent (crates removed)
-#[derive(PartialEq, Clone, Deserialize, Default, JsonSchema, Action)]
-#[action(namespace = git, name = "SendReviewToAgent")]
-pub(crate) struct SendReviewToAgent {
-    pub review_id: String,
-}
 
 pub struct ProjectDiff {
     project: Entity<Project>,
@@ -953,36 +939,7 @@ impl Render for ProjectDiffToolbar {
                         this.dispatch_action(&Commit, window, cx);
                     })),
             )
-            .when(review_count > 0, |el| {
-                el.child(Divider::vertical()).child(
-                    render_send_review_to_agent_button(review_count, &focus_handle).on_click(
-                        cx.listener(|this, _, window, cx| {
-//                             this.dispatch_action(&SendReviewToAgent, window, cx)
-                        }),
-                    ),
-                )
-            })
     }
-}
-
-pub(crate) fn render_send_review_to_agent_button(
-    review_count: usize,
-    focus_handle: &FocusHandle,
-) -> Button {
-    Button::new(
-        "send-review",
-//         format!("Send Review to Agent ({})", review_count),
-    )
-    .start_icon(
-        Icon::new(IconName::ZedAssistant)
-            .size(IconSize::Small)
-            .color(Color::Muted),
-    )
-    .tooltip(Tooltip::for_action_title_in(
-//         "Send all review comments to the Agent panel",
-        &SendReviewToAgent,
-        focus_handle,
-    ))
 }
 
 #[cfg(test)]

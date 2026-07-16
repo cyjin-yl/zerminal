@@ -92,7 +92,7 @@ impl WorktreePicker {
             repo.read(cx)
                 .branch
                 .as_ref()
-                .map(|branch| branch.name().to_string())
+                .map(|branch| branch.to_string())
         });
 
         let all_worktrees_request = repository

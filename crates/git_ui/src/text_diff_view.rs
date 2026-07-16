@@ -35,7 +35,7 @@ pub struct TextDiffView {
     diff_editor: Entity<SplittableEditor>,
     title: SharedString,
     path: Option<SharedString>,
-    buffer_changes_tx: watch::Sender<()>,
+    buffer_changes_tx: async_channel::Sender<()>,
     _recalculate_diff_task: Task<Result<()>>,
 }
 
@@ -189,13 +189,13 @@ impl TextDiffView {
             splittable
         });
 
-        let (buffer_changes_tx, mut buffer_changes_rx) = watch::channel(());
+        let (buffer_changes_tx, mut buffer_changes_rx) = async_channel::bounded(1);
 
         cx.subscribe(&source_buffer, move |this, _, event, _| match event {
             language::BufferEvent::Edited { .. }
             | language::BufferEvent::LanguageChanged(_)
             | language::BufferEvent::Reparsed => {
-                this.buffer_changes_tx.send(()).ok();
+                this.buffer_changes_tx.try_send(()).ok();
             }
             _ => {}
         })

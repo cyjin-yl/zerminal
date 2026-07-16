@@ -278,7 +278,7 @@ impl StashListDelegate {
         util::time::format_localized_timestamp(
             timestamp,
             OffsetDateTime::now_utc(),
-            timezone,
+            Some(timezone),
             util::time::TimestampFormat::Relative,
         )
     }
@@ -289,7 +289,7 @@ impl StashListDelegate {
         util::time::format_localized_timestamp(
             timestamp,
             OffsetDateTime::now_utc(),
-            timezone,
+            Some(timezone),
             util::time::TimestampFormat::EnhancedAbsolute,
         )
     }

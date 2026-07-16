@@ -562,7 +562,7 @@ impl CommitView {
         let date_string = util::time::format_localized_timestamp(
             commit_date,
             time::OffsetDateTime::now_utc(),
-            local_offset,
+            Some(local_offset),
             util::time::TimestampFormat::MediumAbsolute,
         );
 
@@ -715,7 +715,7 @@ impl CommitView {
             return None;
         }
 
-        let markdown_style = TextStyle::default();
+        let markdown_style = markdown::MarkdownStyle::default();
 
         let is_expanded = self.message_expanded;
 

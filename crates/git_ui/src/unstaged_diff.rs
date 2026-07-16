@@ -77,7 +77,7 @@ impl DiffHunkDelegate for UnstagedDiffDelegate {
                 .update(cx, |project, cx| {
                     project.stage_hunks(buffer, hunks.diff, worktree_ranges, cx)
                 })
-                .log_err();
+                .detach();
         }
     }
 

@@ -293,13 +293,10 @@ impl Render for CommitTooltip {
         let absolute_timestamp = util::time::format_localized_timestamp(
             self.commit.commit_time,
             OffsetDateTime::now_utc(),
-            local_offset,
+            Some(local_offset),
             util::time::TimestampFormat::MediumAbsolute,
         );
-        let markdown_style = {
-            let style = TextStyle::default();
-            style
-        };
+        let markdown_style = markdown::MarkdownStyle::default();
 
         let message = self
             .commit
@@ -451,14 +448,14 @@ impl Render for CommitTooltip {
     }
 }
 
-fn blame_entry_timestamp(blame_entry: &BlameEntry, format: time_format::TimestampFormat) -> String {
+fn blame_entry_timestamp(blame_entry: &BlameEntry, format: util::time::TimestampFormat) -> String {
     match blame_entry.author_offset_date_time() {
         Ok(timestamp) => {
             let local_offset = UtcOffset::current_local_offset().unwrap_or(UtcOffset::UTC);
             util::time::format_localized_timestamp(
                 timestamp,
                 time::OffsetDateTime::now_utc(),
-                local_offset,
+                Some(local_offset),
                 format,
             )
         }

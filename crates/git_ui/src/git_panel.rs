@@ -1,5 +1,4 @@
 use crate::askpass_modal::AskPassModal;
-use crate::commit_modal::CommitModal;
 use crate::commit_tooltip::{CommitAvatar, CommitTooltip};
 use crate::commit_view::CommitView;
 use crate::git_panel_settings::GitPanelScrollbarAccessor;
@@ -35,8 +34,8 @@ use git::stash::GitStash;
 use git::status::{DiffStat, StageStatus};
 use git::{Amend, Commit, Signoff, ToggleStaged, repository::RepoPath, status::FileStatus};
 use git::{
-    ExpandCommitEditor, GitHostingProviderRegistry, GitRemote, RestoreTrackedFiles, StageAll,
-    StashAll, StashApply, StashPop, ToggleFillCommitEditor, TrashUntrackedFiles, UnstageAll,
+    GitHostingProviderRegistry, GitRemote, RestoreTrackedFiles, StageAll,
+    StashAll, StashApply, StashPop, TrashUntrackedFiles, UnstageAll,
     ViewFile, parse_git_remote_url,
 };
 use gpui::{
@@ -376,16 +375,6 @@ pub fn register(workspace: &mut Workspace) {
     workspace.register_action(|workspace, _: &Toggle, window, cx| {
         if !workspace.toggle_panel_focus::<GitPanel>(window, cx) {
             workspace.close_panel::<GitPanel>(window, cx);
-        }
-    });
-    workspace.register_action(|workspace, _: &ExpandCommitEditor, window, cx| {
-        CommitModal::toggle(workspace, None, window, cx)
-    });
-    workspace.register_action(|workspace, _: &ToggleFillCommitEditor, window, cx| {
-        if let Some(panel) = workspace.panel::<GitPanel>(cx) {
-            panel.update(cx, |panel, cx| {
-                panel.toggle_fill_commit_editor(&Default::default(), window, cx)
-            });
         }
     });
     workspace.register_action(|workspace, _: &git::Init, window, cx| {
@@ -942,7 +931,7 @@ pub(crate) fn commit_message_editor(
         cx,
     );
     commit_editor.set_collaboration_hub(Box::new(project));
-    commit_editor.set_use_autoclose(false);
+    commit_editor;
     commit_editor.set_show_gutter(false, cx);
     commit_editor.set_use_modal_editing(true);
     commit_editor.set_show_wrap_guides(false, cx);
@@ -3524,7 +3513,7 @@ impl GitPanel {
 
             self.project
                 .read(cx)
-                .git_config(path, args, cx)
+                .git_config(path, args)
                 .detach_and_log_err(cx);
         }
     }
@@ -3735,7 +3724,7 @@ impl GitPanel {
             }
         }
         if !project.is_local()
-            && !project.is_read_only(cx)
+            && !project.is_read_only()
             && let Some(local_committer) = self.local_committer(room, cx)
         {
             new_co_authors.push(local_committer);
@@ -4987,46 +4976,6 @@ impl GitPanel {
         }
     }
 
-    fn toggle_fill_commit_editor(
-        &mut self,
-        _: &ToggleFillCommitEditor,
-        _window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        self.commit_editor_expanded = !self.commit_editor_expanded;
-        self.commit_editor.update(cx, |editor, _cx| {
-            if self.commit_editor_expanded {
-                editor.set_mode(EditorMode::Full {
-                    scale_ui_elements_with_buffer_font_size: false,
-                    show_active_line_background: false,
-                    sizing_behavior: SizingBehavior::ExcludeOverscrollMargin,
-                })
-            } else {
-                editor.set_mode(EditorMode::AutoHeight {
-                    min_lines: MAX_PANEL_EDITOR_LINES,
-                    max_lines: Some(MAX_PANEL_EDITOR_LINES),
-                })
-            }
-        });
-
-        cx.notify();
-    }
-
-    fn expand_commit_editor(
-        &mut self,
-        _: &ExpandCommitEditor,
-        window: &mut Window,
-        cx: &mut Context<Self>,
-    ) {
-        let workspace = self.workspace.clone();
-        window.defer(cx, move |window, cx| {
-            workspace
-                .update(cx, |workspace, cx| {
-                    CommitModal::toggle(workspace, None, window, cx)
-                })
-                .ok();
-        })
-    }
 
     fn render_git_changes_actions_menu(
         &self,
@@ -5237,52 +5186,7 @@ impl GitPanel {
             .gap_px()
             .p_1p5()
             .opacity(0.6)
-            .hover(|s| s.opacity(1.0))
-            .child(
-                IconButton::new("expand-commit-editor", IconName::MaximizeAlt)
-                    .icon_size(IconSize::Small)
-                    .tooltip({
-                        move |_window, cx| {
-                            Tooltip::for_action_in(
-                                "Open Commit Modal",
-                                &git::ExpandCommitEditor,
-                                &editor_focus_handle,
-                                cx,
-                            )
-                        }
-                    })
-                    .on_click(cx.listener({
-                        move |_, _, window, cx| {
-                            window.dispatch_action(git::ExpandCommitEditor.boxed_clone(), cx)
-                        }
-                    })),
-            )
-            .child({
-                let (icon, label) = if self.commit_editor_expanded {
-                    (IconName::Minimize, "Collapse Commit Editor")
-                } else {
-                    (IconName::Maximize, "Expand Commit Editor")
-                };
-                let focus_handle = self.focus_handle.clone();
-
-                IconButton::new("fill-commit-editor", icon)
-                    .icon_size(IconSize::Small)
-                    .tooltip({
-                        move |_window, cx| {
-                            Tooltip::for_action_in(
-                                label,
-                                &git::ToggleFillCommitEditor,
-                                &focus_handle,
-                                cx,
-                            )
-                        }
-                    })
-                    .on_click(cx.listener({
-                        move |_, _, window, cx| {
-                            window.dispatch_action(git::ToggleFillCommitEditor.boxed_clone(), cx)
-                        }
-                    }))
-            });
+            .hover(|s| s.opacity(1.0));
 
         let footer = v_flex()
             .when(self.commit_editor_expanded, |this| this.flex_1().min_h_0())
@@ -5982,7 +5886,7 @@ impl GitPanel {
                                             util::time::format_localized_timestamp(
                                                 dt,
                                                 now,
-                                                local_offset,
+                                                Some(local_offset),
                                                 util::time::TimestampFormat::Relative,
                                             )
                                             .into()
@@ -7197,7 +7101,7 @@ impl GitPanel {
     }
 
     fn has_write_access(&self, cx: &App) -> bool {
-        !self.project.read(cx).is_read_only(cx)
+        !self.project.read(cx).is_read_only()
     }
 
     pub fn load_commit_template(
@@ -7387,7 +7291,7 @@ impl Render for GitPanel {
             .id("git_panel")
             .key_context(self.dispatch_context(window, cx))
             .track_focus(&self.focus_handle)
-            .when(has_write_access && !project.is_read_only(cx), |this| {
+            .when(has_write_access && !project.is_read_only(), |this| {
                 this.on_action(cx.listener(Self::toggle_staged_for_selected))
                     .on_action(cx.listener(Self::stage_range))
                     .on_action(cx.listener(GitPanel::on_commit))
@@ -7423,7 +7327,6 @@ impl Render for GitPanel {
             .on_action(cx.listener(Self::view_staged_changes))
             .on_action(cx.listener(Self::focus_changes_list))
             .on_action(cx.listener(Self::focus_editor))
-            .on_action(cx.listener(Self::expand_commit_editor))
             .when(has_write_access && has_co_authors, |git_panel| {
                 git_panel.on_action(cx.listener(Self::toggle_fill_co_authors))
             })

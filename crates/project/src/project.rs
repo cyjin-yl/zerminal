@@ -544,6 +544,7 @@ impl Project {
     pub fn delete_file(
         &mut self,
         _path: ProjectPath,
+        _force: bool,
         _cx: &mut Context<Self>,
     ) -> Task<anyhow::Result<()>> {
         Task::ready(Err(anyhow::anyhow!("stub: delete_file")))
@@ -553,6 +554,7 @@ impl Project {
     pub fn create_worktree(
         &mut self,
         _abs_path: impl Into<std::path::PathBuf>,
+        _visible: bool,
         _cx: &mut Context<Self>,
     ) -> Task<anyhow::Result<gpui::Entity<Worktree>>> {
         Task::ready(Err(anyhow::anyhow!("stub: create_worktree")))
@@ -561,7 +563,9 @@ impl Project {
     /// Stub: stage_hunks
     pub fn stage_hunks(
         &mut self,
-        _hunks: Vec<git::status::FileStatus>,
+        _buffer: gpui::Entity<language::Buffer>,
+        _unstaged_diff: gpui::Entity<buffer_diff::BufferDiff>,
+        _worktree_ranges: Vec<std::ops::Range<language::Anchor>>,
         _cx: &mut Context<Self>,
     ) -> Task<anyhow::Result<()>> {
         Task::ready(Err(anyhow::anyhow!("stub: stage_hunks")))
@@ -570,7 +574,8 @@ impl Project {
     /// Stub: unstage_staged_hunks
     pub fn unstage_staged_hunks(
         &mut self,
-        _hunks: Vec<git::status::FileStatus>,
+        _staged_diff: gpui::Entity<buffer_diff::BufferDiff>,
+        _index_ranges: Vec<std::ops::Range<language::Anchor>>,
         _cx: &mut Context<Self>,
     ) -> Task<anyhow::Result<()>> {
         Task::ready(Err(anyhow::anyhow!("stub: unstage_staged_hunks")))

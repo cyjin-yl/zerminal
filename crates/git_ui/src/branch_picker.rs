@@ -1546,13 +1546,13 @@ impl PickerDelegate for BranchListDelegate {
                     let formatted_time = util::time::format_localized_timestamp(
                         commit_time,
                         OffsetDateTime::now_utc(),
-                        local_offset,
+                        Some(local_offset),
                         util::time::TimestampFormat::Relative,
                     );
                     let absolute_time = util::time::format_localized_timestamp(
                         commit_time,
                         OffsetDateTime::now_utc(),
-                        local_offset,
+                        Some(local_offset),
                         util::time::TimestampFormat::EnhancedAbsolute,
                     );
                     let author = commit.author_name.clone();

@@ -701,6 +701,11 @@ impl Client {
     pub fn shell(&self) -> Option<Arc<ShellConfig>> {
         None
     }
+
+    /// Stub: is_disconnected
+    pub fn is_disconnected(&self) -> bool {
+        true
+    }
 }
 
 impl Telemetry {
@@ -768,14 +773,31 @@ impl Repository {
     /// Stub: default_branch
     pub fn default_branch(
         &mut self,
-        _cx: &mut gpui::App,
+        _include_remote_name: bool,
     ) -> gpui::Task<anyhow::Result<String>> {
         gpui::Task::ready(Err(anyhow::anyhow!("stub")))
     }
 
     /// Stub: worktrees
-    pub fn worktrees(&mut self, _cx: &gpui::App) -> Vec<u64> {
-        Vec::new()
+    pub fn worktrees(&mut self) -> gpui::Task<anyhow::Result<Vec<u64>>> {
+        gpui::Task::ready(Ok(Vec::new()))
+    }
+
+    /// Stub: status_for_path
+    pub fn status_for_path(&self, _path: &git::repository::RepoPath) -> Option<crate::git_store::StatusEntry> {
+        None
+    }
+
+    /// Stub: project_path_to_repo_path
+    pub fn project_path_to_repo_path(&self, _path: &ProjectPath, _cx: &gpui::App) -> Option<git::repository::RepoPath> {
+        None
+    }
+
+    /// Stub: barrier
+    pub fn barrier(&mut self) -> futures::channel::oneshot::Receiver<()> {
+        let (tx, rx) = futures::channel::oneshot::channel();
+        tx.send(()).ok();
+        rx
     }
 }
 

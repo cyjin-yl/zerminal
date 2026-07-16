@@ -310,13 +310,13 @@ impl BlameRenderer for GitBlameRenderer {
         let absolute_timestamp = util::time::format_localized_timestamp(
             commit_time,
             OffsetDateTime::now_utc(),
-            local_offset,
+            Some(local_offset),
             util::time::TimestampFormat::MediumAbsolute,
         );
         let link_color = cx.theme().colors().text_accent;
         let markdown_style = {
-            let mut style = TextStyle::default();
-            style.link.refine(&TextStyleRefinement {
+            let mut style = markdown::MarkdownStyle::default();
+            style.link = TextStyleRefinement {
                 color: Some(link_color),
                 underline: Some(UnderlineStyle {
                     color: Some(link_color.opacity(0.4)),
@@ -324,7 +324,7 @@ impl BlameRenderer for GitBlameRenderer {
                     ..Default::default()
                 }),
                 ..Default::default()
-            });
+            };
             style
         };
 
@@ -530,7 +530,7 @@ fn blame_entry_relative_timestamp(blame_entry: &BlameEntry) -> String {
             util::time::format_localized_timestamp(
                 timestamp,
                 time::OffsetDateTime::now_utc(),
-                local_offset,
+                Some(local_offset),
                 util::time::TimestampFormat::Relative,
             )
         }

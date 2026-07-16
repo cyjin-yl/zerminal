@@ -776,7 +776,7 @@ fn create_worktree_workspace_inner(
         workspace.capture_state_for_worktree_switch(window, fallback_focused_dock, cx);
     let workspace_handle = workspace.weak_handle();
     let window_handle = window.window_handle().downcast::<MultiWorkspace>();
-    let remote_connection_options = project.read(cx).remote_connection_options(cx);
+    let remote_connection_options = project.read(cx).remote_connection_options();
 
     let (git_repos, non_git_paths) = classify_worktrees(project.read(cx), cx);
 
@@ -911,7 +911,7 @@ pub fn handle_switch_worktree(
         workspace.capture_state_for_worktree_switch(window, fallback_focused_dock, cx);
     let workspace_handle = workspace.weak_handle();
     let window_handle = window.window_handle().downcast::<MultiWorkspace>();
-    let remote_connection_options = project.read(cx).remote_connection_options(cx);
+    let remote_connection_options = project.read(cx).remote_connection_options();
 
     let (git_repos, non_git_paths) = classify_worktrees(project.read(cx), cx);
 
@@ -1228,7 +1228,7 @@ async fn open_worktree_workspace(
 
     new_workspace
         .update(cx, |workspace, cx| {
-            workspace.project().read(cx).wait_for_initial_scan(cx)
+            workspace.project().read(cx).wait_for_initial_scan()
         })
         .await;
 
@@ -1238,7 +1238,7 @@ async fn open_worktree_workspace(
                 .project()
                 .read(cx)
                 .repositories(cx)
-                .values()
+                .iter()
                 .cloned()
                 .collect::<Vec<_>>();
 

@@ -33,7 +33,7 @@ pub struct FileDiffView {
     editor: Entity<SplittableEditor>,
     old_buffer: Entity<Buffer>,
     new_buffer: Entity<Buffer>,
-    buffer_changes_tx: watch::Sender<()>,
+    buffer_changes_tx: async_channel::Sender<()>,
     _recalculate_diff_task: Task<Result<()>>,
 }
 
@@ -111,7 +111,7 @@ impl FileDiffView {
             splittable
         });
 
-        let (buffer_changes_tx, mut buffer_changes_rx) = watch::channel(());
+        let (buffer_changes_tx, mut buffer_changes_rx) = async_channel::bounded(1);
 
         // The buffers' languages may load after the diff was built, e.g. when
         // opening the view on startup via `zed --diff`. Propagate them to the
@@ -136,7 +136,7 @@ impl FileDiffView {
                 language::BufferEvent::Edited { .. }
                 | language::BufferEvent::LanguageChanged(_)
                 | language::BufferEvent::Reparsed => {
-                    this.buffer_changes_tx.send(()).ok();
+                    this.buffer_changes_tx.try_send(()).ok();
                 }
                 _ => {}
             })

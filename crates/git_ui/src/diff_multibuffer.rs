@@ -1,5 +1,4 @@
 use crate::{
-    conflict_view,
     git_panel::{GitPanel, GitStatusEntry},
     git_panel_settings::GitPanelSettings,
 };
@@ -536,11 +535,6 @@ impl DiffMultibuffer {
                 diff,
                 cx,
             );
-            if let Some(conflict_set) = conflict_set {
-                editor.rhs_editor().update(cx, |editor, cx| {
-                    conflict_view::buffer_ranges_updated(editor, conflict_set, cx);
-                });
-            }
             (was_empty, is_newly_added)
         });
 
@@ -661,9 +655,6 @@ impl DiffMultibuffer {
                     if let Some(repo_path) = repo_path_by_display_id.get(&buffer_id) {
                         this.buffer_subscriptions.remove(repo_path);
                     }
-                    editor.rhs_editor().update(cx, |editor, cx| {
-                        conflict_view::buffers_removed(editor, &[buffer_id], cx);
-                    });
                     let _span = ztracing::info_span!("remove_excerpts_for_path");
                     _span.enter();
                     editor.remove_excerpts_for_path(path, cx);
