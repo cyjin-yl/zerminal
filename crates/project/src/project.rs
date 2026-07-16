@@ -86,7 +86,7 @@ pub use buffer_store::ProjectTransaction;
 pub use fs::*;
 pub use language::Location;
 pub use toolchain_store::{ToolchainStore, Toolchains};
-pub use util::shell::Shell;
+pub use stubs::Shell;
 const MAX_PROJECT_SEARCH_HISTORY_SIZE: usize = 500;
 
 #[derive(Clone, Copy, Debug)]
@@ -497,8 +497,7 @@ impl Project {
     /// Stub: create_terminal_task (task crate 已删除)
     pub fn create_terminal_task(
         &mut self,
-        _task: &SpawnInTerminal,
-        _worktree: &gpui::Entity<Worktree>,
+        _task: SpawnInTerminal,
         _cx: &mut Context<Self>,
     ) -> Task<anyhow::Result<gpui::Entity<terminal::Terminal>>> {
         Task::ready(Err(anyhow::anyhow!("stub: terminal task disabled")))
@@ -510,6 +509,89 @@ impl Project {
         _cx: &mut Context<Self>,
     ) -> Task<anyhow::Result<gpui::Entity<terminal::Terminal>>> {
         Task::ready(Err(anyhow::anyhow!("stub: local terminal disabled")))
+    }
+
+    /// Stub: try_windows_path_to_wsl
+    pub fn try_windows_path_to_wsl(
+        &mut self,
+        _path: &std::path::Path,
+        _cx: &mut Context<Self>,
+    ) -> gpui::Task<anyhow::Result<std::path::PathBuf>> {
+        gpui::Task::ready(Err(anyhow::anyhow!("stub: try_windows_path_to_wsl")))
+    }
+
+    /// Stub: find_or_create_worktree
+    pub fn find_or_create_worktree(
+        &mut self,
+        _abs_path: &std::path::Path,
+        _visible: bool,
+        _cx: &mut Context<Self>,
+    ) -> gpui::Task<anyhow::Result<gpui::Entity<Worktree>>> {
+        gpui::Task::ready(Err(anyhow::anyhow!("stub: find_or_create_worktree")))
+    }
+
+    /// Stub: is_read_only
+    pub fn is_read_only(&self) -> bool {
+        false
+    }
+
+    /// Stub: wait_for_initial_scan
+    pub fn wait_for_initial_scan(&self) -> gpui::Task<()> {
+        gpui::Task::ready(())
+    }
+
+    /// Stub: delete_file
+    pub fn delete_file(
+        &mut self,
+        _path: ProjectPath,
+        _cx: &mut Context<Self>,
+    ) -> Task<anyhow::Result<()>> {
+        Task::ready(Err(anyhow::anyhow!("stub: delete_file")))
+    }
+
+    /// Stub: create_worktree
+    pub fn create_worktree(
+        &mut self,
+        _abs_path: impl Into<std::path::PathBuf>,
+        _cx: &mut Context<Self>,
+    ) -> Task<anyhow::Result<gpui::Entity<Worktree>>> {
+        Task::ready(Err(anyhow::anyhow!("stub: create_worktree")))
+    }
+
+    /// Stub: stage_hunks
+    pub fn stage_hunks(
+        &mut self,
+        _hunks: Vec<git::status::FileStatus>,
+        _cx: &mut Context<Self>,
+    ) -> Task<anyhow::Result<()>> {
+        Task::ready(Err(anyhow::anyhow!("stub: stage_hunks")))
+    }
+
+    /// Stub: unstage_staged_hunks
+    pub fn unstage_staged_hunks(
+        &mut self,
+        _hunks: Vec<git::status::FileStatus>,
+        _cx: &mut Context<Self>,
+    ) -> Task<anyhow::Result<()>> {
+        Task::ready(Err(anyhow::anyhow!("stub: unstage_staged_hunks")))
+    }
+
+    /// Stub: git_init
+    pub fn git_init(
+        &self,
+        _worktree: gpui::Entity<Worktree>,
+        _cx: &App,
+    ) -> Task<anyhow::Result<()>> {
+        Task::ready(Err(anyhow::anyhow!("stub: git_init")))
+    }
+
+    /// Stub: git_config
+    pub fn git_config(
+        &self,
+        _worktree: gpui::Entity<Worktree>,
+        _cx: &App,
+    ) -> Task<anyhow::Result<std::collections::HashMap<String, String>>> {
+        Task::ready(Err(anyhow::anyhow!("stub: git_config")))
     }
 }
 

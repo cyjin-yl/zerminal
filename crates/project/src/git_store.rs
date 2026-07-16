@@ -27,7 +27,7 @@ impl ProjectId {
         self.0
     }
 }
-use crate::Shell;
+use util::shell::Shell;
 pub use conflict_set::{ConflictRegion, ConflictSet, ConflictSetSnapshot, ConflictSetUpdate};
 use fs::{Fs, RemoveOptions};
 use futures::{

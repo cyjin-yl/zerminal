@@ -190,11 +190,6 @@ fn possibly_open_target(
                     return Ok(Some(open_target));
                 }
             } else if open_target.is_dir() {
-                workspace.update(cx, |workspace, cx| {
-                    workspace.project().update(cx, |_, cx| {
-                        cx.emit(project::Event::ActivateProjectPanel);
-                    })
-                })?;
                 return Ok(Some(open_target));
             }
         }

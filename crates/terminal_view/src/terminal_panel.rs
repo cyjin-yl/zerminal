@@ -6,7 +6,6 @@ use crate::{
         SerializedItems, SerializedTerminalPanel, deserialize_terminal_panel, serialize_pane_group,
     },
 };
-use project::Breadcrumbs;
 use collections::HashMap;
 use db::kvp::KeyValueStore;
 use futures::{channel::oneshot, future::join_all};
@@ -19,6 +18,7 @@ use itertools::Itertools;
 use project::{Fs, Project, RevealStrategy, RevealTarget, Shell, ShellBuilder, SpawnInTerminal, TaskId};
 use terminal::{Terminal, terminal_settings::TerminalSettings};
 use settings::TerminalDockPosition;
+use settings::Settings as _;
 use ui::{
     ButtonLike, Clickable, ContextMenu, FluentBuilder, PopoverMenu, SplitButton, Toggleable,
     Tooltip, prelude::*,
@@ -810,7 +810,7 @@ impl TerminalPanel {
                     RevealStrategy::NoFocus => {
                         workspace.open_panel::<Self>(window, cx);
                     }
-                    RevealStrategy::Never => {}
+                    RevealStrategy::Never | RevealStrategy::Center | RevealStrategy::Top => {}
                 }
 
                 pane.update(cx, |pane, cx| {
@@ -898,7 +898,7 @@ impl TerminalPanel {
                             RevealStrategy::NoFocus => {
                                 workspace.open_panel::<Self>(window, cx);
                             }
-                            RevealStrategy::Never => {}
+                            RevealStrategy::Never | RevealStrategy::Center | RevealStrategy::Top => {}
                         }
 
                         pane.update(cx, |pane, cx| {
@@ -1071,7 +1071,7 @@ impl TerminalPanel {
                         .detach();
                     }
                 },
-                RevealStrategy::Never => {}
+                RevealStrategy::Never | RevealStrategy::Center | RevealStrategy::Top => {}
             }
 
             Ok(new_terminal.downgrade())
@@ -1169,12 +1169,12 @@ pub fn prepare_task_for_spawn(
     is_windows: bool,
 ) -> SpawnInTerminal {
     let builder = ShellBuilder::new(shell, is_windows);
-    let command_label = builder.command_label(task.command.as_deref().unwrap_or(""));
-    let (command, args) = builder.build_no_quote(task.command.clone(), &task.args);
+    let command_label = builder.command_label(task.command.as_str());
+    let (command, args) = builder.build_no_quote(Some(task.command.clone()), &task.args);
 
     SpawnInTerminal {
         command_label,
-        command: Some(command),
+        command,
         args,
         ..task.clone()
     }
@@ -1243,10 +1243,6 @@ pub fn new_terminal_pane(
             let languages = Some(project.read(cx).languages().clone());
             (callbacks.setup_search_bar)(languages, &toolbar, window, cx);
         }
-        let breadcrumbs = cx.new(|_| Breadcrumbs::new());
-        toolbar.update(cx, |toolbar, cx| {
-            toolbar.add_item(breadcrumbs, window, cx);
-        });
 
         pane
     });

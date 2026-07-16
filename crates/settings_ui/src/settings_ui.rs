@@ -164,7 +164,6 @@ impl<T: 'static> SettingField<T> {
         SettingField {
             pick: |_| Some(&UnimplementedSettingField),
             write: |_, _, _| unreachable!(),
-            organization_override: None,
             json_path: self.json_path,
         }
     }
@@ -262,17 +261,8 @@ impl<T: PartialEq + Clone + Send + Sync + 'static> AnySettingField for SettingFi
         self.json_path
     }
 
-    fn is_overridden_by_organization(&self, cx: &App) -> bool {
-        let Some(org_override) = self.organization_override else {
-            return false;
-        };
-
-        let user_store = AppState::global(cx).user_store.read(cx);
-        let Some(org_config) = user_store.current_organization_configuration() else {
-            return false;
-        };
-
-        (org_override)(&org_config).is_some()
+    fn is_overridden_by_organization(&self, _cx: &App) -> bool {
+        false
     }
 }
 
@@ -1763,27 +1753,6 @@ impl SettingsWindow {
         })
         .detach();
 
-        let app_state = AppState::global(cx);
-        let workspaces: Vec<Entity<Workspace>> = app_state
-            .workspace_store
-            .read(cx)
-            .workspaces()
-            .filter_map(|weak| weak.upgrade())
-            .collect();
-
-        for workspace in workspaces {
-            let project = workspace.read(cx).project().clone();
-            cx.observe_release_in(&project, window, |this, _, window, cx| {
-                this.fetch_files(window, cx)
-            })
-            .detach();
-            cx.subscribe_in(&project, window, Self::handle_project_event)
-                .detach();
-            cx.observe_release_in(&workspace, window, |this, _, window, cx| {
-                this.fetch_files(window, cx)
-            })
-            .detach();
-        }
 
         let this_weak = cx.weak_entity();
         cx.observe_new::<Project>({
@@ -1899,6 +1868,7 @@ impl SettingsWindow {
             list_state,
             last_copied_link_path: None,
 
+            hidden_deleted_skill_directory_paths: HashSet::default(),
         };
 
         this.fetch_files(window, cx);
@@ -3940,89 +3910,8 @@ impl SettingsWindow {
 
                 window.remove_window();
             }
-            SettingsUiFile::Project((worktree_id, path)) => {
-                let settings_path = path.join(paths::local_settings_file_relative_path());
-                let app_state = workspace::AppState::global(cx);
-
-                let Some((workspace_window, worktree, corresponding_workspace)) = app_state
-                    .workspace_store
-                    .read(cx)
-                    .workspaces_with_windows()
-                    .filter_map(|(window_handle, weak)| {
-                        let workspace = weak.upgrade()?;
-                        let window = window_handle.downcast::<MultiWorkspace>()?;
-                        Some((window, workspace))
-                    })
-                    .find_map(|(window, workspace): (_, Entity<Workspace>)| {
-                        workspace
-                            .read(cx)
-                            .project()
-                            .read(cx)
-                            .worktree_for_id(*worktree_id, cx)
-                            .map(|worktree| (window, worktree, workspace))
-                    })
-                else {
-                    log::error!(
-                        "No corresponding workspace contains worktree id: {}",
-                        worktree_id
-                    );
-
-                    return;
-                };
-
-                let create_task = if worktree.read(cx).entry_for_path(&settings_path).is_some() {
-                    None
-                } else {
-                    Some(worktree.update(cx, |tree, cx| {
-                        tree.create_entry(
-                            settings_path.clone(),
-                            false,
-                            Some(initial_project_settings_content().as_bytes().to_vec()),
-                            cx,
-                        )
-                    }))
-                };
-
-                let worktree_id = *worktree_id;
-
-                // TODO: move zed::open_local_file() APIs to this crate, and
-                // re-implement the "initial_contents" behavior
-                let workspace_weak = corresponding_workspace.downgrade();
-                workspace_window
-                    .update(cx, |_, window, cx| {
-                        cx.spawn_in(window, async move |_, cx| {
-                            if let Some(create_task) = create_task {
-                                create_task.await.ok()?;
-                            };
-
-                            workspace_weak
-                                .update_in(cx, |workspace, window, cx| {
-                                    workspace.open_path(
-                                        (worktree_id, settings_path.clone()),
-                                        None,
-                                        true,
-                                        window,
-                                        cx,
-                                    )
-                                })
-                                .ok()?
-                                .await
-                                .log_err()?;
-
-                            workspace_weak
-                                .update_in(cx, |_, window, cx| {
-                                    window.activate_window();
-                                    cx.notify();
-                                })
-                                .ok();
-
-                            Some(())
-                        })
-                        .detach();
-                    })
-                    .ok();
-
-                window.remove_window();
+            SettingsUiFile::Project((_worktree_id, _path)) => {
+                return;
             }
             SettingsUiFile::Server(_) => {
                 // Server files are not editable
@@ -4329,24 +4218,15 @@ pub(crate) fn all_projects(
     cx: &App,
 ) -> impl Iterator<Item = Entity<Project>> {
     let mut seen_project_ids = std::collections::HashSet::new();
-    let app_state = workspace::AppState::global(cx);
-    app_state
-        .workspace_store
-        .read(cx)
-        .workspaces()
-        .filter_map(|weak| weak.upgrade())
-        .map(|workspace: Entity<Workspace>| workspace.read(cx).project().clone())
-        .chain(
-            window
-                .and_then(|handle| handle.read(cx).ok())
-                .into_iter()
-                .flat_map(|multi_workspace| {
-                    multi_workspace
-                        .workspaces()
-                        .map(|workspace| workspace.read(cx).project().clone())
-                        .collect::<Vec<_>>()
-                }),
-        )
+    window
+        .and_then(|handle| handle.read(cx).ok())
+        .into_iter()
+        .flat_map(|multi_workspace| {
+            multi_workspace
+                .workspaces()
+                .map(|workspace| workspace.read(cx).project().clone())
+                .collect::<Vec<_>>()
+        })
         .filter(move |project| seen_project_ids.insert(project.entity_id()))
 }
 
@@ -4585,19 +4465,12 @@ fn get_current_value<'a, T>(
     field: &'a SettingField<T>,
     cx: &'a App,
 ) -> Option<CurrentSettingsValue<'a, T>> {
-    let user_store = AppState::global(cx).user_store.read(cx);
-    let org_config = user_store.current_organization_configuration();
-
     let (_file, value) = settings_store.get_value_from_file(file.to_settings(), field.pick);
     let value = value?;
 
-    let org_value = org_config
-        .zip(field.organization_override)
-        .and_then(|(org_config, org_override)| (org_override)(org_config));
-
     Some(CurrentSettingsValue {
-        disabled: org_value.is_some(),
-        value: org_value.unwrap_or(&value),
+        disabled: false,
+        value: &value,
     })
 }
 
@@ -5071,6 +4944,7 @@ pub mod test {
                 sandbox_host_validation_error: None,
                 last_copied_link_path: None,
 
+                hidden_deleted_skill_directory_paths: HashSet::default(),
             }
         }
     }

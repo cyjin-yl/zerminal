@@ -1101,7 +1101,7 @@ impl TerminalView {
 
 fn terminal_rerun_override(task: &TaskId) -> zed_actions::Rerun {
     zed_actions::Rerun {
-        task_id: Some(task.0.clone()),
+        task_id: Some(task.to_string()),
         allow_concurrent_runs: Some(true),
         use_new_terminal: Some(false),
         reevaluate_context: false,
@@ -1695,7 +1695,6 @@ impl Item for TerminalView {
                 .items()
                 .map(|selected_entry| selected_entry.entry_id)
                 .filter_map(|entry_id| project.path_for_entry(entry_id, cx))
-                .filter_map(|project_path| project.absolute_path(&project_path, cx))
                 .collect::<Vec<_>>();
 
             if !paths.is_empty() {
@@ -1707,7 +1706,6 @@ impl Item for TerminalView {
             let project = project.read(cx);
             if let Some(path) = project
                 .path_for_entry(entry_id, cx)
-                .and_then(|project_path| project.absolute_path(&project_path, cx))
             {
                 self.add_paths_to_terminal(&[path], window, cx);
             }

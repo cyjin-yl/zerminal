@@ -2469,12 +2469,10 @@ impl GitGraph {
 
     fn git_task_context(
         &self,
-        commit_sha: Oid,
-        ref_name: Option<&str>,
-    fn git_task_context(
-        &self,
-        None
-
+        _commit_sha: Oid,
+        _ref_name: Option<&str>,
+    ) -> () {
+        ()
     }
 
     fn git_context_menu_tasks(
@@ -2487,22 +2485,12 @@ impl GitGraph {
 
     fn schedule_git_task(
         &mut self,
-        task_source_kind: TaskSourceKind,
+        _task_source_kind: (),
         _resolved_task: (),
-        window: &mut Window,
-        cx: &mut Context<Self>,
+        _window: &mut Window,
+        _cx: &mut Context<Self>,
     ) {
-        self.workspace
-            .update(cx, |workspace, cx| {
-                workspace.schedule_resolved_task(
-                    task_source_kind,
-                    resolved_task,
-                    false,
-                    window,
-                    cx,
-                );
-            })
-            .ok();
+        // Stub: task scheduling disabled
     }
 
     fn deploy_entry_context_menu(
@@ -3857,11 +3845,8 @@ impl GitGraph {
             return Empty.into_any_element();
         };
 
-        let message_style = editor::TextStyle::default();
         let rem_size = window.rem_size();
-        let line_height = message_style
-            .base_text_style
-            .line_height_in_pixels(rem_size);
+        let line_height = rem_size;
 
         div()
             // Using grid over flexbox because the structure of this side

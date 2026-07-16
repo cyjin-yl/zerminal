@@ -125,7 +125,7 @@ use sqlez::{
 use status_bar::StatusBar;
 pub use status_bar::{HideStatusItem, StatusItemView, add_hide_button_entry};
 use std::{
-    any::TypeId,
+    any::{TypeId, Any},
     borrow::Cow,
     cell::{Cell, RefCell},
     cmp,
@@ -1000,6 +1000,12 @@ pub struct AppState {
     pub fs: Arc<dyn fs::Fs>,
     pub build_window_options: fn(Option<Uuid>, &mut App) -> WindowOptions,
     pub session: Entity<AppSession>,
+    /// Stub: client (crates removed)
+    pub client: Arc<dyn Any + Send + Sync>,
+    /// Stub: node_runtime (crates removed)
+    pub node_runtime: (),
+    /// Stub: user_store (crates removed)
+    pub user_store: (),
 }
 
 struct GlobalAppState(Arc<AppState>);
@@ -6286,19 +6292,15 @@ impl Workspace {
 // use node_runtime::NodeRuntime;  // removed-crate: node_runtime
         use session::Session;
 
-        let client = project.read(cx).client();
-        let user_store = project.read(cx).user_store();
-        let workspace_store = cx.new(|cx| WorkspaceStore::new(client.clone(), cx));
         let session = cx.new(|cx| AppSession::new(Session::test(), cx));
         window.activate_window();
         let app_state = Arc::new(AppState {
             languages: project.read(cx).languages().clone(),
-            workspace_store,
-            client,
-            user_store,
+            client: Arc::new(()),
+            user_store: (),
             fs: project.read(cx).fs().clone(),
             build_window_options: |_, _| Default::default(),
-            node_runtime: NodeRuntime::unavailable(),
+            node_runtime: (),
             session,
         });
         let workspace = Self::new(Default::default(), project, app_state, window, cx);
@@ -7202,6 +7204,11 @@ impl Workspace {
     /// 返回当前工作区的 project group key
     pub fn project_group_key(&self, cx: &App) -> ProjectGroupKey {
         ProjectGroupKey::from_project(&self.project, cx)
+    }
+
+    /// Stub: run_create_worktree_tasks (crates removed)
+    pub fn run_create_worktree_tasks(&mut self, _window: &mut Window, _cx: &mut Context<Self>) {
+        // no-op stub
     }
 
 }
@@ -9198,7 +9205,17 @@ fn load_legacy_panel_size(
     Some(size)
 }
 
+/// Stub: open_remote_project_with_existing_connection (crates removed)
+pub fn open_remote_project_with_existing_connection(
+    _connection_options: (),
+    _project: gpui::Entity<project::Project>,
+    _paths: Vec<std::path::PathBuf>,
+) -> gpui::Task<anyhow::Result<()>> {
+    gpui::Task::ready(Err(anyhow::anyhow!("stub: open_remote_project")))
+}
+
 #[cfg(test)]
+
 mod tests {
     use std::{cell::RefCell, rc::Rc, sync::Arc, time::Duration};
 

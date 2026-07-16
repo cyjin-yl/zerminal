@@ -731,6 +731,52 @@ pub struct RemoteConnectionOptionsStub;
 #[derive(Clone, Debug)]
 pub struct Repository {
     pub work_directory_abs_path: std::path::PathBuf,
+    pub id: u64,
+    pub branch: Option<String>,
+}
+
+impl Repository {
+    /// Stub: entity_id
+    pub fn entity_id(&self) -> gpui::EntityId {
+        gpui::EntityId::from(0)
+    }
+
+    /// Stub: read
+    pub fn read(&self, _cx: &gpui::App) -> &Self {
+        self
+    }
+
+    /// Stub: update
+    pub fn update<F, R>(&self, _cx: &mut gpui::App, f: F) -> R
+    where
+        F: FnOnce(&mut Self, &mut gpui::App) -> R,
+    {
+        // Stub: cannot mutate through Arc, call with dummy
+        let mut dummy = self.clone();
+        f(&mut dummy, _cx)
+    }
+
+    /// Stub: remove_worktree
+    pub fn remove_worktree(
+        &mut self,
+        _worktree_id: u64,
+        _cx: &mut gpui::App,
+    ) -> gpui::Task<anyhow::Result<()>> {
+        gpui::Task::ready(Err(anyhow::anyhow!("stub")))
+    }
+
+    /// Stub: default_branch
+    pub fn default_branch(
+        &mut self,
+        _cx: &mut gpui::App,
+    ) -> gpui::Task<anyhow::Result<String>> {
+        gpui::Task::ready(Err(anyhow::anyhow!("stub")))
+    }
+
+    /// Stub: worktrees
+    pub fn worktrees(&mut self, _cx: &gpui::App) -> Vec<u64> {
+        Vec::new()
+    }
 }
 
 impl Project {
@@ -1123,8 +1169,8 @@ impl Project {
 
     /// 当前活动项目目录
     pub fn active_project_directory(
-        &mut self,
-        _cx: &mut gpui::Context<Self>,
+        &self,
+        _cx: &App,
     ) -> Option<std::path::PathBuf> {
         None
     }
@@ -1147,8 +1193,8 @@ impl Project {
         &self,
         _entry_id: ProjectEntryId,
         _cx: &App,
-    ) -> std::path::PathBuf {
-        std::path::PathBuf::new()
+    ) -> Option<std::path::PathBuf> {
+        None
     }
 
     /// 获取符号列表

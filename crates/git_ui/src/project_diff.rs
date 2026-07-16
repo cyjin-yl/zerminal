@@ -58,6 +58,21 @@ actions!(
 #[action(namespace = git, name = "BranchDiff")]
 pub(crate) struct DeployBranchDiff;
 
+/// Stub: ReviewBranchDiff (crates removed)
+#[derive(PartialEq, Clone, Deserialize, Default, JsonSchema, Action)]
+#[action(namespace = git, name = "ReviewBranchDiff")]
+pub(crate) struct ReviewBranchDiff {
+    pub diff_text: SharedString,
+    pub base_ref: Option<SharedString>,
+}
+
+/// Stub: SendReviewToAgent (crates removed)
+#[derive(PartialEq, Clone, Deserialize, Default, JsonSchema, Action)]
+#[action(namespace = git, name = "SendReviewToAgent")]
+pub(crate) struct SendReviewToAgent {
+    pub review_id: String,
+}
+
 pub struct ProjectDiff {
     project: Entity<Project>,
     workspace: WeakEntity<Workspace>,

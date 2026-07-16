@@ -7968,7 +7968,7 @@ fn collaboration_page() -> SettingsPage {
 }
 
 fn ai_page(_cx: &App) -> SettingsPage {
-    SettingsPage { section_headers: &[], items: &[] }
+    SettingsPage { title: "AI", items: Box::new([]) }
 }
 
 fn show_scrollbar_or_editor(
@@ -8014,6 +8014,26 @@ fn write_helix_mode_inner(settings: &mut SettingsContent, value: Option<bool>) {
         settings.vim_mode = Some(false);
     }
     settings.helix_mode = value;
+}
+
+// Stub: network_page (crates removed)
+fn network_page() -> SettingsPage {
+    SettingsPage { title: "Network", items: Box::new([]) }
+}
+
+// Stub: language_settings_data (crates removed)
+fn language_settings_data() -> [SettingsPageItem; 0] {
+    []
+}
+
+// Stub: non_editor_language_settings_data (crates removed)
+fn non_editor_language_settings_data() -> [SettingsPageItem; 0] {
+    []
+}
+
+// Stub: edit_prediction_language_settings_section (crates removed)
+fn edit_prediction_language_settings_section() -> [SettingsPageItem; 0] {
+    []
 }
 
 #[cfg(test)]
