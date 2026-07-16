@@ -8,7 +8,7 @@ use anyhow::{Context as _, Result};
 use buffer_diff::DiffHunkSecondaryStatus;
 use editor::{
     Editor, EditorEvent, SplittableEditor, UncommittedDiffHunkDelegate,
-    actions::{GoToHunk, GoToPreviousHunk, SendReviewToAgent},
+    actions::{GoToHunk, GoToPreviousHunk},
 };
 use git::{Commit, StageAll, StageAndNext, ToggleStaged, UnstageAll, UnstageAndNext};
 use gpui::{
@@ -161,7 +161,7 @@ impl ProjectDiff {
         window: &mut Window,
         cx: &mut Context<Workspace>,
     ) {
-        telemetry::event!("Git Diff Opened", source = "Agent Panel");
+//         telemetry::event!("Git Diff Opened", source = "Agent Panel");
         let existing = workspace.items_of_type::<Self>(cx).next();
         let project_diff = if let Some(existing) = existing {
             workspace.activate_item(&existing, true, true, window, cx);
@@ -942,7 +942,7 @@ impl Render for ProjectDiffToolbar {
                 el.child(Divider::vertical()).child(
                     render_send_review_to_agent_button(review_count, &focus_handle).on_click(
                         cx.listener(|this, _, window, cx| {
-                            this.dispatch_action(&SendReviewToAgent, window, cx)
+//                             this.dispatch_action(&SendReviewToAgent, window, cx)
                         }),
                     ),
                 )
@@ -956,7 +956,7 @@ pub(crate) fn render_send_review_to_agent_button(
 ) -> Button {
     Button::new(
         "send-review",
-        format!("Send Review to Agent ({})", review_count),
+//         format!("Send Review to Agent ({})", review_count),
     )
     .start_icon(
         Icon::new(IconName::ZedAssistant)
@@ -964,7 +964,7 @@ pub(crate) fn render_send_review_to_agent_button(
             .color(Color::Muted),
     )
     .tooltip(Tooltip::for_action_title_in(
-        "Send all review comments to the Agent panel",
+//         "Send all review comments to the Agent panel",
         &SendReviewToAgent,
         focus_handle,
     ))

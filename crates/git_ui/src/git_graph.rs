@@ -29,7 +29,7 @@ use markdown::{Markdown, MarkdownElement};
 use menu::{Cancel, SelectFirst, SelectLast, SelectNext, SelectPrevious};
 use picker::{Picker, PickerDelegate};
 use project::{
-    GIT_COMMAND_TASK_TAG, ProjectPath, TaskSourceKind,
+    ProjectPath,
     git_store::{
         CommitDataState, GitGraphEvent, GitStore, GitStoreEvent, GraphDataResponse, Repository,
         RepositoryEvent, RepositoryId,
@@ -2471,71 +2471,24 @@ impl GitGraph {
         &self,
         commit_sha: Oid,
         ref_name: Option<&str>,
-        cx: &App,
-    ) -> Option<TaskContext> {
-        let repository_path = self
-            .get_repository(cx)?
-            .read(cx)
-            .work_directory_abs_path
-            .to_path_buf();
+    fn git_task_context(
+        &self,
+        None
 
-        let repository_name = repository_path
-            .file_name()
-            .and_then(|name| name.to_str())
-            .map(ToString::to_string);
-
-        let mut task_variables = TaskVariables::from_iter([
-            (VariableName::GitSha, commit_sha.to_string()),
-            (VariableName::GitShaShort, commit_sha.display_short()),
-            (
-                VariableName::GitRepositoryPath,
-                repository_path.to_string_lossy().into_owned(),
-            ),
-        ]);
-
-        if let Some(repository_name) = repository_name {
-            task_variables.insert(VariableName::GitRepositoryName, repository_name);
-        }
-
-        if let Some(ref_name) = ref_name {
-            task_variables.insert(VariableName::GitRef, ref_name.to_string());
-        }
-
-        Some(TaskContext {
-            cwd: Some(repository_path),
-            task_variables,
-            ..TaskContext::default()
-        })
     }
 
     fn git_context_menu_tasks(
         &self,
-        task_context: &TaskContext,
+        _task_context: &(),
         cx: &App,
-    ) -> Vec<(TaskSourceKind, ResolvedTask)> {
-        let Some(workspace) = self.workspace.upgrade() else {
-            return Vec::new();
-        };
-
-        let project = workspace.read(cx).project().clone();
-
-        let task_inventory = project.read_with(cx, |project, cx| {
-            project.task_store().read(cx).task_inventory().cloned()
-        });
-
-        let Some(task_inventory) = task_inventory else {
-            return Vec::new();
-        };
-
-        task_inventory
-            .read(cx)
-            .resolve_global_tasks_with_tag(GIT_COMMAND_TASK_TAG, task_context)
+    ) -> Vec<()> {
+        Vec::new()
     }
 
     fn schedule_git_task(
         &mut self,
         task_source_kind: TaskSourceKind,
-        resolved_task: ResolvedTask,
+        _resolved_task: (),
         window: &mut Window,
         cx: &mut Context<Self>,
     ) {
@@ -4946,7 +4899,7 @@ mod tests {
     use git::repository::{CommitData, InitialGraphCommitData};
     use gpui::{TestAppContext, UpdateGlobal};
     use project::git_store::{GitStoreEvent, RepositoryEvent};
-    use project::{Project, TaskSourceKind, task_store::TaskSettingsLocation};
+    use project::{Project, task_store::TaskSettingsLocation};
     use rand::prelude::*;
     use serde_json::json;
     use settings::{SettingsStore, ThemeSettingsContent};
@@ -4959,7 +4912,7 @@ mod tests {
             let settings_store = SettingsStore::test(cx);
             cx.set_global(settings_store);
             theme_settings::init(theme::LoadThemes::JustBase, cx);
-            language_model::init(cx);
+//             language_model::init(cx);
             crate::init(cx);
         });
     }
@@ -7322,7 +7275,7 @@ mod tests {
         });
 
         assert!(
-            matches!(task_source_kind, TaskSourceKind::AbsPath { .. }),
+            matches!(task_source_kind::AbsPath { .. }),
             "scheduled task should come from global tasks"
         );
         assert_eq!(resolved_task.resolved_label, "Git Show abcdef1");

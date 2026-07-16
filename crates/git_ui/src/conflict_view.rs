@@ -19,9 +19,8 @@ use std::{ops::Range, sync::Arc};
 use ui::{ButtonLike, Divider, Tooltip, prelude::*};
 use util::debug_panic;
 use workspace::{HideStatusItem, StatusItemView, Workspace, item::ItemHandle};
-use zed_actions::agent::{
-    ConflictContent, ResolveConflictedFilesWithAgent, ResolveConflictsWithAgent,
-};
+// use zed_actions::agent::{
+//     ConflictContent, ResolveConflictedFilesWithAgent, ResolveConflictsWithAgent,
 
 pub(crate) struct ConflictAddon {
     buffers: HashMap<BufferId, BufferConflicts>,
@@ -327,7 +326,6 @@ fn render_conflict_buttons(
     editor: WeakEntity<Editor>,
     cx: &mut BlockContext,
 ) -> AnyElement {
-    let is_ai_enabled = AgentSettings::get_global(cx).enabled(cx);
 
     h_flex()
         .id(cx.block_id)
@@ -393,54 +391,6 @@ fn render_conflict_buttons(
                     }
                 }),
         )
-        .when(is_ai_enabled, |this| {
-            this.child(Divider::vertical()).child(
-                Button::new("resolve-with-agent", "Resolve with Agent")
-                    .label_size(LabelSize::Small)
-                    .start_icon(
-                        Icon::new(IconName::ZedAssistant)
-                            .size(IconSize::Small)
-                            .color(Color::Muted),
-                    )
-                    .on_click({
-                        let conflict = conflict.clone();
-                        move |_, window, cx| {
-                            let content = editor
-                                .update(cx, |editor, cx| {
-                                    let multibuffer = editor.buffer().read(cx);
-                                    let buffer_id = conflict.ours.end.buffer_id;
-                                    let buffer = multibuffer.buffer(buffer_id)?;
-                                    let buffer_read = buffer.read(cx);
-                                    let snapshot = buffer_read.snapshot();
-                                    let conflict_text = snapshot
-                                        .text_for_range(conflict.range.clone())
-                                        .collect::<String>();
-                                    let file_path = buffer_read
-                                        .file()
-                                        .and_then(|file| file.as_local())
-                                        .map(|f| f.abs_path(cx).to_string_lossy().to_string())
-                                        .unwrap_or_default();
-                                    Some(ConflictContent {
-                                        file_path,
-                                        conflict_text,
-                                        ours_branch_name: conflict.ours_branch_name.to_string(),
-                                        theirs_branch_name: conflict.theirs_branch_name.to_string(),
-                                    })
-                                })
-                                .ok()
-                                .flatten();
-                            if let Some(content) = content {
-                                window.dispatch_action(
-                                    Box::new(ResolveConflictsWithAgent {
-                                        conflicts: vec![content],
-                                    }),
-                                    cx,
-                                );
-                            }
-                        }
-                    }),
-            )
-        })
         .into_any()
 }
 
@@ -557,13 +507,7 @@ impl MergeConflictIndicator {
                 | GitStoreEvent::RepositoryUpdated(_, RepositoryEvent::StatusesChanged, _)
         );
 
-        let agent_settings = AgentSettings::get_global(cx);
-        if !agent_settings.enabled(cx)
-            || !agent_settings.show_merge_conflict_indicator
-            || !conflicts_changed
-        {
-            return;
-        }
+        return;
 
         let project = self.project.read(cx);
         if project.is_via_collab() {
@@ -586,15 +530,8 @@ impl MergeConflictIndicator {
         }
     }
 
-    fn resolve_with_agent(&mut self, window: &mut Window, cx: &mut Context<Self>) {
-        window.dispatch_action(
-            Box::new(ResolveConflictedFilesWithAgent {
-                conflicted_file_paths: self.conflicted_paths.clone(),
-            }),
-            cx,
-        );
-        self.dismissed = true;
-        cx.notify();
+    fn resolve_with_agent(&mut self, _window: &mut Window, _cx: &mut Context<Self>) {
+        // stubbed: agent crate removed
     }
 
     fn dismiss(&mut self, _: &ClickEvent, _window: &mut Window, cx: &mut Context<Self>) {
@@ -605,76 +542,7 @@ impl MergeConflictIndicator {
 
 impl Render for MergeConflictIndicator {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let agent_settings = AgentSettings::get_global(cx);
-        if !agent_settings.enabled(cx)
-            || !agent_settings.show_merge_conflict_indicator
-            || self.conflicted_paths.is_empty()
-            || self.dismissed
-        {
-            return Empty.into_any_element();
-        }
-
-        let file_count = self.conflicted_paths.len();
-
-        let message: SharedString = format!(
-            "Resolve Merge Conflict{} with Agent",
-            if file_count == 1 { "" } else { "s" }
-        )
-        .into();
-
-        let tooltip_label: SharedString = format!(
-            "Found {} {} across the codebase",
-            file_count,
-            if file_count == 1 {
-                "conflict"
-            } else {
-                "conflicts"
-            }
-        )
-        .into();
-
-        let border_color = cx.theme().colors().text_accent.opacity(0.2);
-
-        h_flex()
-            .h(rems_from_px(22.))
-            .rounded_sm()
-            .border_1()
-            .border_color(border_color)
-            .child(
-                ButtonLike::new("update-button")
-                    .tab_index(0isize)
-                    .aria_label(message.clone())
-                    .child(
-                        h_flex()
-                            .h_full()
-                            .gap_1()
-                            .child(
-                                Icon::new(IconName::GitMergeConflict)
-                                    .size(IconSize::Small)
-                                    .color(Color::Muted),
-                            )
-                            .child(Label::new(message).size(LabelSize::Small)),
-                    )
-                    .tooltip(move |_, cx| {
-                        Tooltip::with_meta(
-                            tooltip_label.clone(),
-                            None,
-                            "Click to Resolve with Agent",
-                            cx,
-                        )
-                    })
-                    .on_click(cx.listener(|this, _, window, cx| {
-                        this.resolve_with_agent(window, cx);
-                    })),
-            )
-            .child(
-                div().border_l_1().border_color(border_color).child(
-                    IconButton::new("dismiss-merge-conflicts", IconName::Close)
-                        .icon_size(IconSize::XSmall)
-                        .on_click(cx.listener(Self::dismiss)),
-                ),
-            )
-            .into_any_element()
+        return Empty.into_any_element();
     }
 }
 

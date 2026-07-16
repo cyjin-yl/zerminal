@@ -1397,6 +1397,11 @@ mod tests {
     use util::rel_path::rel_path;
     use workspace::{TerminalProvider, WorkspaceSettings};
 
+    // Stub for removed task crate
+    struct SpawnInTerminal {
+        label: String,
+    }
+
     struct CountingTerminalProvider {
         spawned_task_labels: Arc<Mutex<Vec<String>>>,
     }

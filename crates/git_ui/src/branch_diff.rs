@@ -9,7 +9,6 @@ use crate::{
 use anyhow::{Context as _, Result, anyhow};
 use editor::{
     Addon, Editor, EditorEvent, RestoreOnlyDiffHunkDelegate, SplittableEditor,
-    actions::SendReviewToAgent,
 };
 use git::{repository::DiffType, status::FileStatus};
 use gpui::{
@@ -37,7 +36,7 @@ use workspace::{
     notifications::NotifyTaskExt,
     searchable::SearchableItemHandle,
 };
-use zed_actions::agent::ReviewBranchDiff;
+// use zed_actions::agent::ReviewBranchDiff; // removed
 
 /// The workspace item for a branch (merge-base) diff: "Changes since {branch}".
 /// It wraps a single [`DiffMultibuffer`] over [`DiffBase::Merge`] and delegates
@@ -750,9 +749,7 @@ impl Render for BranchDiffToolbar {
             .multibuffer()
             .read(cx)
             .is_empty();
-        let is_ai_enabled = AgentSettings::get_global(cx).enabled(cx);
-
-        let show_review_button = !is_multibuffer_empty && is_ai_enabled;
+        let show_review_button = false;
 
         h_flex()
             .my_neg_1()
@@ -831,7 +828,7 @@ impl Render for BranchDiffToolbar {
                 this.child(Divider::vertical()).child(
                     render_send_review_to_agent_button(review_count, &focus_handle).on_click(
                         cx.listener(|this, _, window, cx| {
-                            this.dispatch_action(&SendReviewToAgent, window, cx)
+                            // removed: SendReviewToAgent
                         }),
                     ),
                 )
