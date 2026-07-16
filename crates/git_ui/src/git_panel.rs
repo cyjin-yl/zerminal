@@ -2009,9 +2009,7 @@ impl GitPanel {
                             .project()
                             .update(cx, |project, cx| project.delete_file(path, true, cx))
                     })?;
-                    if let Some(task) = task {
-                        task.await?;
-                    }
+                    task.await?;
                     Ok(())
                 })
                 .detach_and_prompt_err(
@@ -2194,12 +2192,12 @@ impl GitPanel {
                 to_delete
                     .iter()
                     .filter_map(|entry| {
-                        workspace.project().update(cx, |project, cx| {
-                            let project_path = active_repo
-                                .read(cx)
-                                .repo_path_to_project_path(&entry.repo_path, cx)?;
-                            project.delete_file(project_path, true, cx)
-                        })
+                        let project_path = active_repo
+                            .read(cx)
+                            .repo_path_to_project_path(&entry.repo_path, cx)?;
+                        Some(workspace
+                            .project()
+                            .update(cx, |project, cx| project.delete_file(project_path, true, cx)))
                     })
                     .collect::<Vec<_>>()
             })?;
@@ -3300,18 +3298,19 @@ impl GitPanel {
                 }
             };
 
-            let Ok(result) = this.update(cx, |this, cx| {
+            let Ok(project) = this.update(cx, |this, cx| this.project.clone()) else {
+                return;
+            };
+            let result = project.update(cx, |project, cx| {
                 let fallback_branch_name = GitPanelSettings::get_global(cx)
                     .fallback_branch_name
                     .clone();
-                this.project.read(cx).git_init(
+                project.git_init(
                     worktree.read(cx).abs_path(),
                     fallback_branch_name,
                     cx,
                 )
-            }) else {
-                return;
-            };
+            });
 
             let result = result.await;
 

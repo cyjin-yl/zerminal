@@ -92,7 +92,7 @@ impl WorktreePicker {
             repo.read(cx)
                 .branch
                 .as_ref()
-                .map(|branch| branch.to_string())
+                .map(|branch| branch.ref_name.to_string())
         });
 
         let all_worktrees_request = repository
@@ -1549,14 +1549,11 @@ pub async fn open_remote_worktree(
     };
 
     let new_project = cx.update(|_, cx| {
-        project::Project::remote(
-            session,
-            app_state.client.clone(),
-            app_state.node_runtime.clone(),
-            app_state.user_store.clone(),
+        project::Project::local(
             app_state.languages.clone(),
             app_state.fs.clone(),
-            true,
+            None,
+            paths.clone(),
             cx,
         )
     })?;

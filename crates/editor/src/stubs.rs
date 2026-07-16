@@ -70,6 +70,13 @@ pub struct DebugScenario;
 #[derive(Clone, Debug)]
 pub struct ResolvedTask;
 
+impl ResolvedTask {
+    /// Stub: display_label
+    pub fn display_label(&self) -> &str {
+        "Git Task"
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct RunnableTag;
 

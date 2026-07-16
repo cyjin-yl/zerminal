@@ -324,31 +324,12 @@ pub fn classify_worktrees(
     for worktree in project.visible_worktrees(cx) {
         let wt_path = worktree.read(cx).abs_path();
 
-        let matching_repo = repositories
-            .iter()
-            .filter_map(|(id, repo)| {
-                let work_dir = repo.read(cx).work_directory_abs_path.clone();
-                if wt_path.starts_with(work_dir.as_ref()) {
-                    Some((*id, repo.clone(), work_dir.as_ref().components().count()))
-                } else {
-                    None
-                }
-            })
-            .max_by(
-                |(left_id, _left_repo, left_depth), (right_id, _right_repo, right_depth)| {
-                    left_depth
-                        .cmp(right_depth)
-                        .then_with(|| left_id.cmp(right_id))
-                },
-            );
-
-        if let Some((id, repo, _)) = matching_repo {
-            if seen_repo_ids.insert(id) {
-                git_repos.push(repo);
+        for repo in &repositories {
+            if seen_repo_ids.insert(repo.entity_id().as_u64()) {
+                git_repos.push(repo.clone());
             }
-        } else {
-            non_git_paths.push(wt_path.to_path_buf());
         }
+        non_git_paths.push(wt_path.to_path_buf());
     }
 
     (git_repos, non_git_paths)

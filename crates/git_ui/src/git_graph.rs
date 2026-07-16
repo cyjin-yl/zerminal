@@ -2477,16 +2477,16 @@ impl GitGraph {
 
     fn git_context_menu_tasks(
         &self,
-        _task_context: &(),
-        cx: &App,
-    ) -> Vec<()> {
+        _task_context: &editor::TaskContext,
+        _cx: &App,
+    ) -> Vec<(editor::TaskSourceKind, editor::ResolvedTask)> {
         Vec::new()
     }
 
     fn schedule_git_task(
         &mut self,
-        _task_source_kind: (),
-        _resolved_task: (),
+        _task_source_kind: editor::TaskSourceKind,
+        _resolved_task: editor::ResolvedTask,
         _window: &mut Window,
         _cx: &mut Context<Self>,
     ) {
