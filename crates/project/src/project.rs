@@ -26,7 +26,6 @@ use crate::{
 pub use git_store::{
     ConflictRegion, ConflictSet, ConflictSetSnapshot, ConflictSetUpdate,
     git_traversal::{ChildEntriesGitIter, GitEntry, GitEntryRef, GitTraversal},
-    linked_worktree_short_name, repo_identity_path, worktrees_directory_for_repo,
 };
 pub use manifest_tree::ManifestTree;
 pub use worktree_store::WorktreePaths;
@@ -661,3 +660,12 @@ impl<'a> From<&'a ProjectPath> for SettingsLocation<'a> {
         }
     }
 }
+
+/// 存根: git 仓库身份路径解析 (来源: spec §2.1 — git 功能保留但简化)
+pub fn repo_identity_path(_common_dir: &Path) -> PathBuf {
+    PathBuf::new()
+}
+
+// 存根: file finder 相关类型 (来源: spec §2.1 — file_finder 保留)
+pub struct PathMatchCandidateSet;
+pub enum Candidates { Files }

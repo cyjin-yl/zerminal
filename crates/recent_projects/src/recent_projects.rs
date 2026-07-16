@@ -195,7 +195,7 @@ fn get_open_folders(workspace: &Workspace, cx: &App) -> Vec<OpenFolderEntry> {
 
     let active_worktree_id = if let Some(repo) = project.active_repository(cx) {
         let repo = &*repo;
-        let repo_path = &repo.work_directory_abs_path;
+        let repo_path = &repo.snapshot.work_directory_abs_path;
         project.visible_worktrees(cx).find_map(|worktree| {
             let worktree_path = worktree.read(cx).abs_path();
             (worktree_path.as_ref() == repo_path.as_path() || worktree_path.as_ref().starts_with(repo_path.as_path()))
@@ -1171,7 +1171,7 @@ impl PickerDelegate for RecentProjectsDelegate {
                                     let modal_workspace = multi_workspace.workspace().clone();
                                     multi_workspace.find_or_create_workspace(
                                         path_list,
-                                        host,
+                                        None, // 来源: spec §2.1 — 远程连接已移除
                                         Some(key.clone()),
                                         move |options, window, cx| {
                                             connect_with_modal(
