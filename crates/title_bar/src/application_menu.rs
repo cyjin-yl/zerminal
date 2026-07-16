@@ -167,7 +167,7 @@ impl ApplicationMenu {
                     .menu(move |window, cx| {
                         Self::build_menu_from_items(entry.clone(), window, cx).into()
                     })
-                    .trigger_with_tooltip(
+                    .trigger(
                         IconButton::new(
                             SharedString::from(format!("{}-menu-trigger", menu_name)),
                             ui::IconName::Menu,
@@ -176,7 +176,6 @@ impl ApplicationMenu {
                         .icon_size(IconSize::Small)
                         .tab_index(0isize)
                         .aria_label("Application menu"),
-                        tooltip_stub("Open Application Menu", SharedString::default()),
                     )
                     .with_handle(handle),
             )

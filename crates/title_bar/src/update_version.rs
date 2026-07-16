@@ -15,11 +15,12 @@ pub struct UpdateVersion {
 impl UpdateVersion {
     pub fn new(cx: &mut Context<Self>) -> Self {
         if let Some(auto_updater) = AutoUpdater::get(cx) {
-            cx.observe(&auto_updater, |this, auto_update, cx| {
+            let auto_updater_clone = auto_updater.clone();
+            cx.observe(&auto_updater, move |this, auto_update, cx| {
                 let auto_update = auto_update.read(cx);
                 this.status = auto_update.status();
                 this.update_check_type = auto_update.update_check_type();
-                this.dismissed_status = auto_updater.read(cx).dismissed_status();
+                this.dismissed_status = auto_updater_clone.read(cx).dismissed_status();
                 cx.notify();
             })
             .detach();
@@ -119,7 +120,7 @@ impl Render for UpdateVersion {
                     .label_size(LabelSize::Small)
                     .color(Color::Accent)
                     .on_click(|_, _, cx| {
-                        workspace::reload(cx);
+                        workspace::reload(&mut *cx);
                     })
                     .into_any_element()
             }

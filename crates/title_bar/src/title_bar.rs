@@ -478,7 +478,7 @@ impl TitleBar {
     fn render_remote_project_connection(&self, cx: &mut Context<Self>) -> Option<AnyElement> {
         let workspace = self.workspace.clone();
 
-        let options = self.project.read(cx).remote_connection_options(cx)?;
+        let options = self.project.read(cx).remote_connection_options()?;
         let host: SharedString = options.display_name().into();
 
         let (nickname, tooltip_title, icon) = match options {
@@ -497,29 +497,9 @@ impl TitleBar {
 
         let nickname = nickname.unwrap_or_else(|| host.clone());
 
-        let (indicator_color, meta) = match self.project.read(cx).remote_connection_state(cx)? {
-            remote::ConnectionState::Connecting => (Color::Info, format!("Connecting to: {host}")),
-            remote::ConnectionState::Connected => (Color::Success, format!("Connected to: {host}")),
-            remote::ConnectionState::HeartbeatMissed => (
-                Color::Warning,
-                format!("Connection attempt to {host} missed. Retrying..."),
-            ),
-            remote::ConnectionState::Reconnecting => (
-                Color::Warning,
-                format!("Lost connection to {host}. Reconnecting..."),
-            ),
-            remote::ConnectionState::Disconnected => {
-                (Color::Error, format!("Disconnected from {host}"))
-            }
-        };
-
-        let icon_color = match self.project.read(cx).remote_connection_state(cx)? {
-            remote::ConnectionState::Connecting => Color::Info,
-            remote::ConnectionState::Connected => Color::Default,
-            remote::ConnectionState::HeartbeatMissed => Color::Warning,
-            remote::ConnectionState::Reconnecting => Color::Warning,
-            remote::ConnectionState::Disconnected => Color::Error,
-        };
+        let indicator_color = Color::Success;
+        let meta = format!("Connected to: {host}");
+        let icon_color = Color::Default;
 
         let meta = SharedString::from(meta);
 
@@ -538,7 +518,6 @@ impl TitleBar {
                 })
                 .trigger(
                     ButtonLike::new("remote_project")
-                    ButtonLike::new("remote_project")
                         .selected_style(ButtonStyle::Tinted(TintColor::Accent))
                         .child(
                             h_flex()
@@ -554,9 +533,8 @@ impl TitleBar {
                                     ))
                                     .into_any_element(),
                                 )
-                                .child(Label::new(nickname).size(LabelSize::Small).truncate()),
-                        )
-)
+                            )
+                    )
                 .anchor(gpui::Anchor::TopLeft)
                 .into_any_element(),
         )
@@ -602,15 +580,6 @@ impl TitleBar {
             return self.render_remote_project_connection(cx);
         }
 
-        if self.project.read(cx).is_disconnected(cx) {
-            return Some(
-                Button::new("disconnected", "Disconnected")
-                    .disabled(true)
-                    .color(Color::Disabled)
-                    .label_size(LabelSize::Small)
-                    .into_any_element(),
-            );
-        }
 
         None
     }
@@ -677,7 +646,6 @@ impl TitleBar {
             })
             .trigger(
                 Button::new("project_name_trigger", display_name)
-                Button::new("project_name_trigger", display_name)
                     .label_size(LabelSize::Small)
                     .tab_index(0isize)
                     .when(self.worktree_count(cx) > 1, |this| {
@@ -688,9 +656,7 @@ impl TitleBar {
                         )
                     })
                     .selected_style(ButtonStyle::Tinted(TintColor::Accent))
-                    .when(!is_project_selected, |s| s.color(Color::Muted))
-)
-                },
+                    .when(!is_project_selected, |s| s.color(Color::Muted)),
             )
             .anchor(gpui::Anchor::TopLeft)
             .into_any_element()
@@ -729,7 +695,6 @@ impl TitleBar {
             })
             .trigger(
                 Button::new("project_name_trigger", display_name)
-                Button::new("project_name_trigger", display_name)
                     .label_size(LabelSize::Small)
                     .tab_index(0isize)
                     .when(self.worktree_count(cx) > 1, |this| {
@@ -740,9 +705,7 @@ impl TitleBar {
                         )
                     })
                     .selected_style(ButtonStyle::Tinted(TintColor::Accent))
-                    .when(!is_project_selected, |s| s.color(Color::Muted))
-)
-                },
+                    .when(!is_project_selected, |s| s.color(Color::Muted)),
             )
             .anchor(gpui::Anchor::TopLeft)
     }
@@ -831,7 +794,6 @@ impl TitleBar {
                 })
                 .trigger(
                     Button::new("worktree_picker_trigger", display_label)
-                    Button::new("worktree_picker_trigger", display_label)
                         .selected_style(ButtonStyle::Tinted(TintColor::Accent))
                         .label_size(LabelSize::Small)
                         .color(Color::Muted)
@@ -842,7 +804,7 @@ impl TitleBar {
                                 .size(IconSize::XSmall)
                                 .color(Color::Muted),
                         )
-)
+                    )
                 .anchor(gpui::Anchor::TopLeft)
         };
 
@@ -890,12 +852,6 @@ impl TitleBar {
                         ))
                     })
                     .trigger(trigger)
-                            format!("Detached HEAD: {}", branch_tooltip_label)
-                        } else {
-                            format!("Currently Checked Out: {}", branch_tooltip_label)
-                        };
-                        "Branch & Stash", meta)
-                    })
                     .anchor(gpui::Anchor::TopLeft)
             })
         });
