@@ -10,6 +10,8 @@ use std::{
 use chrono::{DateTime, Utc};
 
 use fs::Fs;
+use remote::RemoteConnectionOptions;
+use remote_connection::connect_with_modal;
 
 #[cfg(target_os = "windows")]
 mod wsl_picker;
@@ -544,14 +546,8 @@ pub fn init(cx: &mut App) {
                     if let project::Event::WorktreeUpdatedEntries(worktree_id, updated_entries) =
                         event
                     {
-                        dev_container_suggest::suggest_on_worktree_updated(
-                            workspace,
-                            *worktree_id,
-                            updated_entries,
-                            project,
-                            window,
-                            cx,
-                        );
+                        // dev_container_suggest::suggest_on_worktree_updated(...) removed spec §8.2 M3
+                        let (_worktree_id, _updated_entries) = (worktree_id, updated_entries);
                     }
                 },
             )
@@ -1280,7 +1276,7 @@ impl PickerDelegate for RecentProjectsDelegate {
                     )
                     .into_any_element();
 
-                let icon = icon_for_remote_connection(folder.connection_options.as_ref());
+                let icon = icon_for_remote_connection(folder.connection_options.as_ref().map(|_| ""));
                 let show_icon = self.filtered_entries_include_remote_project();
 
                 let tooltip_path: SharedString = path.to_string_lossy().to_string().into();
@@ -1492,8 +1488,7 @@ impl PickerDelegate for RecentProjectsDelegate {
                     .map(|p| p.compact().to_string_lossy().to_string())
                     .collect();
                 let tooltip_path: SharedString = match &location {
-                    SerializedWorkspaceLocation::Remote(options) => {
-                        let host = options.display_name();
+                    SerializedWorkspaceLocation::Remote(host) => {
                         if ordered_paths.len() == 1 {
                             format!("{} ({})", ordered_paths[0], host).into()
                         } else {
@@ -1522,8 +1517,8 @@ impl PickerDelegate for RecentProjectsDelegate {
                 };
 
                 let prefix = match &location {
-                    SerializedWorkspaceLocation::Remote(options) => {
-                        Some(SharedString::from(options.display_name()))
+                    SerializedWorkspaceLocation::Remote(host) => {
+                        Some(SharedString::from(host.clone()))
                     }
                     _ => None,
                 };
@@ -1997,19 +1992,14 @@ impl PickerDelegate for RecentProjectsDelegate {
 
 fn icon_for_project_group(key: &ProjectGroupKey) -> IconName {
     let host = key.host();
-    icon_for_remote_connection(host.as_ref())
+    icon_for_remote_connection(host)
 }
 
-pub(crate) fn icon_for_remote_connection(options: Option<&RemoteConnectionOptions>) -> IconName {
-    match options {
-        None => IconName::Screen,
-        Some(options) => match options {
-            RemoteConnectionOptions::Ssh(_) => IconName::Server,
-            RemoteConnectionOptions::Wsl(_) => IconName::Linux,
-            RemoteConnectionOptions::Docker(_) => IconName::Box,
-            #[cfg(any(test, feature = "test-support"))]
-            RemoteConnectionOptions::Mock(_) => IconName::Server,
-        },
+pub(crate) fn icon_for_remote_connection(options: Option<&str>) -> IconName {
+    if options.is_some() {
+        IconName::Server
+    } else {
+        IconName::Screen
     }
 }
 
@@ -2097,10 +2087,6 @@ fn open_local_project(
                 multiple: true,
                 prompt: None,
             },
-            DirectoryLister::Local(
-                workspace.project().clone(),
-                workspace.app_state().fs.clone(),
-            ),
             window,
             cx,
         )
@@ -2194,32 +2180,14 @@ impl RecentProjectsDelegate {
                             );
                     }
                 }
-                SerializedWorkspaceLocation::Remote(mut connection) => {
-                    let app_state = workspace.app_state().clone();
-                    let replace_window = if replace_current_window {
+                SerializedWorkspaceLocation::Remote(_host) => {
+                    // Remote project reopening stubbed (spec §8.2 M3)
+                    let _app_state = workspace.app_state().clone();
+                    let _replace_window = if replace_current_window {
                         window.window_handle().downcast::<MultiWorkspace>()
                     } else {
                         None
                     };
-                    let open_options = OpenOptions {
-                        requesting_window: replace_window,
-                        ..Default::default()
-                    };
-                    if let RemoteConnectionOptions::Ssh(connection) = &mut connection {
-                        RemoteSettings::get_global(cx)
-                            .fill_connection_options_from_settings(connection);
-                    };
-                    let paths = candidate_workspace_paths.paths().to_vec();
-                    cx.spawn_in(window, async move |_, cx| {
-                        open_remote_project(connection.clone(), paths, app_state, open_options, cx)
-                            .await
-                    })
-                    .detach_and_prompt_err(
-                        "Failed to open project",
-                        window,
-                        cx,
-                        |_, _, _| None,
-                    );
                 }
             }
         });
@@ -2449,6 +2417,122 @@ impl RecentProjectsDelegate {
         !self.is_current_workspace(workspace.workspace_id, cx)
             && !self.is_in_current_window_groups(workspace)
             && !self.is_open_folder(&workspace.paths)
+    }
+}
+
+/// Stub: open_remote_project (remote project 功能已删除 spec §8.2 M3)
+pub async fn open_remote_project(
+    _connection_options: RemoteConnectionOptions,
+    _paths: Vec<std::path::PathBuf>,
+    _app_state: &workspace::AppState,
+    _open_options: workspace::OpenOptions,
+    _cx: &mut gpui::App,
+) -> anyhow::Result<()> {
+    Ok(())
+}
+
+/// Stub: RemoteServerProjects (remote server 功能已删除 spec §8.2 M3)
+pub struct RemoteServerProjects {
+    focus_handle: gpui::FocusHandle,
+}
+
+impl gpui::Focusable for RemoteServerProjects {
+    fn focus_handle(&self, _cx: &gpui::App) -> gpui::FocusHandle {
+        self.focus_handle.clone()
+    }
+}
+impl gpui::EventEmitter<gpui::DismissEvent> for RemoteServerProjects {}
+
+impl workspace::ModalView for RemoteServerProjects {
+    fn on_before_dismiss(
+        &mut self,
+        _window: &mut Window,
+        _: &mut Context<Self>,
+    ) -> workspace::DismissDecision {
+        workspace::DismissDecision::Dismiss(true)
+    }
+    fn fade_out_background(&self) -> bool {
+        true
+    }
+}
+impl gpui::Render for RemoteServerProjects {
+    fn render(&mut self, _window: &mut Window, _cx: &mut Context<Self>) -> impl IntoElement {
+        div()
+    }
+}
+
+
+impl RemoteServerProjects {
+    pub fn new(
+        _create_new_window: bool,
+        _fs: Arc<dyn fs::Fs>,
+        _window: &mut Window,
+        _handle: WeakEntity<Workspace>,
+        cx: &mut Context<Self>,
+    ) -> Self {
+        Self {
+            focus_handle: cx.focus_handle(),
+        }
+    }
+
+    pub fn wsl(
+        _create_new_window: bool,
+        _fs: Arc<dyn fs::Fs>,
+        _window: &mut Window,
+        _handle: WeakEntity<Workspace>,
+        cx: &mut Context<Self>,
+    ) -> Self {
+        Self {
+            focus_handle: cx.focus_handle(),
+        }
+    }
+
+    pub fn new_dev_container(
+        _fs: Arc<dyn fs::Fs>,
+        _configs: Vec<DevContainerConfig>,
+        _app_state: &workspace::AppState,
+        _dev_container_context: DevContainerContext,
+        _window: &mut Window,
+        _handle: WeakEntity<Workspace>,
+        cx: &mut Context<Self>,
+    ) -> Self {
+        Self {
+            focus_handle: cx.focus_handle(),
+        }
+    }
+
+    pub fn popover(
+        _fs: Arc<dyn fs::Fs>,
+        _workspace: WeakEntity<Workspace>,
+        _paths: Option<Vec<std::path::PathBuf>>,
+        _window: &mut Window,
+        cx: &mut gpui::App,
+    ) -> gpui::Entity<Self> {
+        cx.new(|cx| Self {
+            focus_handle: cx.focus_handle(),
+        })
+    }
+}
+
+/// Stub: find_devcontainer_configs (dev_container crate 已删除 spec §8.2 M3)
+fn find_devcontainer_configs(
+    _workspace: &Entity<Workspace>,
+    _cx: &mut App,
+) -> Vec<DevContainerConfig> {
+    Vec::new()
+}
+
+/// Stub type for DevContainerConfig
+#[derive(Clone)]
+pub struct DevContainerConfig;
+
+/// Stub type for DevContainerContext
+#[derive(Clone)]
+pub struct DevContainerContext;
+
+impl DevContainerContext {
+    pub fn from_workspace(_workspace: &Entity<Workspace>, _cx: &mut App) -> Self {
+        Self
     }
 }
 

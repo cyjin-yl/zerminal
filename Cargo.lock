@@ -9603,6 +9603,7 @@ dependencies = [
  "picker_preview",
  "project",
  "release_channel",
+ "rope",
  "semver",
  "serde_json",
  "settings",

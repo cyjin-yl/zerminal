@@ -231,7 +231,7 @@ pub struct DiagnosticSummary {
 
 #[derive(Clone)]
 pub enum DirectoryLister {
-    Local(Arc<dyn Fs>),
+    Local(Arc<Project>, Arc<dyn Fs>),
     Project(Arc<Project>),
 }
 
@@ -1020,7 +1020,7 @@ impl Project {
         language::Capability::ReadWrite
     }
 
-    pub fn is_local(&self, _cx: &App) -> bool {
+    pub fn is_local(&self) -> bool {
         true
     }
 
@@ -1028,7 +1028,7 @@ impl Project {
         None
     }
 
-    pub fn remote_connection_options(&self) -> Option<Arc<RemoteConnectionOptionsStub>> {
+    pub fn remote_connection_options(&self) -> Option<remote::RemoteConnectionOptions> {
         None
     }
 
@@ -1051,11 +1051,7 @@ impl Project {
         Vec::new()
     }
 
-    pub fn active_repository(
-        &self,
-        _path: &ProjectPath,
-        _cx: &App,
-    ) -> Option<Arc<Repository>> {
+    pub fn active_repository(&self, _cx: &App) -> Option<Arc<Repository>> {
         None
     }
 
@@ -1340,7 +1336,7 @@ impl Breadcrumbs {
 }
 
 /// Stub: path_suffix (from project crate, 已删除)
-pub fn path_suffix(path: &std::path::Path, detail: bool) -> String {
+pub fn path_suffix(path: &std::path::Path, detail: usize) -> String {
     let _ = detail;
     path.file_name()
         .map(|n| n.to_string_lossy().to_string())

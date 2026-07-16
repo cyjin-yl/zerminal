@@ -7,8 +7,10 @@ use gpui::{
 use ordered_float::OrderedFloat;
 use picker::{Picker, PickerDelegate, PreviewUpdate};
 use project::{Project, Symbol, lsp_store::SymbolLocation};
+use rope::Unclipped;
 use settings::Settings;
 use std::{cmp::Reverse, sync::Arc};
+use anyhow;
 use theme::ActiveTheme;
 use theme_settings::ThemeSettings;
 use util::ResultExt;
@@ -42,7 +44,7 @@ pub struct ProjectSymbolsDelegate {
     workspace: WeakEntity<Workspace>,
     project: Entity<Project>,
     selected_match_index: usize,
-    symbols: Vec<Symbol>,
+    symbols: Vec<SymbolLocation>,
     visible_match_candidates: Vec<StringMatchCandidate>,
     external_match_candidates: Vec<StringMatchCandidate>,
     show_worktree_root_name: bool,
@@ -86,7 +88,7 @@ impl ProjectSymbolsDelegate {
         ));
         let sort_key_for_match = |mat: &StringMatch| {
             let symbol = &self.symbols[mat.candidate_id];
-            (Reverse(OrderedFloat(mat.score)), symbol.label.filter_text())
+            (Reverse(OrderedFloat(mat.score)), symbol.symbol.name.clone())
         };
 
         visible_matches.sort_unstable_by_key(sort_key_for_match);
@@ -96,7 +98,7 @@ impl ProjectSymbolsDelegate {
 
         for mat in &mut matches {
             let symbol = &self.symbols[mat.candidate_id];
-            let filter_start = symbol.label.filter_range.start;
+            let filter_start = symbol.symbol.range.start.row as usize;
             for position in &mut mat.positions {
                 *position += filter_start;
             }
@@ -124,7 +126,7 @@ impl PickerDelegate for ProjectSymbolsDelegate {
             .map(|mat| self.symbols[mat.candidate_id].clone())
         {
             let buffer = self.project.update(cx, |project, cx| {
-                project.open_buffer_for_symbol(&symbol, cx)
+                project.open_buffer_for_symbol(&symbol.symbol, cx)
             });
             let symbol = symbol.clone();
             let workspace = self.workspace.clone();
@@ -133,7 +135,7 @@ impl PickerDelegate for ProjectSymbolsDelegate {
                 workspace.update_in(cx, |workspace, window, cx| {
                     let position = buffer
                         .read(cx)
-                        .clip_point_utf16(symbol.range.start, Bias::Left);
+                        .clip_point_utf16(Unclipped(symbol.symbol.range.start), Bias::Left);
                     let pane = if secondary {
                         workspace.adjacent_pane(window, cx)
                     } else {
@@ -191,7 +193,7 @@ impl PickerDelegate for ProjectSymbolsDelegate {
     fn try_get_preview_data_for_match(&self, _cx: &App) -> Option<PreviewUpdate> {
         let candidate_id = self.matches.get(self.selected_match_index)?.candidate_id;
         let symbol = self.symbols.get(candidate_id)?.clone();
-        Some(PreviewUpdate::from_symbol(symbol))
+        Some(PreviewUpdate::from_symbol(symbol.symbol))
     }
 
     fn update_matches(
@@ -223,16 +225,13 @@ impl PickerDelegate for ProjectSymbolsDelegate {
                         .iter()
                         .enumerate()
                         .map(|(id, symbol)| {
-                            StringMatchCandidate::new(id, symbol.label.filter_text())
+                            StringMatchCandidate::new(id, &symbol.symbol.name)
                         })
                         .partition(|candidate| {
-                            if let SymbolLocation::InProject(path) = &symbols[candidate.id].path {
-                                project
-                                    .entry_for_path(path, cx)
-                                    .is_some_and(|e| !e.is_ignored)
-                            } else {
-                                false
-                            }
+                            let path = &symbols[candidate.id].path;
+                            project
+                                .entry_for_path(path, cx)
+                                .is_some_and(|e| !e.is_ignored)
                         });
 
                     delegate.visible_match_candidates = visible_match_candidates;
@@ -256,28 +255,20 @@ impl PickerDelegate for ProjectSymbolsDelegate {
         let string_match = &self.matches.get(ix)?;
         let symbol = &self.symbols.get(string_match.candidate_id)?;
         let theme = cx.theme();
-        let local_player = theme.players().local();
-        let syntax_runs = styled_runs_for_code_label(&symbol.label, theme.syntax(), &local_player);
+        let syntax_runs: Vec<(std::ops::Range<usize>, gpui::HighlightStyle)> = Vec::new();
 
-        let path = match &symbol.path {
-            SymbolLocation::InProject(project_path) => {
-                let project = self.project.read(cx);
-                let mut path = project_path.path.clone();
-                if self.show_worktree_root_name
-                    && let Some(worktree) = project.worktree_for_id(project_path.worktree_id, cx)
-                {
-                    path = worktree.read(cx).root_name().join(&path);
-                }
-                path.display(path_style).into_owned().into()
-            }
-            SymbolLocation::OutsideProject {
-                abs_path,
-                signature: _,
-            } => abs_path.to_string_lossy(),
-        };
-        let label = symbol.label.text.clone();
-        let line_number = symbol.range.start.0.row + 1;
-        let path = path.into_owned();
+        let project_path = &symbol.path;
+        let project = self.project.read(cx);
+        let mut path_str = project_path.path.clone();
+        if self.show_worktree_root_name
+            && let Some(worktree) = project.worktree_for_id(project_path.worktree_id, cx)
+        {
+            path_str = worktree.read(cx).root_name().join(&path_str);
+        }
+        let path = path_str.display(path_style).to_string();
+
+        let label = symbol.symbol.name.clone();
+        let line_number = symbol.symbol.range.start.row + 1;
 
         let settings = ThemeSettings::get_global(cx);
 

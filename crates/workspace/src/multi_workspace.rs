@@ -1201,10 +1201,10 @@ impl MultiWorkspace {
     pub fn find_or_create_workspace(
         &mut self,
         paths: PathList,
-        host: Option<String>,
+        host: Option<&str>,
         provisional_project_group_key: Option<ProjectGroupKey>,
         _connect_remote: impl FnOnce(
-            String,
+            remote::RemoteConnectionOptions,
             &mut Window,
             &mut Context<Self>,
         ) -> Task<Result<Option<Entity<remote::RemoteClient>>>>
@@ -1232,10 +1232,10 @@ impl MultiWorkspace {
     pub fn find_or_create_workspace_with_source_workspace(
         &mut self,
         paths: PathList,
-        host: Option<String>,
+        host: Option<&str>,
         provisional_project_group_key: Option<ProjectGroupKey>,
         _connect_remote: impl FnOnce(
-            String,
+            remote::RemoteConnectionOptions,
             &mut Window,
             &mut Context<Self>,
         ) -> Task<Result<Option<Entity<remote::RemoteClient>>>>
@@ -1248,7 +1248,7 @@ impl MultiWorkspace {
         cx: &mut Context<Self>,
     ) -> Task<Result<Entity<Workspace>>> {
         if let Some(workspace) =
-            self.workspace_for_paths_excluding(&paths, host.as_deref(), excluding, cx)
+            self.workspace_for_paths_excluding(&paths, host, excluding, cx)
         {
             self.activate(workspace.clone(), source_workspace, window, cx);
             return Task::ready(Ok(workspace));

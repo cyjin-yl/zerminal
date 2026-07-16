@@ -249,8 +249,10 @@ impl PickerDelegate for SidebarRecentProjectsDelegate {
                     });
                 }
             }
-            SerializedWorkspaceLocation::Remote(connection) => {
-                let mut connection = connection.clone();
+            SerializedWorkspaceLocation::Remote(_host) => {
+                // Remote project reopening stubbed (spec §8.2 M3)
+                let workspace = workspace.clone();
+                let paths = recent_workspace.paths.paths().to_vec();
                 workspace.update(cx, |workspace, cx| {
                     let app_state = workspace.app_state().clone();
                     let replace_window = window.window_handle().downcast::<MultiWorkspace>();
@@ -258,21 +260,11 @@ impl PickerDelegate for SidebarRecentProjectsDelegate {
                         requesting_window: replace_window,
                         ..Default::default()
                     };
-                    if let RemoteConnectionOptions::Ssh(connection) = &mut connection {
-                        crate::RemoteSettings::get_global(cx)
-                            .fill_connection_options_from_settings(connection);
-                    };
-                    let paths = recent_workspace.paths.paths().to_vec();
                     cx.spawn_in(window, async move |_, cx| {
-                        open_remote_project(connection.clone(), paths, app_state, open_options, cx)
-                            .await
+                        // Stub: remote project no longer supported
+                        let _ = (paths, app_state, open_options);
                     })
-                    .detach_and_prompt_err(
-                        "Failed to open project",
-                        window,
-                        cx,
-                        |_, _, _| None,
-                    );
+                    .detach();
                 });
             }
         }
@@ -307,8 +299,7 @@ impl PickerDelegate for SidebarRecentProjectsDelegate {
             .collect();
 
         let tooltip_path: SharedString = match &workspace.location {
-            SerializedWorkspaceLocation::Remote(options) => {
-                let host = options.display_name();
+            SerializedWorkspaceLocation::Remote(host) => {
                 if ordered_paths.len() == 1 {
                     format!("{} ({})", ordered_paths[0], host).into()
                 } else {
@@ -332,9 +323,7 @@ impl PickerDelegate for SidebarRecentProjectsDelegate {
             .collect();
 
         let prefix = match &workspace.location {
-            SerializedWorkspaceLocation::Remote(options) => {
-                Some(SharedString::from(options.display_name()))
-            }
+            SerializedWorkspaceLocation::Remote(host) => Some(host.clone().into()),
             _ => None,
         };
 
@@ -347,7 +336,7 @@ impl PickerDelegate for SidebarRecentProjectsDelegate {
 
         let icon = icon_for_remote_connection(match &workspace.location {
             SerializedWorkspaceLocation::Local => None,
-            SerializedWorkspaceLocation::Remote(options) => Some(options),
+            SerializedWorkspaceLocation::Remote(host) => Some(host.as_str()),
         });
 
         Some(
