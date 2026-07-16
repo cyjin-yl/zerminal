@@ -7,7 +7,6 @@ use gpui::{
     Window, WindowId, actions, deferred, px,
 };
 use project::{Project, WorktreePaths};
-use remote::RemoteConnectionOptions;
 use settings::{SettingsFile, SettingsStore};
 pub use settings::SidebarSide;
 use std::cell::Cell;
@@ -268,17 +267,17 @@ impl<T: Sidebar> SidebarHandle for Entity<T> {
 /// 将其下沉到 workspace crate 内部，仅保留路径分组与远程 host 标记。
 #[derive(Clone, Debug, Eq, PartialEq, Hash)]
 pub struct ProjectGroupKey {
-    host: Option<RemoteConnectionOptions>,
+    host: Option<String>,
     path_list: PathList,
 }
 
 impl ProjectGroupKey {
-    pub fn new(host: Option<RemoteConnectionOptions>, path_list: PathList) -> Self {
+    pub fn new(host: Option<String>, path_list: PathList) -> Self {
         Self { host, path_list }
     }
 
-    pub fn host(&self) -> Option<&RemoteConnectionOptions> {
-        self.host.as_ref()
+    pub fn host(&self) -> Option<&str> {
+        self.host.as_deref()
     }
 
     pub fn path_list(&self) -> &PathList {
@@ -292,9 +291,14 @@ impl ProjectGroupKey {
 
     pub fn from_worktree_paths(
         worktree_paths: WorktreePaths,
-        host: Option<RemoteConnectionOptions>,
+        host: Option<String>,
     ) -> Self {
         Self::new(host, worktree_paths.main_worktree_path_list().clone())
+    }
+
+    /// Stub: matches (remote 已删除，始终返回 true)
+    pub fn matches(&self, other: &ProjectGroupKey) -> bool {
+        self.path_list == other.path_list
     }
 }
 
@@ -609,7 +613,7 @@ impl MultiWorkspace {
                     if let Some(workspace) = workspace.upgrade() {
                         // 规范 §2.1：Project::remote_connection_options 已随远程项目类型删除，
                         // 本地工作区 host 固定为 None。
-                        let host: Option<RemoteConnectionOptions> = None;
+                        let host: Option<String> = None;
                         let old_key = ProjectGroupKey::from_worktree_paths(
                             old_worktree_paths.clone(),
                             host,
@@ -1152,7 +1156,7 @@ impl MultiWorkspace {
     pub fn workspace_for_paths(
         &self,
         path_list: &PathList,
-        host: Option<&RemoteConnectionOptions>,
+        host: Option<&str>,
         cx: &App,
     ) -> Option<Entity<Workspace>> {
         self.workspace_for_paths_excluding(path_list, host, &[], cx)
@@ -1161,7 +1165,7 @@ impl MultiWorkspace {
     fn workspace_for_paths_excluding(
         &self,
         path_list: &PathList,
-        host: Option<&RemoteConnectionOptions>,
+        host: Option<&str>,
         excluding: &[Entity<Workspace>],
         cx: &App,
     ) -> Option<Entity<Workspace>> {
@@ -1197,10 +1201,10 @@ impl MultiWorkspace {
     pub fn find_or_create_workspace(
         &mut self,
         paths: PathList,
-        host: Option<RemoteConnectionOptions>,
+        host: Option<String>,
         provisional_project_group_key: Option<ProjectGroupKey>,
         _connect_remote: impl FnOnce(
-            RemoteConnectionOptions,
+            String,
             &mut Window,
             &mut Context<Self>,
         ) -> Task<Result<Option<Entity<remote::RemoteClient>>>>
@@ -1228,10 +1232,10 @@ impl MultiWorkspace {
     pub fn find_or_create_workspace_with_source_workspace(
         &mut self,
         paths: PathList,
-        host: Option<RemoteConnectionOptions>,
+        host: Option<String>,
         provisional_project_group_key: Option<ProjectGroupKey>,
         _connect_remote: impl FnOnce(
-            RemoteConnectionOptions,
+            String,
             &mut Window,
             &mut Context<Self>,
         ) -> Task<Result<Option<Entity<remote::RemoteClient>>>>
@@ -1244,7 +1248,7 @@ impl MultiWorkspace {
         cx: &mut Context<Self>,
     ) -> Task<Result<Entity<Workspace>>> {
         if let Some(workspace) =
-            self.workspace_for_paths_excluding(&paths, host.as_ref(), excluding, cx)
+            self.workspace_for_paths_excluding(&paths, host.as_deref(), excluding, cx)
         {
             self.activate(workspace.clone(), source_workspace, window, cx);
             return Task::ready(Ok(workspace));
@@ -1592,7 +1596,7 @@ impl MultiWorkspace {
                             .project_groups
                             .iter()
                             .map(|group| {
-                                let location = match group.key.host().cloned() {
+                                let location = match group.key.host().map(|s| s.to_string()) {
                                     Some(host) => crate::persistence::model::SerializedWorkspaceLocation::Remote(host),
                                     None => crate::persistence::model::SerializedWorkspaceLocation::Local,
                                 };

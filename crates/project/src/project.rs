@@ -153,10 +153,13 @@ pub enum Event {
     },
     /// Stub variants for deleted diagnostic/remote features (spec §8.2 M2)
     DiskBasedDiagnosticsStarted,
-    DiskBasedDiagnosticsFinished,
-    DiagnosticsUpdated,
-    LanguageServerRemoved,
-    DisconnectedFromRemote,
+    DiskBasedDiagnosticsFinished { language_server_id: lsp::LanguageServerId },
+    DiagnosticsUpdated {
+        paths: Vec<Arc<util::rel_path::RelPath>>,
+        language_server_id: lsp::LanguageServerId,
+    },
+    LanguageServerRemoved(lsp::LanguageServerId),
+    DisconnectedFromRemote { server_not_running: bool },
     DisconnectedFromHost,
     LanguageNotFound(Entity<language::Buffer>),
 }

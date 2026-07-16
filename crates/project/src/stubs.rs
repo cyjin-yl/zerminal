@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use fs::Fs;
 use extension::ExtensionProvides;
 use text::Anchor;
+use worktree::ProjectEntryId;
 
 pub type CompletionId = u64;
 
@@ -194,10 +195,23 @@ pub struct Color {
 // ---------------------------------------------------------------------------
 
 #[derive(Clone, Debug)]
+pub struct SymbolLabel {
+    pub text: String,
+}
+
+impl SymbolLabel {
+    pub fn filter_text(&self) -> &str {
+        &self.text
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct Symbol {
     pub name: String,
     pub kind: lsp::SymbolKind,
     pub range: Range<language::PointUtf16>,
+    pub label: SymbolLabel,
+    pub path: Option<ProjectPath>,
 }
 
 
@@ -567,6 +581,14 @@ pub mod lsp_store {
             None
         }
     }
+
+    /// Stub: SymbolLocation (from lsp_store crate)
+    #[derive(Clone, Debug)]
+    pub struct SymbolLocation {
+        pub symbol: super::Symbol,
+        pub path: ProjectPath,
+    }
+
 }
 
 // ---------------------------------------------------------------------------
@@ -1061,6 +1083,83 @@ impl Project {
     ) -> gpui::Task<anyhow::Result<Entity<language::Buffer>>> {
         gpui::Task::ready(Err(anyhow::anyhow!("stub: create_buffer")))
     }
+
+    /// 返回搜索历史可变引用
+    pub fn search_history_mut(
+        &mut self,
+        kind: crate::search::SearchInputKind,
+    ) -> &mut crate::search_history::SearchHistory {
+        match kind {
+            crate::search::SearchInputKind::Query => &mut self.search_history,
+            crate::search::SearchInputKind::Include => &mut self.search_included_history,
+            crate::search::SearchInputKind::Exclude => &mut self.search_excluded_history,
+        }
+    }
+
+    /// 返回搜索历史引用
+    pub fn search_history(
+        &self,
+        kind: crate::search::SearchInputKind,
+    ) -> &crate::search_history::SearchHistory {
+        match kind {
+            crate::search::SearchInputKind::Query => &self.search_history,
+            crate::search::SearchInputKind::Include => &self.search_included_history,
+            crate::search::SearchInputKind::Exclude => &self.search_excluded_history,
+        }
+    }
+
+    /// 执行项目搜索
+    pub fn search(
+        &mut self,
+        _query: crate::search::SearchQuery,
+        _cx: &mut gpui::Context<Self>,
+    ) -> gpui::Task<anyhow::Result<()>> {
+        gpui::Task::ready(Ok(()))
+    }
+
+    /// 是否支持终端
+    pub fn supports_terminal(&self, _cx: &App) -> bool {
+        true
+    }
+
+    /// 当前活动项目目录
+    pub fn active_project_directory(
+        &mut self,
+        _cx: &mut gpui::Context<Self>,
+    ) -> Option<std::path::PathBuf> {
+        None
+    }
+
+    /// 当前活动项目目录 (const ref)
+    pub fn active_entry_directory(
+        &self,
+        _cx: &App,
+    ) -> Option<std::path::PathBuf> {
+        None
+    }
+
+    /// 是否远程项目
+    pub fn is_remote(&self) -> bool {
+        false
+    }
+
+    /// 根据 entry_id 获取路径
+    pub fn path_for_entry(
+        &self,
+        _entry_id: ProjectEntryId,
+        _cx: &App,
+    ) -> std::path::PathBuf {
+        std::path::PathBuf::new()
+    }
+
+    /// 获取符号列表
+    pub fn symbols(
+        &mut self,
+        _query: &str,
+        _cx: &mut gpui::Context<Self>,
+    ) -> gpui::Task<anyhow::Result<Vec<crate::lsp_store::SymbolLocation>>> {
+        gpui::Task::ready(Ok(Vec::new()))
+    }
 }
 
 /// Stub: FileFinderSettings (open_path_prompt 模块已删除)
@@ -1133,8 +1232,9 @@ impl settings::Settings for VimModeSetting {
 pub type TaskId = u64;
 
 /// Stub: RevealStrategy (open_path_prompt crate 已删除)
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum RevealStrategy {
+    #[default]
     Center,
     Top,
     Always,
@@ -1143,15 +1243,17 @@ pub enum RevealStrategy {
 }
 
 /// Stub: RevealTarget (open_path_prompt crate 已删除)
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub enum RevealTarget {
+    #[default]
     Center,
     Dock,
 }
 
 /// Stub: Shell (task crate 已删除)
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Default)]
 pub enum Shell {
+    #[default]
     System,
     Program(Arc<ShellConfig>),
 }
@@ -1170,21 +1272,47 @@ pub struct ShellBuilder {
 }
 
 impl ShellBuilder {
-    pub fn new() -> Self {
-        Self {
-            program: String::new(),
-            args: Vec::new(),
+    pub fn new(shell: &Shell, _is_windows: bool) -> Self {
+        let (program, args) = match shell {
+            Shell::System => (util::get_system_shell(), Vec::new()),
+            Shell::Program(config) => (config.program.clone(), config.args.clone()),
+        };
+        Self { program, args }
+    }
+
+    /// 生成命令标签字符串
+    pub fn command_label(&self, command: &str) -> String {
+        if command.is_empty() {
+            self.program.clone()
+        } else {
+            format!("{} {}", self.program, command)
+        }
+    }
+
+    /// 构建命令和参数 (no shell quoting)
+    pub fn build_no_quote(&self, command: Option<String>, _args: &[String]) -> (String, Vec<String>) {
+        let mut all_args = self.args.clone();
+        if let Some(cmd) = command {
+            if !cmd.is_empty() {
+                all_args.push("-c".to_string());
+                all_args.push(cmd);
+                (self.program.clone(), all_args)
+            } else {
+                (self.program.clone(), all_args)
+            }
+        } else {
+            (self.program.clone(), all_args)
         }
     }
 }
 
 /// Stub: SpawnInTerminal (task crate 已删除)
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct SpawnInTerminal {
     pub program: String,
     pub args: Vec<String>,
     pub working_directory: Option<ProjectPath>,
-    pub shell: Option<Shell>,
+    pub shell: Shell,
     pub allow_concurrent_runs: bool,
     pub use_new_terminal: bool,
     pub full_label: String,
@@ -1192,10 +1320,40 @@ pub struct SpawnInTerminal {
     pub reveal: RevealStrategy,
     pub reveal_target: RevealTarget,
     pub command: String,
+    pub label: String,
+    pub command_label: String,
+    pub show_summary: bool,
+    pub show_command: bool,
+    pub show_rerun: bool,
+    pub env: std::collections::HashMap<String, String>,
+    pub cwd: Option<std::path::PathBuf>,
 }
 
 /// Stub: Breadcrumbs (breadcrumbs crate 已删除)
 #[derive(Debug, Clone)]
 pub struct Breadcrumbs {}
 
+impl Breadcrumbs {
+    pub fn new() -> Self {
+        Self {}
+    }
+}
 
+/// Stub: path_suffix (from project crate, 已删除)
+pub fn path_suffix(path: &std::path::Path, detail: bool) -> String {
+    let _ = detail;
+    path.file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| path.to_string_lossy().to_string())
+}
+
+/// Stub: TerminalDockPosition re-export from settings
+pub use settings::TerminalDockPosition;
+
+/// Stub: SearchResults (task crate 已删除)
+pub struct SearchResults<T> {
+    pub rx: futures::channel::mpsc::UnboundedReceiver<T>,
+}
+
+/// Stub: Search alias for SearchQuery (task crate 已删除)
+pub type Search = crate::search::SearchQuery;

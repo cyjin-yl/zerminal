@@ -53,6 +53,8 @@ pub struct SpawnInTerminal {
     pub hide: HideStrategy,
     pub show_summary: bool,
     pub show_command: bool,
+    pub id: u64,
+    pub show_rerun: bool,
 }
 
 #[cfg(unix)]

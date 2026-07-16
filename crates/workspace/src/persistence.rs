@@ -1055,7 +1055,7 @@ impl WorkspaceDb {
         Some(SerializedWorkspace {
             id: workspace_id,
             location: match remote_connection_options {
-                Some(options) => SerializedWorkspaceLocation::Remote(options),
+                Some(options) => SerializedWorkspaceLocation::Remote(options.display_name()),
                 None => SerializedWorkspaceLocation::Local,
             },
             paths,
@@ -1158,7 +1158,7 @@ impl WorkspaceDb {
         Some(SerializedWorkspace {
             id: workspace_id,
             location: match remote_connection_options {
-                Some(options) => SerializedWorkspaceLocation::Remote(options),
+                Some(options) => SerializedWorkspaceLocation::Remote(options.display_name()),
                 None => SerializedWorkspaceLocation::Local,
             },
             paths,
@@ -1259,11 +1259,9 @@ impl WorkspaceDb {
             conn.with_savepoint("update_worktrees", || {
                 let remote_connection_id = match workspace.location.clone() {
                     SerializedWorkspaceLocation::Local => None,
-                    SerializedWorkspaceLocation::Remote(connection_options) => {
-                        Some(Self::get_or_create_remote_connection_internal(
-                            conn,
-                            connection_options
-                        )?.0)
+                    SerializedWorkspaceLocation::Remote(_name) => {
+                        // 规范 §8.2：远程连接已移除，跳过
+                        None
                     }
                 };
 
@@ -1758,7 +1756,7 @@ impl WorkspaceDb {
                 if let Some(connection_options) = remote_connections.get(&remote_connection_id) {
                     result.push(RecentWorkspace {
                         workspace_id: id,
-                        location: SerializedWorkspaceLocation::Remote(connection_options.clone()),
+                        location: SerializedWorkspaceLocation::Remote(connection_options.display_name()),
                         paths: paths.clone(),
                         identity_paths: identity_paths_hint.unwrap_or(paths),
                         timestamp,
@@ -1805,8 +1803,8 @@ impl WorkspaceDb {
         let target_paths = &target.identity_paths;
         let target_remote_connection = match &target.location {
             SerializedWorkspaceLocation::Local => None,
-            SerializedWorkspaceLocation::Remote(connection) => {
-                Some(remote_connection_identity(connection))
+            SerializedWorkspaceLocation::Remote(_name) => {
+                None
             }
         };
 
@@ -1923,7 +1921,7 @@ impl WorkspaceDb {
                 workspaces.push(SessionWorkspace {
                     workspace_id,
                     location: SerializedWorkspaceLocation::Remote(
-                        self.remote_connection(remote_connection_id)?,
+                        self.remote_connection(remote_connection_id)?.display_name(),
                     ),
                     paths,
                     window_id,
@@ -2396,7 +2394,14 @@ pub struct RecentWorkspace {
 }
 
 // 规范 §2.1 / §15.1：project::ProjectGroupKey 已删除；
-// RecentWorkspace 不再提供 project_group_key 转换方法。
+// RecentWorkspace 提供 project_group_key 方法 (stub: 返回本地 key)
+
+impl RecentWorkspace {
+    /// 返回 project group key (stub: 本地项目无 host)
+    pub fn project_group_key(&self) -> crate::ProjectGroupKey {
+        crate::ProjectGroupKey::new(None, self.paths.clone())
+    }
+}
 
 async fn resolve_local_workspace_identity(fs: &dyn Fs, paths: &PathList) -> Option<PathList> {
     let raw_paths = paths.paths();
@@ -2434,8 +2439,8 @@ fn dedupe_recent_workspaces(
     for workspace in workspaces {
         let location_identity = match &workspace.location {
             SerializedWorkspaceLocation::Local => None,
-            SerializedWorkspaceLocation::Remote(connection) => {
-                Some(remote_connection_identity(connection))
+            SerializedWorkspaceLocation::Remote(_name) => {
+                None
             }
         };
         let key = (location_identity, workspace.identity_paths.paths().to_vec());

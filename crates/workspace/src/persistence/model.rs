@@ -41,7 +41,7 @@ pub(crate) enum RemoteConnectionKind {
 #[derive(Debug, PartialEq, Clone, serde::Serialize, serde::Deserialize)]
 pub enum SerializedWorkspaceLocation {
     Local,
-    Remote(RemoteConnectionOptions),
+    Remote(String),
 }
 
 impl SerializedWorkspaceLocation {

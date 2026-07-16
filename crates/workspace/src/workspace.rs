@@ -7198,6 +7198,12 @@ impl Workspace {
     ) -> Task<anyhow::Result<gpui::AnyView>> {
         Task::ready(Err(anyhow::anyhow!("stub: open_resolved_path")))
     }
+
+    /// 返回当前工作区的 project group key
+    pub fn project_group_key(&self, cx: &App) -> ProjectGroupKey {
+        ProjectGroupKey::from_project(&self.project, cx)
+    }
+
 }
 
 #[derive(Clone)]
@@ -7778,8 +7784,10 @@ pub async fn restore_multiworkspace(
 
             let mut fallback_handle = None;
             for group in &state.project_groups {
-                let host = match &group.location {
-                    persistence::model::SerializedWorkspaceLocation::Remote(options) => Some(options.clone()),
+                let host: Option<String> = match &group.location {
+                    persistence::model::SerializedWorkspaceLocation::Remote(options) => {
+                        Some(options.clone())
+                    }
                     persistence::model::SerializedWorkspaceLocation::Local => None,
                 };
                 let key = ProjectGroupKey::new(host, PathList::deserialize(&group.path_list));
@@ -7841,8 +7849,10 @@ pub async fn apply_restored_multiworkspace_state(
         // stale keys from previous sessions get normalized and deduped.
         let mut resolved_groups: Vec<SerializedProjectGroupState> = Vec::new();
         for serialized in project_groups.iter().cloned() {
-            let host = match &serialized.location {
-                persistence::model::SerializedWorkspaceLocation::Remote(options) => Some(options.clone()),
+            let host: Option<String> = match &serialized.location {
+                persistence::model::SerializedWorkspaceLocation::Remote(options) => {
+                    Some(options.clone())
+                }
                 persistence::model::SerializedWorkspaceLocation::Local => None,
             };
             let key = ProjectGroupKey::new(host, PathList::deserialize(&serialized.path_list));
@@ -7862,7 +7872,7 @@ pub async fn apply_restored_multiworkspace_state(
                     resolved_paths.push(path.to_path_buf());
                 }
             }
-            let resolved = ProjectGroupKey::new(key.host().cloned(), PathList::new(&resolved_paths));
+            let resolved = ProjectGroupKey::new(key.host().map(|s| s.to_string()), PathList::new(&resolved_paths));
             if !resolved_groups.iter().any(|g| g.key == resolved) {
                 resolved_groups.push(SerializedProjectGroupState {
                     key: resolved,

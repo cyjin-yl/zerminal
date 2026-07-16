@@ -1,7 +1,4 @@
-mod dev_container_suggest;
 pub mod disconnected_overlay;
-mod remote_connections;
-mod remote_servers;
 pub mod sidebar_recent_projects;
 mod ssh_config;
 
@@ -17,9 +14,6 @@ use fs::Fs;
 #[cfg(target_os = "windows")]
 mod wsl_picker;
 
-use remote::RemoteConnectionOptions;
-pub use remote_connection::{RemoteConnectionModal, connect, connect_with_modal};
-pub use remote_connections::{navigate_to_positions, open_remote_project};
 
 use disconnected_overlay::DisconnectedOverlay;
 use fuzzy_nucleo::{StringMatch, StringMatchCandidate, match_strings};
@@ -33,8 +27,6 @@ use picker::{
     highlighted_match_with_paths::{HighlightedMatch, HighlightedMatchWithPaths},
 };
 use project::{Worktree, git_store::Repository};
-pub use remote_connections::RemoteSettings;
-pub use remote_servers::RemoteServerProjects;
 use settings::{DefaultOpenBehavior, Settings, WorktreeId};
 use workspace::ProjectGroupKey;
 
