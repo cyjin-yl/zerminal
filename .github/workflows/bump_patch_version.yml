@@ -32,7 +32,7 @@ jobs:
     - id: channel
       name: bump_patch_version::run_bump_patch_version::read_channel
       run: |
-        channel="$(cat crates/zerminal/RELEASE_CHANNEL)"
+        channel="$(cat crates/z3rm/RELEASE_CHANNEL)"
 
         tag_suffix=""
         case $channel in
