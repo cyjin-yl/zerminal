@@ -10,7 +10,6 @@ use picker::{Picker, PickerDelegate};
 use project::git_store::{Repository, RepositoryEvent};
 use std::sync::Arc;
 use time::{OffsetDateTime, UtcOffset};
-use time_format;
 use ui::{HighlightedLabel, KeyBinding, ListItem, ListItemSpacing, Tooltip, prelude::*};
 use util::ResultExt;
 use workspace::notifications::DetachAndPromptErr;
@@ -276,22 +275,22 @@ impl StashListDelegate {
     fn format_timestamp(timestamp: i64, timezone: UtcOffset) -> String {
         let timestamp =
             OffsetDateTime::from_unix_timestamp(timestamp).unwrap_or(OffsetDateTime::now_utc());
-        time_format::format_localized_timestamp(
+        util::time::format_localized_timestamp(
             timestamp,
             OffsetDateTime::now_utc(),
             timezone,
-            time_format::TimestampFormat::Relative,
+            util::time::TimestampFormat::Relative,
         )
     }
 
     fn format_absolute_timestamp(timestamp: i64, timezone: UtcOffset) -> String {
         let timestamp =
             OffsetDateTime::from_unix_timestamp(timestamp).unwrap_or(OffsetDateTime::now_utc());
-        time_format::format_localized_timestamp(
+        util::time::format_localized_timestamp(
             timestamp,
             OffsetDateTime::now_utc(),
             timezone,
-            time_format::TimestampFormat::EnhancedAbsolute,
+            util::time::TimestampFormat::EnhancedAbsolute,
         )
     }
 

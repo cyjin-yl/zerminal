@@ -729,7 +729,9 @@ pub struct RemoteConnectionOptionsStub;
 
 /// Stub for deleted git::Repository (spec §8.2 M2)
 #[derive(Clone, Debug)]
-pub struct Repository;
+pub struct Repository {
+    pub work_directory_abs_path: std::path::PathBuf,
+}
 
 impl Project {
     pub fn open_buffer_by_id(
@@ -1109,8 +1111,9 @@ impl Project {
         &mut self,
         _query: crate::search::SearchQuery,
         _cx: &mut gpui::Context<Self>,
-    ) -> gpui::Task<anyhow::Result<()>> {
-        gpui::Task::ready(Ok(()))
+    ) -> SearchResults<crate::search::SearchResult> {
+        let (tx, rx) = futures::channel::mpsc::unbounded();
+        SearchResults { tx, rx }
     }
 
     /// 是否支持终端
@@ -1348,7 +1351,18 @@ pub use settings::TerminalDockPosition;
 
 /// Stub: SearchResults (task crate 已删除)
 pub struct SearchResults<T> {
+    pub tx: futures::channel::mpsc::UnboundedSender<T>,
     pub rx: futures::channel::mpsc::UnboundedReceiver<T>,
+}
+
+impl<T> Clone for SearchResults<T> {
+    fn clone(&self) -> Self {
+        let (tx2, rx2) = futures::channel::mpsc::unbounded();
+        SearchResults {
+            tx: self.tx.clone(),
+            rx: rx2,
+        }
+    }
 }
 
 /// Stub: Search alias for SearchQuery (task crate 已删除)

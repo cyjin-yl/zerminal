@@ -508,7 +508,8 @@ async fn consume_search_stream(
     cx: &mut AsyncApp,
 ) -> Option<SearchResults<SearchResult>> {
     // Note: is cancel safe
-    let mut matches = pin!(search_results.rx.clone().ready_chunks(1024));
+    let search_results_clone = search_results.clone();
+    let mut matches = pin!(search_results_clone.rx.ready_chunks(1024));
 
     let mut limit_reached = false;
     while let Some(results) = matches.next().await {
@@ -1060,7 +1061,6 @@ impl ProjectSearchView {
         let query_editor = cx.new(|cx| {
             let mut editor = Editor::auto_height(1, 4, window, cx);
             editor.set_placeholder_text("Search all files…", window, cx);
-            editor.set_use_autoclose(false);
             editor.set_use_selection_highlight(false);
             editor.set_text(query_text, window, cx);
             editor

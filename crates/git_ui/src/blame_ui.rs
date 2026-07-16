@@ -2,7 +2,7 @@ use crate::{
     commit_tooltip::{CommitAvatar, CommitTooltip, commit_tag_chips},
     commit_view::CommitView,
 };
-use editor::{BlameRenderer, Editor, hover_markdown_style};
+use editor::{BlameRenderer, Editor};
 use git::{blame::BlameEntry, commit::ParsedCommitMessage, repository::CommitSummary};
 use gpui::{
     ClipboardItem, Entity, Hsla, MouseButton, ScrollHandle, Subscription, TextStyle,
@@ -307,15 +307,15 @@ impl BlameRenderer for GitBlameRenderer {
             .map(|sha| sha.to_string().into())
             .unwrap_or_else(|| sha.clone());
         let local_offset = time::UtcOffset::current_local_offset().unwrap_or(time::UtcOffset::UTC);
-        let absolute_timestamp = time_format::format_localized_timestamp(
+        let absolute_timestamp = util::time::format_localized_timestamp(
             commit_time,
             OffsetDateTime::now_utc(),
             local_offset,
-            time_format::TimestampFormat::MediumAbsolute,
+            util::time::TimestampFormat::MediumAbsolute,
         );
         let link_color = cx.theme().colors().text_accent;
         let markdown_style = {
-            let mut style = hover_markdown_style(window, cx);
+            let mut style = TextStyle::default();
             style.link.refine(&TextStyleRefinement {
                 color: Some(link_color),
                 underline: Some(UnderlineStyle {
@@ -527,11 +527,11 @@ fn blame_entry_relative_timestamp(blame_entry: &BlameEntry) -> String {
         Ok(timestamp) => {
             let local_offset =
                 time::UtcOffset::current_local_offset().unwrap_or(time::UtcOffset::UTC);
-            time_format::format_localized_timestamp(
+            util::time::format_localized_timestamp(
                 timestamp,
                 time::OffsetDateTime::now_utc(),
                 local_offset,
-                time_format::TimestampFormat::Relative,
+                util::time::TimestampFormat::Relative,
             )
         }
         Err(_) => "Error parsing date".to_string(),

@@ -186,7 +186,7 @@ pub async fn delete_recent_project(workspace_id: WorkspaceId, db: &WorkspaceDb) 
 
 fn get_open_folders(workspace: &Workspace, cx: &App) -> Vec<OpenFolderEntry> {
     let project = workspace.project().read(cx);
-    let connection_options = project.remote_connection_options(cx);
+    let connection_options = project.remote_connection_options();
     let visible_worktrees: Vec<_> = project.visible_worktrees(cx).collect();
 
     if visible_worktrees.len() <= 1 {
@@ -194,11 +194,11 @@ fn get_open_folders(workspace: &Workspace, cx: &App) -> Vec<OpenFolderEntry> {
     }
 
     let active_worktree_id = if let Some(repo) = project.active_repository(cx) {
-        let repo = repo.read(cx);
+        let repo = &*repo;
         let repo_path = &repo.work_directory_abs_path;
         project.visible_worktrees(cx).find_map(|worktree| {
             let worktree_path = worktree.read(cx).abs_path();
-            (worktree_path == *repo_path || worktree_path.starts_with(repo_path.as_ref()))
+            (worktree_path.as_ref() == repo_path.as_path() || worktree_path.as_ref().starts_with(repo_path.as_path()))
                 .then(|| worktree.read(cx).id())
         })
     } else {
@@ -515,15 +515,15 @@ pub fn init(cx: &mut App) {
             }
 
             let fs = workspace.project().read(cx).fs().clone();
-            let configs = find_devcontainer_configs(workspace, cx);
+            let configs = find_devcontainer_configs(&cx.entity(), cx);
             let app_state = workspace.app_state().clone();
-            let dev_container_context = DevContainerContext::from_workspace(workspace, cx);
+            let dev_container_context = DevContainerContext::from_workspace(&cx.entity(), cx);
             let handle = cx.entity().downgrade();
             workspace.toggle_modal(window, cx, |window, cx| {
                 RemoteServerProjects::new_dev_container(
                     fs,
                     configs,
-                    app_state,
+                    &app_state,
                     dev_container_context,
                     window,
                     handle,
@@ -2424,9 +2424,9 @@ impl RecentProjectsDelegate {
 pub async fn open_remote_project(
     _connection_options: RemoteConnectionOptions,
     _paths: Vec<std::path::PathBuf>,
-    _app_state: &workspace::AppState,
+    _app_state: std::sync::Arc<workspace::AppState>,
     _open_options: workspace::OpenOptions,
-    _cx: &mut gpui::App,
+    _cx: &mut gpui::AsyncWindowContext,
 ) -> anyhow::Result<()> {
     Ok(())
 }

@@ -3904,7 +3904,7 @@ impl GitGraph {
             return Empty.into_any_element();
         };
 
-        let message_style = editor::hover_markdown_style(window, cx);
+        let message_style = editor::TextStyle::default();
         let rem_size = window.rem_size();
         let line_height = message_style
             .base_text_style

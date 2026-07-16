@@ -1,5 +1,5 @@
 use crate::commit_view::CommitView;
-use editor::hover_markdown_style;
+
 use futures::Future;
 use git::blame::BlameEntry;
 use git::repository::CommitSummary;
@@ -290,14 +290,14 @@ impl Render for CommitTooltip {
             .unwrap_or_else(|| self.commit.sha.clone());
         let full_sha = self.commit.sha.to_string();
         let local_offset = UtcOffset::current_local_offset().unwrap_or(UtcOffset::UTC);
-        let absolute_timestamp = time_format::format_localized_timestamp(
+        let absolute_timestamp = util::time::format_localized_timestamp(
             self.commit.commit_time,
             OffsetDateTime::now_utc(),
             local_offset,
-            time_format::TimestampFormat::MediumAbsolute,
+            util::time::TimestampFormat::MediumAbsolute,
         );
         let markdown_style = {
-            let style = hover_markdown_style(window, cx);
+            let style = TextStyle::default();
             style
         };
 
@@ -455,7 +455,7 @@ fn blame_entry_timestamp(blame_entry: &BlameEntry, format: time_format::Timestam
     match blame_entry.author_offset_date_time() {
         Ok(timestamp) => {
             let local_offset = UtcOffset::current_local_offset().unwrap_or(UtcOffset::UTC);
-            time_format::format_localized_timestamp(
+            util::time::format_localized_timestamp(
                 timestamp,
                 time::OffsetDateTime::now_utc(),
                 local_offset,
@@ -467,5 +467,5 @@ fn blame_entry_timestamp(blame_entry: &BlameEntry, format: time_format::Timestam
 }
 
 pub fn blame_entry_relative_timestamp(blame_entry: &BlameEntry) -> String {
-    blame_entry_timestamp(blame_entry, time_format::TimestampFormat::Relative)
+    blame_entry_timestamp(blame_entry, util::time::TimestampFormat::Relative)
 }

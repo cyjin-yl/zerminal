@@ -650,7 +650,7 @@ pub trait DiagnosticRenderer: Send + Sync {
         editor: WeakEntity<crate::Editor>,
         language_registry: Option<Arc<LanguageRegistry>>,
         cx: &mut App,
-    ) -> Vec<BlockProperties<Anchor>>;
+    ) -> Vec<crate::display_map::BlockProperties<multi_buffer::Anchor>>;
 
     fn render_hover(
         &self,
@@ -674,7 +674,7 @@ impl Clone for Box<dyn DiagnosticRenderer> {
     fn clone(&self) -> Self { self.clone_box() }
 }
 
-pub fn set_diagnostic_renderer(_renderer: Option<Box<dyn DiagnosticRenderer>>) {}
+pub fn set_diagnostic_renderer(_renderer: Option<Box<dyn DiagnosticRenderer>>, _cx: &mut gpui::App) {}
 
 #[derive(Clone, Debug, Default)]
 pub struct GlobalDiagnosticRenderer;

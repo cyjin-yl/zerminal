@@ -10026,6 +10026,8 @@ impl Editor {
     /// Stub: go_to_diagnostic_at_cursor
     pub fn go_to_diagnostic_at_cursor(
         &mut self,
+        _direction: crate::Direction,
+        _filter: project::project_settings::GoToDiagnosticSeverityFilter,
         _window: &mut Window,
         _cx: &mut Context<Self>,
     ) {

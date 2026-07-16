@@ -109,7 +109,7 @@ impl BufferDiagnosticsEditor {
                     // `BufferDiagnosticsEditor` should update its state only if
                     // one of the paths matches its `project_path`, otherwise
                     // the event should be ignored.
-                    if paths.contains(&buffer_diagnostics_editor.project_path) {
+                    if paths.iter().any(|p| p.as_ref() == buffer_diagnostics_editor.project_path.path.as_ref()) {
                         buffer_diagnostics_editor.update_diagnostic_summary(cx);
 
                         if buffer_diagnostics_editor.editor.focus_handle(cx).contains_focused(window, cx) || buffer_diagnostics_editor.focus_handle.contains_focused(window, cx) {
@@ -980,7 +980,7 @@ impl DiagnosticsToolbarEditor for WeakEntity<BufferDiagnosticsEditor> {
                     .project
                     .read(cx)
                     .language_servers_running_disk_based_diagnostics(cx)
-                    .next()
+                    .first()
                     .is_some()
         })
         .unwrap_or(false)

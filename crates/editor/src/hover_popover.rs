@@ -11,8 +11,8 @@ pub fn diagnostics_markdown_style(_window: &Window, _cx: &App) -> markdown::Mark
 
 /// Stub: open_markdown_url (spec §8.2 M2)
 pub fn open_markdown_url(
+    _workspace: Option<gpui::Entity<workspace::Workspace>>,
     _url: SharedString,
-    _editor: &mut Editor,
     _window: &mut Window,
     _cx: &mut Context<Editor>,
 ) {

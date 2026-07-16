@@ -48,7 +48,7 @@ impl Render for ToolbarControls {
             None => {}
         }
 
-        let is_agent_enabled = AgentSettings::get_global(cx).enabled(cx);
+        let is_agent_enabled = false; // agent_settings crate 已移除
 
         let (warning_tooltip, warning_color) = if include_warnings {
             ("Exclude Warnings", Color::Warning)

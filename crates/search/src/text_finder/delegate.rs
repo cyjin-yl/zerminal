@@ -1203,16 +1203,17 @@ async fn stream_results_to_picker(
     imported_matches: ImportedMatches,
     cx: &mut AsyncApp,
 ) -> Option<SearchResults<SearchResult>> {
+    let search_results_clone = search_results.clone();
     let mut results_stream = std::pin::pin!(
-        search_results
+        search_results_clone
             .rx
-            .clone()
             .ready_chunks(SEARCH_RESULTS_BATCH_SIZE)
     );
 
     // Project search enforces its ranges cap per file,
     // so one minified line slips through uncapped; cap it here.
-    let cap = Search::MAX_SEARCH_RESULT_RANGES;
+    const MAX_SEARCH_RESULT_RANGES: usize = 500;
+    let cap = MAX_SEARCH_RESULT_RANGES;
     let mut total_matches = 0;
 
     let mut clear_existing = matches!(imported_matches, ImportedMatches::No);

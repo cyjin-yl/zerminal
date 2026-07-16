@@ -3,7 +3,7 @@ use buffer_diff::BufferDiff;
 use collections::HashMap;
 use editor::{
     Addon, Editor, EditorEvent, EditorSettings, MultiBuffer, RestoreOnlyDiffHunkDelegate,
-    SplittableEditor, hover_markdown_style, multibuffer_context_lines,
+    SplittableEditor, multibuffer_context_lines,
 };
 use futures_lite::future::yield_now;
 use git::repository::{CommitDetails, CommitDiff, RepoPath, is_binary_content};
@@ -559,11 +559,11 @@ impl CommitView {
         let commit_date = time::OffsetDateTime::from_unix_timestamp(commit.commit_timestamp)
             .unwrap_or_else(|_| time::OffsetDateTime::now_utc());
         let local_offset = time::UtcOffset::current_local_offset().unwrap_or(time::UtcOffset::UTC);
-        let date_string = time_format::format_localized_timestamp(
+        let date_string = util::time::format_localized_timestamp(
             commit_date,
             time::OffsetDateTime::now_utc(),
             local_offset,
-            time_format::TimestampFormat::MediumAbsolute,
+            util::time::TimestampFormat::MediumAbsolute,
         );
 
         let avatar_size = rems_from_px(40.);
@@ -715,7 +715,7 @@ impl CommitView {
             return None;
         }
 
-        let markdown_style = hover_markdown_style(window, cx);
+        let markdown_style = TextStyle::default();
 
         let is_expanded = self.message_expanded;
 

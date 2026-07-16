@@ -7,12 +7,11 @@ use std::{
     time::{Duration, Instant},
 };
 
-mod action_completion_provider;
 mod ui_components;
 
 use anyhow::{Context as _, anyhow};
 use collections::{HashMap, HashSet};
-use editor::{CompletionProvider, Editor, EditorEvent, EditorMode, SizingBehavior};
+use editor::{Editor, EditorEvent, EditorMode, SizingBehavior};
 use fs::Fs;
 use fuzzy::{StringMatch, StringMatchCandidate};
 use gpui::{
@@ -26,7 +25,7 @@ use gpui::{
 use language::{Language, LanguageConfig, ToOffset as _};
 
 use notifications::status_toast::StatusToast;
-use project::{CompletionDisplayOptions, Project};
+use project::Project;
 use settings::{
     BaseKeymap, KeybindSource, KeymapFile, Settings as _, SettingsAssets, infer_json_indent_size,
 };
@@ -47,7 +46,6 @@ pub use ui_components::*;
 use zed_actions::{ChangeKeybinding, OpenKeymap};
 
 use crate::{
-    action_completion_provider::ActionCompletionProvider,
     persistence::KeybindingEditorDb,
     ui_components::keystroke_input::{
         ClearKeystrokes, KeystrokeInput, StartRecording, StopRecording,
@@ -580,17 +578,8 @@ impl KeymapEditor {
         cx.spawn({
             let workspace = workspace.clone();
             async move |this, cx| {
-                let temp_dir = tempfile::tempdir_in(paths::temp_dir())?;
-                let worktree = workspace
-                    .update(cx, |ws, cx| {
-                        ws.project()
-                            .update(cx, |p, cx| p.create_worktree(temp_dir.path(), false, cx))
-                    })?
-                    .await?;
-                this.update(cx, |this, _| {
-                    this.action_args_temp_dir = Some(temp_dir);
-                    this.action_args_temp_dir_worktree = Some(worktree);
-                })
+                // create_worktree not available in stripped project crate
+                anyhow::Ok(())
             }
         })
         .detach();
@@ -2534,9 +2523,6 @@ impl KeybindingEditorModal {
                             buffer.set_language(Some(language), cx);
                         });
                     }
-                    editor.set_completion_provider(Some(std::rc::Rc::new(
-                        KeyContextCompletionProvider { contexts },
-                    )));
                 });
             })
             .detach();
@@ -2569,11 +2555,6 @@ impl KeybindingEditorModal {
                     .as_any()
                     .downcast_ref::<Entity<Editor>>()
                     .unwrap();
-                editor_entity.update(cx, |editor, _cx| {
-                    editor.set_completion_provider(Some(std::rc::Rc::new(
-                        ActionCompletionProvider::new(actions, humanized_names),
-                    )));
-                });
 
                 input
             });
@@ -2926,43 +2907,9 @@ impl KeybindingEditorModal {
         Ok(())
     }
 
-    fn is_any_editor_showing_completions(&self, window: &Window, cx: &App) -> bool {
-        let is_editor_showing_completions =
-            |focus_handle: &FocusHandle, editor_entity: &Entity<Editor>| -> bool {
-                focus_handle.contains_focused(window, cx)
-                    && editor_entity.read_with(cx, |editor, _cx| {
-                        editor
-                            .context_menu()
-                            .borrow()
-                            .as_ref()
-                            .is_some_and(|menu| menu.visible())
-                    })
-            };
-
-        self.action_editor.as_ref().is_some_and(|action_editor| {
-            let focus_handle = action_editor.read(cx).focus_handle(cx);
-            let editor_entity = action_editor.read(cx).editor();
-            let editor_entity = editor_entity
-                .as_any()
-                .downcast_ref::<Entity<Editor>>()
-                .unwrap();
-            is_editor_showing_completions(&focus_handle, editor_entity)
-        }) || {
-            let focus_handle = self.context_editor.read(cx).focus_handle(cx);
-            let editor_entity = self.context_editor.read(cx).editor();
-            let editor_entity = editor_entity
-                .as_any()
-                .downcast_ref::<Entity<Editor>>()
-                .unwrap();
-            is_editor_showing_completions(&focus_handle, editor_entity)
-        } || self
-            .action_arguments_editor
-            .as_ref()
-            .is_some_and(|args_editor| {
-                let focus_handle = args_editor.read(cx).focus_handle(cx);
-                let editor_entity = &args_editor.read(cx).editor;
-                is_editor_showing_completions(&focus_handle, editor_entity)
-            })
+    fn is_any_editor_showing_completions(&self, _window: &Window, _cx: &App) -> bool {
+        // context_menu() not available in stripped editor crate
+        false
     }
 
     fn key_context(&self) -> KeyContext {
@@ -3335,7 +3282,6 @@ impl ActionArgumentsEditor {
                     editor.disable_mouse_wheel_zoom();
                     editor.set_searchable(false);
                     editor.disable_scrollbars_and_minimap(window, cx);
-                    editor.set_show_edit_predictions(Some(false), window, cx);
                     editor.set_show_gutter(false, cx);
                     Self::set_editor_text(&mut editor, arguments, window, cx);
                     editor
@@ -3440,7 +3386,7 @@ impl ActionArgumentsEditor {
 
         project
             .update(cx, |project, cx| {
-                project.open_local_buffer(temp_file_path, cx)
+                project.open_local_buffer(&temp_file_path, cx)
             })?
             .await
             .context("Failed to create buffer")
@@ -3488,68 +3434,6 @@ impl Render for ActionArgumentsEditor {
     }
 }
 
-struct KeyContextCompletionProvider {
-    contexts: Vec<SharedString>,
-}
-
-impl CompletionProvider for KeyContextCompletionProvider {
-    fn completions(
-        &self,
-        buffer: &Entity<language::Buffer>,
-        buffer_position: language::Anchor,
-        _trigger: editor::CompletionContext,
-        _window: &mut Window,
-        cx: &mut Context<Editor>,
-    ) -> gpui::Task<anyhow::Result<Vec<project::CompletionResponse>>> {
-        let buffer = buffer.read(cx);
-        let mut count_back = 0;
-        for char in buffer.reversed_chars_at(buffer_position) {
-            if char.is_ascii_alphanumeric() || char == '_' {
-                count_back += 1;
-            } else {
-                break;
-            }
-        }
-        let start_anchor =
-            buffer.anchor_before(buffer_position.to_offset(buffer).saturating_sub(count_back));
-        let replace_range = start_anchor..buffer_position;
-        gpui::Task::ready(Ok(vec![project::CompletionResponse {
-            completions: self
-                .contexts
-                .iter()
-                .map(|context| project::Completion {
-                    replace_range: replace_range.clone(),
-                    label: language::CodeLabel::plain(context.to_string(), None),
-                    new_text: context.to_string(),
-                    documentation: None,
-                    source: project::CompletionSource::Custom,
-                    icon_path: None,
-                    icon_color: None,
-                    match_start: None,
-                    snippet_deduplication_key: None,
-                    insert_text_mode: None,
-                    confirm: None,
-                    group: None,
-                })
-                .collect(),
-            display_options: CompletionDisplayOptions::default(),
-            is_incomplete: false,
-        }]))
-    }
-
-    fn is_completion_trigger(
-        &self,
-        _buffer: &Entity<language::Buffer>,
-        _position: language::Anchor,
-        text: &str,
-        _trigger_in_words: bool,
-        _cx: &mut Context<Editor>,
-    ) -> bool {
-        text.chars()
-            .last()
-            .is_some_and(|last_char| last_char.is_ascii_alphanumeric() || last_char == '_')
-    }
-}
 
 async fn load_json_language(workspace: WeakEntity<Workspace>, cx: &mut AsyncApp) -> Arc<Language> {
     let json_language_task = workspace

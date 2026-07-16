@@ -18,6 +18,7 @@ use gpui::{
 use itertools::Itertools;
 use project::{Fs, Project, RevealStrategy, RevealTarget, Shell, ShellBuilder, SpawnInTerminal, TaskId};
 use terminal::{Terminal, terminal_settings::TerminalSettings};
+use settings::TerminalDockPosition;
 use ui::{
     ButtonLike, Clickable, ContextMenu, FluentBuilder, PopoverMenu, SplitButton, Toggleable,
     Tooltip, prelude::*,
