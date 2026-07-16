@@ -20,25 +20,19 @@ pub const PROTOCOL_VERSION: proto::ProtocolVersion = proto::ProtocolVersion {
     minor: 0,
 };
 
-// §9 将 Envelope 编码为长度前缀二进制帧：| len: u32 | protobuf bytes |。
+// §9 将 Envelope 编码为长度前缀二进制帧：| varint len | protobuf bytes |。
 /// Frame a message as length-prefixed binary.
 pub fn frame(msg: &Envelope) -> Result<Vec<u8>, prost::EncodeError> {
     let mut buf = Vec::with_capacity(msg.encoded_len() + 4);
-    (msg.encoded_len() as u32).encode(&mut buf)?;
-    msg.encode(&mut buf)?;
+    msg.encode_length_delimited(&mut buf)?;
     Ok(buf)
 }
 
 // §9 从长度前缀二进制帧解码 Envelope，返回 (消息, 已消费字节数)。
 /// Decode a framed message. Returns (message, bytes_consumed).
 pub fn unframe(buf: &[u8]) -> Result<(Envelope, usize), prost::DecodeError> {
-    if buf.len() < 4 {
-        return Err(prost::DecodeError::new("buffer too short for frame header"));
-    }
-    let len = u32::decode(&buf[..4])? as usize;
-    if buf.len() < 4 + len {
-        return Err(prost::DecodeError::new("incomplete frame"));
-    }
-    let msg = Envelope::decode(&buf[4..4 + len])?;
-    Ok((msg, 4 + len))
+    let mut rest: &[u8] = buf;
+    let msg = Envelope::decode_length_delimited(&mut rest)?;
+    let consumed = buf.len() - rest.len();
+    Ok((msg, consumed))
 }

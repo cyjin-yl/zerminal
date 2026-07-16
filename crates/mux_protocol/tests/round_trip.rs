@@ -2,25 +2,6 @@
 use mux_protocol::*;
 use prost::Message;
 
-#[test]
-fn debug_bytes() {
-    let env = Envelope {
-        version: Some(PROTOCOL_VERSION),
-        payload: Some(proto::envelope::Payload::Notification(Notification {
-            event: Some(proto::notification::Event::PaneDirty(PaneDirty {
-                pane_id: "w1:p1".into(),
-            })),
-        })),
-    };
-    let framed = frame(&env).unwrap();
-    println!("framed len: {}", framed.len());
-    println!("framed bytes: {:?}", framed);
-    println!("raw env len: {}", env.encoded_len());
-    let mut raw = Vec::new();
-    env.encode(&mut raw).unwrap();
-    println!("raw env bytes: {:?}", raw);
-}
-
 // §3.3 验证 GridDiff 可以直接编码/解码。
 #[test]
 fn test_grid_diff_round_trip() {
