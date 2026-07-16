@@ -183,6 +183,22 @@ async fn dispatch_request(
                 )),
             });
         }
+        RequestBody::RenameSession(_r) => {
+            return Ok(Response {
+                request_id,
+                body: Some(ResponseBody::Error(
+                    "rename_session not implemented yet".to_string(),
+                )),
+            });
+        }
+        RequestBody::SetPaneTitle(_r) => {
+            return Ok(Response {
+                request_id,
+                body: Some(ResponseBody::Error(
+                    "set_pane_title not implemented yet".to_string(),
+                )),
+            });
+        }
     };
 
     Ok(Response {
