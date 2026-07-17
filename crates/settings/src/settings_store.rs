@@ -30,14 +30,13 @@ use util::{
 };
 
 use crate::editorconfig_store::EditorconfigStore;
-
 use crate::{
-    ActiveSettingsProfileName, FontFamilyName, IconThemeName, LanguageSettingsContent,
-    LanguageToSettingsMap, LspSettings, LspSettingsMap, SemanticTokenRules, ThemeName,
-    UserSettingsContentExt, VsCodeSettings, WorktreeId,
+    ActiveSettingsProfileName, ExtensionsSettingsContent, FontFamilyName, IconThemeName,
+    LanguageSettingsContent, LanguageToSettingsMap, LspSettings, LspSettingsMap, SemanticTokenRules,
+    ThemeName, UserSettingsContentExt, VsCodeSettings, WorktreeId,
     settings_content::{
-        ExtensionsSettingsContent, ProfileBase, ProjectSettingsContent, RootUserSettings,
-        SettingsContent, UserSettingsContent, merge_from::MergeFrom,
+        ProfileBase, ProjectSettingsContent, RootUserSettings, SettingsContent, UserSettingsContent,
+        merge_from::MergeFrom,
     },
 };
 

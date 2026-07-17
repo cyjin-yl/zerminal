@@ -34,6 +34,7 @@ impl From<BaseKeymapContent> for BaseKeymap {
             BaseKeymapContent::Emacs => Self::Emacs,
             BaseKeymapContent::Cursor => Self::Cursor,
             BaseKeymapContent::None => Self::None,
+            _ => Self::default(),
         }
     }
 }
