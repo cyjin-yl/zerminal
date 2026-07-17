@@ -1,0 +1,20 @@
+[package]
+name = "transport_resilient"
+version = "0.1.0"
+edition = "2024"
+publish = false
+license = "Apache-2.0"
+
+[lib]
+path = "src/transport_resilient.rs"
+
+[dependencies]
+mux_protocol = { workspace = true }
+tokio = { workspace = true, features = ["full"] }
+aes-gcm = "0.10"
+tokio-util = { version = "0.7", features = ["codec"] }
+prost = { workspace = true }
+anyhow = { workspace = true }
+parking_lot = { workspace = true }
+tracing = { workspace = true }
+generic-array = "0.14"
