@@ -3343,7 +3343,8 @@ mod tests {
     };
     use parking_lot::Mutex;
     use rand::{Rng, distr, rngs::StdRng};
-// use task::{Shell, ShellBuilder};  // removed-crate: task
+    use util::shell::{Shell, ShellKind};
+    use util::shell_builder::ShellBuilder;
 
     #[test]
     fn test_init_command_startup_marker_commands_do_not_contain_marker() {
@@ -3486,7 +3487,7 @@ mod tests {
                 TerminalBuilder::new(
                     None,
                     None,
-                    task::Shell::WithArguments {
+                    util::shell::Shell::WithArguments {
                         program,
                         args,
                         title_override: None,
@@ -3537,7 +3538,7 @@ mod tests {
                 TerminalBuilder::new(
                     None,
                     Some(task_state),
-                    task::Shell::WithArguments {
+                    util::shell::Shell::WithArguments {
                         program,
                         args,
                         title_override: None,
@@ -3838,7 +3839,7 @@ mod tests {
                 TerminalBuilder::new(
                     None,
                     None,
-                    task::Shell::System,
+                    util::shell::Shell::System,
                     HashMap::default(),
                     SettingsCursorShape::default(),
                     AlternateScroll::On,
@@ -3906,7 +3907,7 @@ mod tests {
                 TerminalBuilder::new(
                     None,
                     None,
-                    task::Shell::System,
+                    util::shell::Shell::System,
                     HashMap::default(),
                     SettingsCursorShape::default(),
                     AlternateScroll::On,
@@ -3968,7 +3969,7 @@ mod tests {
                 TerminalBuilder::new(
                     None,
                     None,
-                    task::Shell::WithArguments {
+                    util::shell::Shell::WithArguments {
                         program,
                         args,
                         title_override: None,
@@ -4843,7 +4844,7 @@ mod tests {
                     TerminalBuilder::new(
                         None,
                         None,
-                        task::Shell::System,
+                        util::shell::Shell::System,
                         HashMap::default(),
                         SettingsCursorShape::default(),
                         AlternateScroll::On,

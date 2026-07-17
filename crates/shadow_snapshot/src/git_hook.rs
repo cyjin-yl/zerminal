@@ -83,7 +83,7 @@ mod tests {
     fn test_mark_pre_commit_deltas() {
         let hook = GitCommitHook::new();
 
-        let versions = [VersionId(1), VersionId(2), VersionId(3)];
+        let versions: [VersionId; 3] = [1, 2, 3];
         hook.mark_pre_commit_deltas(&versions);
 
         for version in &versions {
@@ -96,25 +96,25 @@ mod tests {
     fn test_take_eligible_versions() {
         let hook = GitCommitHook::new();
 
-        let versions = [VersionId(1), VersionId(2)];
+        let versions: [VersionId; 2] = [1, 2];
         hook.mark_pre_commit_deltas(&versions);
 
         let taken = hook.take_eligible_versions();
-        assert!(taken.contains(&VersionId(1)));
-        assert!(taken.contains(&VersionId(2)));
+        assert!(taken.contains(&1));
+        assert!(taken.contains(&2));
 
         // 取走后不再标记
-        assert!(!hook.is_gc_eligible(&VersionId(1)));
+        assert!(!hook.is_gc_eligible(&1));
     }
 
     #[test]
     fn test_reset() {
         let hook = GitCommitHook::new();
 
-        hook.mark_pre_commit_deltas(&[VersionId(1)]);
+        hook.mark_pre_commit_deltas(&[1]);
         hook.reset();
 
-        assert!(!hook.is_gc_eligible(&VersionId(1)));
+        assert!(!hook.is_gc_eligible(&1));
         assert!(!hook.is_commit_triggered());
     }
 }

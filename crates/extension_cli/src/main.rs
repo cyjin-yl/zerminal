@@ -15,7 +15,6 @@ use extension::extension_builder::{CompileExtensionOptions, ExtensionBuilder};
 use extension::{ExtensionManifest, ExtensionProvides, ExtensionSnippets};
 use language::LanguageConfig;
 use reqwest_client::ReqwestClient;
-use settings_content::SemanticTokenRules;
 use tokio::process::Command;
 use tree_sitter::{Language, Query, WasmStore};
 
@@ -461,8 +460,8 @@ fn test_languages(
                 LanguageConfig::FILE_NAME => {
                     // Loaded above
                 }
-                SemanticTokenRules::FILE_NAME => {
-                    let _token_rules = SemanticTokenRules::load(&file_path)?;
+                _ if file_name == "semantic-tokens.scm" => {
+                    // SemanticTokenRules::load removed (LSP-only, not in z3rm)
                 }
                 // task::TaskTemplates 已删除，跳过任务文件校验
                 _ if file_name.ends_with(".scm") => {
