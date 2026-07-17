@@ -8,9 +8,6 @@ use ui::IntoElement;
 use crate::{
     ActionLink, DynamicItem, PROJECT, SettingField, SettingItem, SettingsFieldMetadata,
     SettingsPage, SettingsPageItem, SubPageLink, USER, active_language, all_language_names,
-    pages::{
-        render_feature_flags_page,
-    },
 };
 
 const DEFAULT_STRING: String = String::new();
@@ -195,7 +192,7 @@ fn general_page() -> SettingsPage {
         ]
     }
 
-    fn workspace_settings_section() -> [SettingsPageItem; 6] {
+    fn workspace_settings_section() -> [SettingsPageItem; 5] {
         [
             SettingsPageItem::SectionHeader("Window"),
             SettingsPageItem::SettingItem(SettingItem {
@@ -208,7 +205,9 @@ fn general_page() -> SettingsPage {
                         Some(&settings_content.workspace.window_decorations)
                     },
                     write: |settings_content, value, _| {
-                        settings_content.workspace.window_decorations = value;
+                        if let Some(v) = value {
+                            settings_content.workspace.window_decorations = v;
+                        }
                     },
                 }),
                 metadata: None,
@@ -224,7 +223,9 @@ fn general_page() -> SettingsPage {
                         Some(&settings_content.workspace.text_rendering_mode)
                     },
                     write: |settings_content, value, _| {
-                        settings_content.workspace.text_rendering_mode = value;
+                        if let Some(v) = value {
+                            settings_content.workspace.text_rendering_mode = v;
+                        }
                     },
                 }),
                 metadata: None,
@@ -238,7 +239,9 @@ fn general_page() -> SettingsPage {
                     json_path: Some("confirm_quit"),
                     pick: |settings_content| Some(&settings_content.workspace.confirm_quit),
                     write: |settings_content, value, _| {
-                        settings_content.workspace.confirm_quit = value;
+                        if let Some(v) = value {
+                            settings_content.workspace.confirm_quit = v;
+                        }
                     },
                 }),
                 metadata: None,
@@ -254,7 +257,9 @@ fn general_page() -> SettingsPage {
                         Some(&settings_content.workspace.on_last_window_closed)
                     },
                     write: |settings_content, value, _| {
-                        settings_content.workspace.on_last_window_closed = value;
+                        if let Some(v) = value {
+                            settings_content.workspace.on_last_window_closed = v;
+                        }
                     },
                 }),
                 metadata: None,
@@ -686,7 +691,7 @@ fn appearance_page() -> SettingsPage {
         ]
     }
 
-    fn font_section() -> [SettingsPageItem; 4] {
+    fn font_section() -> [SettingsPageItem; 5] {
         [
             SettingsPageItem::SectionHeader("Font"),
             SettingsPageItem::SettingItem(SettingItem {
@@ -818,7 +823,7 @@ fn keymap_page() -> SettingsPage {
 // =========================================================================
 
 fn terminal_page() -> SettingsPage {
-    fn terminal_font_section() -> [SettingsPageItem; 4] {
+    fn terminal_font_section() -> [SettingsPageItem; 3] {
         [
             SettingsPageItem::SectionHeader("Font"),
             SettingsPageItem::SettingItem(SettingItem {
@@ -868,7 +873,7 @@ fn terminal_page() -> SettingsPage {
         ]
     }
 
-    fn terminal_behavior_section() -> [SettingsPageItem; 8] {
+    fn terminal_behavior_section() -> [SettingsPageItem; 6] {
         [
             SettingsPageItem::SectionHeader("Behavior"),
             SettingsPageItem::SettingItem(SettingItem {
@@ -984,7 +989,7 @@ fn terminal_page() -> SettingsPage {
         ]
     }
 
-    fn terminal_dock_section() -> [SettingsPageItem; 4] {
+    fn terminal_dock_section() -> [SettingsPageItem; 3] {
         [
             SettingsPageItem::SectionHeader("Dock"),
             SettingsPageItem::SettingItem(SettingItem {
@@ -1050,7 +1055,7 @@ fn terminal_page() -> SettingsPage {
 // =========================================================================
 
 fn mux_page() -> SettingsPage {
-    fn mux_connection_section() -> [SettingsPageItem; 3] {
+    fn mux_connection_section() -> [SettingsPageItem; 2] {
         [
             SettingsPageItem::SectionHeader("Connection"),
             SettingsPageItem::SettingItem(SettingItem {
@@ -1078,7 +1083,7 @@ fn mux_page() -> SettingsPage {
         ]
     }
 
-    fn mux_behavior_section() -> [SettingsPageItem; 4] {
+    fn mux_behavior_section() -> [SettingsPageItem; 2] {
         [
             SettingsPageItem::SectionHeader("Behavior"),
             SettingsPageItem::SettingItem(SettingItem {
@@ -1103,7 +1108,7 @@ fn mux_page() -> SettingsPage {
         ]
     }
 
-    fn mux_ui_section() -> [SettingsPageItem; 4] {
+    fn mux_ui_section() -> [SettingsPageItem; 2] {
         [
             SettingsPageItem::SectionHeader("UI"),
             SettingsPageItem::SettingItem(SettingItem {
@@ -1173,7 +1178,7 @@ fn shadow_snapshot_page() -> SettingsPage {
         ]
     }
 
-    fn shadow_snapshot_quota_section() -> [SettingsPageItem; 3] {
+    fn shadow_snapshot_quota_section() -> [SettingsPageItem; 2] {
         [
             SettingsPageItem::SectionHeader("Quota"),
             SettingsPageItem::SettingItem(SettingItem {
@@ -1200,7 +1205,7 @@ fn shadow_snapshot_page() -> SettingsPage {
         ]
     }
 
-    fn shadow_snapshot_behavior_section() -> [SettingsPageItem; 5] {
+    fn shadow_snapshot_behavior_section() -> [SettingsPageItem; 3] {
         [
             SettingsPageItem::SectionHeader("Behavior"),
             SettingsPageItem::SettingItem(SettingItem {
@@ -1317,7 +1322,7 @@ fn extensions_page() -> SettingsPage {
 // =========================================================================
 
 fn workspace_page() -> SettingsPage {
-    fn workspace_section() -> [SettingsPageItem; 3] {
+    fn workspace_section() -> [SettingsPageItem; 2] {
         [
             SettingsPageItem::SectionHeader("Workspace"),
             SettingsPageItem::SettingItem(SettingItem {
@@ -1330,7 +1335,9 @@ fn workspace_page() -> SettingsPage {
                         Some(&settings_content.workspace.focus_follows_mouse)
                     },
                     write: |settings_content, value, _| {
-                        settings_content.workspace.focus_follows_mouse = value;
+                        if let Some(v) = value {
+                            settings_content.workspace.focus_follows_mouse = v;
+                        }
                     },
                 }),
                 metadata: None,
@@ -1339,7 +1346,7 @@ fn workspace_page() -> SettingsPage {
         ]
     }
 
-    fn title_bar_section() -> [SettingsPageItem; 5] {
+    fn title_bar_section() -> [SettingsPageItem; 3] {
         [
             SettingsPageItem::SectionHeader("Title Bar"),
             SettingsPageItem::SettingItem(SettingItem {
@@ -1389,7 +1396,7 @@ fn workspace_page() -> SettingsPage {
         ]
     }
 
-    fn status_bar_section() -> [SettingsPageItem; 4] {
+    fn status_bar_section() -> [SettingsPageItem; 3] {
         [
             SettingsPageItem::SectionHeader("Status Bar"),
             SettingsPageItem::SettingItem(SettingItem {
@@ -1433,7 +1440,7 @@ fn workspace_page() -> SettingsPage {
         ]
     }
 
-    fn tab_bar_section() -> [SettingsPageItem; 4] {
+    fn tab_bar_section() -> [SettingsPageItem; 3] {
         [
             SettingsPageItem::SectionHeader("Tab Bar"),
             SettingsPageItem::SettingItem(SettingItem {
@@ -1495,9 +1502,6 @@ fn workspace_page() -> SettingsPage {
 // =========================================================================
 
 fn developer_page(cx: &App) -> SettingsPage {
-    use feature_flags::FeatureFlagAppExt as _;
-
-    let feature_flags = render_feature_flags_page(cx);
 
     fn log_section() -> [SettingsPageItem; 2] {
         [
@@ -1547,7 +1551,6 @@ fn developer_page(cx: &App) -> SettingsPage {
         title: "Developer",
         items: concat_sections!(
             @vec,
-            feature_flags,
             log_section(),
             feature_flags_section(),
         )

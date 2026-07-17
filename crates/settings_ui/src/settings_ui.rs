@@ -722,8 +722,9 @@ fn open_settings_editor_with(
             _ => match WorkspaceSettings::get_global(cx).window_decorations {
                 settings::WindowDecorations::System => gpui::WindowDecorations::Server,
                 settings::WindowDecorations::Client => gpui::WindowDecorations::Client,
-                settings::WindowDecorations::None => gpui::WindowDecorations::None,
+                settings::WindowDecorations::None => gpui::WindowDecorations::Server,
             },
+        };
 
         cx.open_window(
             WindowOptions {
