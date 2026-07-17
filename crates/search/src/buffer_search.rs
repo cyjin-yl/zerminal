@@ -30,7 +30,8 @@ use project::{
     search_history::{SearchHistory, SearchHistoryCursor},
 };
 
-use settings::{SeedQuerySetting, Settings};
+use settings::Settings;
+use workspace::settings_stubs::SeedQuerySetting;
 use std::{any::TypeId, sync::Arc};
 use zed_actions::{outline::ToggleOutline, workspace::CopyPath, workspace::CopyRelativePath};
 
@@ -1145,7 +1146,7 @@ impl BufferSearchBar {
                 replace_enabled: false,
                 selection_search_enabled: false,
             },
-            Some(SeedQuerySetting::Always),
+            Some(SeedQuerySetting::Selection),
             window,
             cx,
         );

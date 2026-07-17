@@ -66,8 +66,7 @@ impl StatusItemView for SearchButton {
     }
 
     fn hide_setting(&self, _: &App) -> Option<HideStatusItem> {
-        Some(HideStatusItem::new(|settings| {
-            settings.editor.search.get_or_insert_default().button = Some(false);
-        }))
+        // editor 字段已从 SettingsContent 移除 (spec §16 Plan 16)
+        None
     }
 }
