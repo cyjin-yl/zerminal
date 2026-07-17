@@ -11,6 +11,7 @@ pub mod connection;
 pub mod clipboard;
 pub mod grid_sync;
 pub mod coalescing;
+pub mod dec2026;
 pub mod layout;
 pub mod pane;
 pub mod persistence;
