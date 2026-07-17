@@ -24,3 +24,4 @@ rusqlite = { version = "0.32", features = ["bundled"] }
 proptest = { workspace = true }
 proptest-derive = { workspace = true }
 tempfile = { workspace = true }
+rand = { workspace = true }

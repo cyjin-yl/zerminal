@@ -141,48 +141,36 @@ mod tests {
 
     #[test]
     fn test_mux_detach_action() {
-        let cx = TestAppContext::with_platform();
-        cx.update(|cx| {
-            // Detach action 可以实例化
-            let _action = Detach::default();
-        });
+        // Detach action 可以实例化
+        let _action = Detach::default();
     }
 
     #[test]
     fn test_enter_prefix_mode_default_timeout() {
-        let cx = TestAppContext::with_platform();
-        cx.update(|cx| {
-            let action = EnterPrefixMode::default();
-            assert_eq!(action.timeout_ms, 500);
-        });
+        let action = EnterPrefixMode::default();
+        assert_eq!(action.timeout_ms, 500);
     }
 
     #[test]
     fn test_focus_pane_index_default() {
-        let cx = TestAppContext::with_platform();
-        cx.update(|cx| {
-            let action = FocusPaneIndex::default();
-            assert_eq!(action.index, 0);
-        });
+        let action = FocusPaneIndex::default();
+        assert_eq!(action.index, 0);
     }
 
     #[test]
     fn test_pane_actions_exist() {
-        let cx = TestAppContext::with_platform();
-        cx.update(|cx| {
-            let _ = NewTab::default();
-            let _ = CloseTab::default();
-            let _ = NextTab::default();
-            let _ = PrevTab::default();
-            let _ = SplitRight::default();
-            let _ = SplitDown::default();
-            let _ = FocusLeft::default();
-            let _ = FocusRight::default();
-            let _ = FocusUp::default();
-            let _ = FocusDown::default();
-            let _ = ZoomToggle::default();
-            let _ = FocusPane0::default();
-            let _ = FocusPane1::default();
-        });
+        let _ = NewTab::default();
+        let _ = CloseTab::default();
+        let _ = NextTab::default();
+        let _ = PrevTab::default();
+        let _ = SplitRight::default();
+        let _ = SplitDown::default();
+        let _ = FocusLeft::default();
+        let _ = FocusRight::default();
+        let _ = FocusUp::default();
+        let _ = FocusDown::default();
+        let _ = ZoomToggle::default();
+        let _ = FocusPane0::default();
+        let _ = FocusPane1::default();
     }
 }

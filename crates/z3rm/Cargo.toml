@@ -352,6 +352,9 @@ features = [ "test-support"]
 workspace = true
 features = [ "test-support"]
 
+[dev-dependencies.mux_protocol]
+workspace = true
+
 [package.metadata.bundle-dev]
 icon = [ "resources/app-icon-dev@2x.png", "resources/app-icon-dev.png"]
 identifier = "dev.z3rm.Z3rm-Dev"

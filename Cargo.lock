@@ -6466,6 +6466,7 @@ dependencies = [
  "serde",
  "serde_json",
  "settings",
+ "settings_content",
  "shellexpand",
  "smallvec",
  "streaming-iterator",
@@ -10039,7 +10040,9 @@ dependencies = [
  "anyhow",
  "parking_lot",
  "rquickjs",
+ "serde_json",
  "tempfile",
+ "tokio",
  "tracing",
 ]
 
@@ -11736,6 +11739,7 @@ dependencies = [
  "parking_lot",
  "proptest",
  "proptest-derive",
+ "rand 0.9.4",
  "rope",
  "rusqlite",
  "sha2",
@@ -16933,6 +16937,7 @@ dependencies = [
  "markdown",
  "menu",
  "mux",
+ "mux_protocol",
  "notifications",
  "parking_lot",
  "paths",
