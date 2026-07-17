@@ -84,7 +84,7 @@ pub use item::{
     ProjectItem, SerializableItem, SerializableItemHandle, WeakItemHandle,
 };
 use itertools::Itertools;
-use language::{Buffer, LanguageRegistry, Rope, language_settings::all_language_settings};
+use language::{Buffer, Capability, LanguageRegistry, Rope, language_settings::all_language_settings};
 pub use modal_layer::*;
 // use node_runtime::NodeRuntime;  // removed-crate: node_runtime
 use notifications::{
@@ -271,6 +271,8 @@ actions!(
         OpenFiles,
         /// Opens the current location in terminal.
         OpenInTerminal,
+        /// §16.5 Opens a diff review view for the current file (shadow snapshot).
+        OpenDiff,
         /// Opens the component preview.
         OpenComponentPreview,
         /// Reloads the active item.
@@ -776,6 +778,22 @@ pub fn init(app_state: Arc<AppState>, cx: &mut App) {
                     directories,
                     multiple: true,
                     prompt: None,
+                },
+                true,
+                cx,
+            );
+        })
+        .on_action(|_: &OpenDiff, cx: &mut App| {
+            // §16.5 打开 diff review：选择文件 → 对比当前版本与 shadow snapshot 前一个版本
+            // TODO: 集成 shadow_snapshot 获取前一版本内容并打开 diff 视图
+            let app_state = AppState::global(cx);
+            prompt_and_open_paths(
+                app_state,
+                PathPromptOptions {
+                    files: true,
+                    directories: false,
+                    multiple: false,
+                    prompt: Some("Select file for diff review".into()),
                 },
                 true,
                 cx,
@@ -3976,6 +3994,25 @@ impl Workspace {
         })
     }
 
+    /// §16.5 以只读模式打开绝对路径文件
+    pub fn open_abs_path_readonly(
+        &mut self,
+        abs_path: PathBuf,
+        visible: bool,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Task<anyhow::Result<Box<dyn ItemHandle>>> {
+        let project_path_task =
+            Workspace::project_path_for_path(self.project.clone(), &abs_path, visible, cx);
+        cx.spawn_in(window, async move |this, cx| {
+            let (_, path) = project_path_task.await?;
+            this.update_in(cx, |this, window, cx| {
+                this.open_path_readonly(path, None, true, false, true, window, cx)
+            })?
+            .await
+        })
+    }
+
     pub fn split_abs_path(
         &mut self,
         abs_path: PathBuf,
@@ -4040,6 +4077,85 @@ impl Workspace {
                     build_item,
                 )
             })
+        })
+    }
+
+    /// §16.5 以只读模式打开文件，自动 split-right（若中心 pane 仅有 terminal 或为空）
+    pub fn open_path_readonly(
+        &mut self,
+        path: impl Into<ProjectPath>,
+        pane: Option<WeakEntity<Pane>>,
+        focus_item: bool,
+        allow_preview: bool,
+        activate: bool,
+        window: &mut Window,
+        cx: &mut Context<Self>,
+    ) -> Task<anyhow::Result<Box<dyn ItemHandle>>> {
+        let project_path = path.into();
+
+        // §16.5 自动 split-right：若中心 pane 为空或仅有 terminal，先 split
+        let pane_to_use = if let Some(p) = pane.clone() {
+            p
+        } else if self.center_pane_only_has_terminals(cx) {
+            let old_pane = self.last_active_center_pane.clone().unwrap_or_else(|| {
+                self.panes
+                    .first()
+                    .expect("There must be an active pane")
+                    .clone()
+                    .downgrade()
+            });
+            // §16.5 split_pane 需要 Entity<Pane>，升级 WeakEntity
+            let old_pane_entity = old_pane.upgrade().unwrap_or_else(|| {
+                self.panes
+                    .first()
+                    .expect("There must be an active pane")
+                    .clone()
+            });
+            self.split_pane(old_pane_entity, SplitDirection::Right, window, cx).downgrade()
+        } else {
+            self.last_active_center_pane.clone().unwrap_or_else(|| {
+                self.panes
+                    .first()
+                    .expect("There must be an active pane")
+                    .downgrade()
+            })
+        };
+
+        let task = self.load_path(project_path.clone(), window, cx);
+        window.spawn(cx, async move |cx| {
+            let (project_entry_id, build_item) = task.await?;
+
+            pane_to_use.update_in(cx, |pane, window, cx| {
+                let item = pane.open_item(
+                    project_entry_id,
+                    project_path.clone(),
+                    focus_item,
+                    allow_preview,
+                    activate,
+                    None,
+                    window,
+                    cx,
+                    build_item,
+                );
+                // §16.5 设置为只读模式
+                if item.capability(cx) != Capability::ReadOnly {
+                    item.toggle_read_only(window, cx);
+                }
+                item
+            })
+        })
+    }
+
+    /// §16.5 检查中心 pane 是否仅有 terminal 或为空（用于自动 split-right）
+    fn center_pane_only_has_terminals(&self, cx: &App) -> bool {
+        let center_pane = self.active_pane.clone();
+        let items: Vec<_> = center_pane.read(cx).items().cloned().collect();
+        if items.is_empty() {
+            return true;
+        }
+        // §16.5 Terminal 的 buffer_kind 为 None，Editor 为 Singleton/Multibuffer
+        items.iter().all(|item| {
+            item.buffer_kind(cx) == ItemBufferKind::None
         })
     }
 

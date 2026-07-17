@@ -11,7 +11,7 @@ use workspace::path_link::possible_open_target;
 use workspace::path_link::{
     BackgroundPathChecks, OpenTargetFoundBy, possible_open_target_with_fs_checks,
 };
-use workspace::{OpenOptions, OpenVisible, Workspace, path_link::OpenTarget};
+use workspace::{ItemHandle, OpenOptions, OpenVisible, Workspace, path_link::OpenTarget};
 
 pub(super) fn hover_path_like_target(
     workspace: &WeakEntity<Workspace>,
@@ -144,27 +144,47 @@ fn possibly_open_target(
         };
 
         let path_to_open = open_target.path();
-        let opened_items = workspace
-            .update_in(cx, |workspace, window, cx| {
-                workspace.open_paths(
-                    vec![path_to_open.path.clone()],
-                    OpenOptions {
-                        visible: Some(OpenVisible::OnlyDirectories),
-                        ..Default::default()
-                    },
-                    None,
-                    window,
-                    cx,
-                )
-            })
-            .context("workspace update")?
-            .await;
-        if opened_items.len() != 1 {
-            debug_panic!(
-                "Received {} items for one path {path_to_open:?}",
-                opened_items.len(),
-            );
-        }
+
+        // §16.5 终端路径点击以只读模式打开文件
+        let opened_items: Vec<Option<anyhow::Result<Box<dyn ItemHandle>>>> = if open_target.is_file() {
+            // 文件：以只读模式打开
+            let item_result = workspace
+                .update_in(cx, |workspace, window, cx| {
+                    workspace.open_abs_path_readonly(
+                        path_to_open.path.clone(),
+                        true,
+                        window,
+                        cx,
+                    )
+                })
+                .context("workspace update")?
+                .await;
+            vec![Some(item_result)]
+        } else {
+            // 目录：使用原有 open_paths
+            let opened_items = workspace
+                .update_in(cx, |workspace, window, cx| {
+                    workspace.open_paths(
+                        vec![path_to_open.path.clone()],
+                        OpenOptions {
+                            visible: Some(OpenVisible::OnlyDirectories),
+                            ..Default::default()
+                        },
+                        None,
+                        window,
+                        cx,
+                    )
+                })
+                .context("workspace update")?
+                .await;
+            if opened_items.len() != 1 {
+                debug_panic!(
+                    "Received {} items for one path {path_to_open:?}",
+                    opened_items.len(),
+                );
+            }
+            opened_items
+        };
 
         if let Some(opened_item) = opened_items.first() {
             if open_target.is_file() {

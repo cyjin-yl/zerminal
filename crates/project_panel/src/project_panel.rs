@@ -866,18 +866,36 @@ impl ProjectPanel {
                             let entry_id = entry.id;
                             let is_via_ssh = project.read(cx).is_via_remote_server();
 
-                            workspace
-                                .open_path_preview(
-                                    ProjectPath {
-                                        worktree_id,
-                                        path: file_path.clone(),
-                                    },
-                                    None,
-                                    focus_opened_item,
-                                    allow_preview,
-                                    true,
-                                    window, cx,
-                                )
+                            let task = if focus_opened_item {
+                                // §16.5 双击打开可编辑编辑器
+                                workspace
+                                    .open_path_preview(
+                                        ProjectPath {
+                                            worktree_id,
+                                            path: file_path.clone(),
+                                        },
+                                        None,
+                                        focus_opened_item,
+                                        allow_preview,
+                                        true,
+                                        window, cx,
+                                    )
+                            } else {
+                                // §16.5 单击打开只读文件查看器
+                                workspace
+                                    .open_path_readonly(
+                                        ProjectPath {
+                                            worktree_id,
+                                            path: file_path.clone(),
+                                        },
+                                        None,
+                                        focus_opened_item,
+                                        allow_preview,
+                                        true,
+                                        window, cx,
+                                    )
+                            };
+                            task
                                 .detach_and_prompt_err("Failed to open file", window, cx, move |e, _, _| {
                                     if e.to_string().contains("File is too large to load") {
                                         Some(e.to_string())
