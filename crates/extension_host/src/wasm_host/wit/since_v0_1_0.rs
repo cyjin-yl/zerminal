@@ -463,14 +463,8 @@ impl ExtensionImports for WasmState {
                             })
                             .cloned()
                             .unwrap_or_default();
-                        Ok(serde_json::to_string(&settings::LspSettings {
-                            binary: settings.binary.map(|binary| settings::BinarySettings {
-                                path: binary.path,
-                                arguments: binary.arguments,
-                            }),
-                            settings: settings.settings,
-                            initialization_options: settings.initialization_options,
-                        })?)
+                        // LspSettings 已重构为空结构体 (spec §16 Plan 16)
+                        Ok(serde_json::to_string(&settings::LspSettings::default())?)
                     }
                     _ => {
                         bail!("Unknown settings category: {}", category);

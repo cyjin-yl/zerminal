@@ -885,6 +885,9 @@ impl SplitDirection {
         match WorkspaceSettings::get_global(cx).pane_split_direction_vertical {
             PaneSplitDirectionVertical::Left => SplitDirection::Left,
             PaneSplitDirectionVertical::Right => SplitDirection::Right,
+            PaneSplitDirectionVertical::Vertical | PaneSplitDirectionVertical::Horizontal => {
+                SplitDirection::Left
+            }
         }
     }
 
@@ -892,6 +895,9 @@ impl SplitDirection {
         match WorkspaceSettings::get_global(cx).pane_split_direction_horizontal {
             PaneSplitDirectionHorizontal::Down => SplitDirection::Down,
             PaneSplitDirectionHorizontal::Up => SplitDirection::Up,
+            PaneSplitDirectionHorizontal::Horizontal | PaneSplitDirectionHorizontal::Vertical => {
+                SplitDirection::Down
+            }
         }
     }
 

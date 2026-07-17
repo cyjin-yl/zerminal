@@ -677,10 +677,8 @@ impl LspAdapter for RustLspAdapter {
         mut original: InitializeParams,
         cx: &App,
     ) -> Result<InitializeParams> {
-        let enable_lsp_tasks = ProjectSettings::get_global(cx)
-            .lsp
-            .get(&SERVER_NAME)
-            .is_some_and(|s| s.enable_lsp_tasks);
+        // enable_lsp_tasks 字段已从 LspSettings 移除 (spec §16 Plan 16)
+        let enable_lsp_tasks = false;
 
         let mut experimental = json!({
             "commands": {

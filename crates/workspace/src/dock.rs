@@ -308,25 +308,6 @@ pub enum DockPosition {
     Right,
 }
 
-impl From<settings::DockPosition> for DockPosition {
-    fn from(value: settings::DockPosition) -> Self {
-        match value {
-            settings::DockPosition::Left => Self::Left,
-            settings::DockPosition::Bottom => Self::Bottom,
-            settings::DockPosition::Right => Self::Right,
-        }
-    }
-}
-
-impl Into<settings::DockPosition> for DockPosition {
-    fn into(self) -> settings::DockPosition {
-        match self {
-            Self::Left => settings::DockPosition::Left,
-            Self::Bottom => settings::DockPosition::Bottom,
-            Self::Right => settings::DockPosition::Right,
-        }
-    }
-}
 
 impl From<TerminalDockPosition> for DockPosition {
     fn from(value: TerminalDockPosition) -> Self {

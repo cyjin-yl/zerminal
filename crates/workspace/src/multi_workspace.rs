@@ -8,7 +8,7 @@ use gpui::{
 };
 use project::{Project, WorktreePaths};
 use settings::{SettingsFile, SettingsStore};
-pub use settings::SidebarSide;
+pub use crate::settings_stubs::{SidebarDockPosition, SidebarSide};
 use std::cell::Cell;
 use std::future::Future;
 use std::path::PathBuf;
@@ -19,7 +19,6 @@ use util::path_list::PathList;
 use zed_actions::agents_sidebar::ToggleThreadSwitcher;
 
 // use agent_settings::AgentSettings;  // removed-crate: agent_settings
-use settings::SidebarDockPosition;
 use ui::{ContextMenu, right_click_menu};
 
 const SIDEBAR_RESIZE_HANDLE_SIZE: Pixels = px(6.0);
@@ -84,14 +83,11 @@ pub fn sidebar_side_context_menu(
                         let side = match position {
                             SidebarDockPosition::Left => "left",
                             SidebarDockPosition::Right => "right",
+                            SidebarDockPosition::Bottom | SidebarDockPosition::Top => "left",
                         };
                         telemetry::event!("Sidebar Side Changed", side = side);
-                        settings::update_settings_file(fs.clone(), cx, move |settings, _cx| {
-                            settings
-                                .agent
-                                .get_or_insert_default()
-                                .set_sidebar_side(position);
-                        });
+                        // agent 字段已从 SettingsContent 移除 (spec §16 Plan 16)
+                        // 侧边栏位置变更不再持久化到设置
                     },
                 );
             }

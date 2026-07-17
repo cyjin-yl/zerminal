@@ -1,29 +1,33 @@
 use std::{num::NonZeroUsize, time::Duration};
 
 use crate::DockPosition;
+pub use crate::settings_stubs::{
+    ActivateOnClose, AutosaveSetting, BottomDockLayout, CenteredLayoutSettings,
+    CliDefaultOpenBehavior, CloseWindowWhenNoItems, DefaultOpenBehavior, EncodingDisplayOptions,
+    InactiveOpacity, PaneSplitDirectionHorizontal, PaneSplitDirectionVertical,
+    RestoreOnStartupBehavior,
+};
 use collections::HashMap;
 use gpui::{App, Subscription};
 use serde::Deserialize;
-pub use settings::{
-    AutosaveSetting, BottomDockLayout, EncodingDisplayOptions, InactiveOpacity,
-    PaneSplitDirectionHorizontal, PaneSplitDirectionVertical, RegisterSetting,
-    RestoreOnStartupBehavior, Settings,
-};
+pub use settings::{RegisterSetting, Settings};
 use settings::{CommandAliasTarget, SettingsStore};
 
+/// 工作区设置 (spec §16 Plan 16)
+/// 原 settings 字段已大幅精简，保留向后兼容桩值
 #[derive(RegisterSetting)]
 pub struct WorkspaceSettings {
     pub active_pane_modifiers: ActivePanelModifiers,
-    pub bottom_dock_layout: settings::BottomDockLayout,
-    pub pane_split_direction_horizontal: settings::PaneSplitDirectionHorizontal,
-    pub pane_split_direction_vertical: settings::PaneSplitDirectionVertical,
-    pub centered_layout: settings::CenteredLayoutSettings,
+    pub bottom_dock_layout: BottomDockLayout,
+    pub pane_split_direction_horizontal: PaneSplitDirectionHorizontal,
+    pub pane_split_direction_vertical: PaneSplitDirectionVertical,
+    pub centered_layout: CenteredLayoutSettings,
     pub confirm_quit: bool,
     pub show_call_status_icon: bool,
     pub autosave: AutosaveSetting,
-    pub restore_on_startup: settings::RestoreOnStartupBehavior,
-    pub cli_default_open_behavior: settings::CliDefaultOpenBehavior,
-    pub default_open_behavior: settings::DefaultOpenBehavior,
+    pub restore_on_startup: RestoreOnStartupBehavior,
+    pub cli_default_open_behavior: CliDefaultOpenBehavior,
+    pub default_open_behavior: DefaultOpenBehavior,
     pub restore_on_file_reopen: bool,
     pub drop_target_size: f32,
     pub use_system_path_prompts: bool,
@@ -31,7 +35,7 @@ pub struct WorkspaceSettings {
     pub accessible_mode: bool,
     pub command_aliases: HashMap<String, CommandAliasTarget>,
     pub max_tabs: Option<NonZeroUsize>,
-    pub when_closing_with_no_tabs: settings::CloseWindowWhenNoItems,
+    pub when_closing_with_no_tabs: CloseWindowWhenNoItems,
     pub on_last_window_closed: settings::OnLastWindowClosed,
     pub text_rendering_mode: settings::TextRenderingMode,
     pub resize_all_panels_in_dock: Vec<DockPosition>,
@@ -43,114 +47,131 @@ pub struct WorkspaceSettings {
     pub focus_follows_mouse: FocusFollowsMouse,
 }
 
+/// 鼠标跟随焦点设置 (spec §16 Plan 16)
 #[derive(Copy, Clone, Deserialize)]
 pub struct FocusFollowsMouse {
     pub enabled: bool,
     pub debounce: Duration,
 }
 
+/// 活动面板修饰样式 (spec §16 Plan 16)
 #[derive(Copy, Clone, PartialEq, Debug, Default)]
 pub struct ActivePanelModifiers {
-    /// Size of the border surrounding the active pane.
-    /// When set to 0, the active pane doesn't have any border.
-    /// The border is drawn inset.
-    ///
-    /// Default: `0.0`
-    // TODO: make this not an option, it is never None
+    /// 活动面板边框大小, 0 表示无边框
     pub border_size: Option<f32>,
-    /// Opacity of inactive panels.
-    /// When set to 1.0, the inactive panes have the same opacity as the active one.
-    /// If set to 0, the inactive panes content will not be visible at all.
-    /// Values are clamped to the [0.0, 1.0] range.
-    ///
-    /// Default: `1.0`
-    // TODO: make this not an option, it is never None
+    /// 非活动面板不透明度, 范围 [0.0, 1.0], 默认 1.0
     pub inactive_opacity: Option<InactiveOpacity>,
 }
 
+/// Tab 栏设置 (spec §16 Plan 16)
 #[derive(Deserialize, RegisterSetting)]
 pub struct TabBarSettings {
+    /// 是否显示 Tab 栏
     pub show: bool,
+    /// 中间点击关闭标签
+    pub middle_click_to_close: bool,
+    /// 鼠标滚轮切换标签
+    pub mouse_scroll_to_switch: bool,
+    /// 仅显示活动项
+    pub show_active_item: bool,
+    /// 关闭按钮显示方式
+    pub show_close_button: settings::ShowCloseButton,
+    /// 导航历史按钮 (向后兼容桩)
     pub show_nav_history_buttons: bool,
+    /// Tab 栏按钮 (向后兼容桩)
     pub show_tab_bar_buttons: bool,
+    /// 固定标签单独行 (向后兼容桩)
     pub show_pinned_tabs_in_separate_row: bool,
+}
+
+/// 读取 TabBarSettings 从设置内容
+impl Settings for TabBarSettings {
+    fn from_settings(content: &settings::SettingsContent) -> Self {
+        let tab_bar = content.tab_bar.clone().unwrap_or_default();
+        TabBarSettings {
+            show: true, // Tab 栏默认显示
+            middle_click_to_close: tab_bar.middle_click_to_close,
+            mouse_scroll_to_switch: tab_bar.mouse_scroll_to_switch,
+            show_active_item: tab_bar.show_active_item,
+            show_close_button: tab_bar.show_close_button,
+            // 向后兼容桩字段 (spec §16 Plan 16)
+            show_nav_history_buttons: true,
+            show_tab_bar_buttons: true,
+            show_pinned_tabs_in_separate_row: false,
+        }
+    }
 }
 
 impl Settings for WorkspaceSettings {
     fn from_settings(content: &settings::SettingsContent) -> Self {
         let workspace = &content.workspace;
         Self {
-            active_pane_modifiers: ActivePanelModifiers {
-                border_size: Some(
-                    workspace
-                        .active_pane_modifiers
-                        .unwrap()
-                        .border_size
-                        .unwrap(),
-                ),
-                inactive_opacity: Some(
-                    workspace
-                        .active_pane_modifiers
-                        .unwrap()
-                        .inactive_opacity
-                        .unwrap(),
-                ),
-            },
-            bottom_dock_layout: workspace.bottom_dock_layout.unwrap(),
-            pane_split_direction_horizontal: workspace.pane_split_direction_horizontal.unwrap(),
-            pane_split_direction_vertical: workspace.pane_split_direction_vertical.unwrap(),
-            centered_layout: workspace.centered_layout.unwrap(),
-            confirm_quit: workspace.confirm_quit.unwrap(),
-            show_call_status_icon: workspace.show_call_status_icon.unwrap(),
-            autosave: workspace.autosave.unwrap(),
-            restore_on_startup: workspace.restore_on_startup.unwrap(),
-            cli_default_open_behavior: workspace.cli_default_open_behavior.unwrap(),
-            default_open_behavior: workspace.default_open_behavior.unwrap(),
-            restore_on_file_reopen: workspace.restore_on_file_reopen.unwrap(),
-            drop_target_size: workspace.drop_target_size.unwrap(),
-            use_system_path_prompts: workspace.use_system_path_prompts.unwrap(),
-            use_system_prompts: workspace.use_system_prompts.unwrap(),
-            accessible_mode: workspace.accessible_mode.unwrap(),
-            command_aliases: workspace.command_aliases.clone(),
-            max_tabs: workspace.max_tabs,
-            when_closing_with_no_tabs: workspace.when_closing_with_no_tabs.unwrap(),
-            on_last_window_closed: workspace.on_last_window_closed.unwrap(),
-            text_rendering_mode: workspace.text_rendering_mode.unwrap(),
-            resize_all_panels_in_dock: workspace
-                .resize_all_panels_in_dock
-                .clone()
-                .unwrap()
-                .into_iter()
-                .map(Into::into)
-                .collect(),
-            close_on_file_delete: workspace.close_on_file_delete.unwrap(),
-            close_panel_on_toggle: workspace.close_panel_on_toggle.unwrap(),
-            use_system_window_tabs: workspace.use_system_window_tabs.unwrap(),
-            zoomed_padding: workspace.zoomed_padding.unwrap(),
-            window_decorations: workspace.window_decorations.unwrap(),
+            // 活动面板修饰 (原 settings 字段已移除, 使用默认值)
+            active_pane_modifiers: ActivePanelModifiers::default(),
+            // 底部停靠布局 (原 settings 字段已移除, 使用默认值)
+            bottom_dock_layout: BottomDockLayout::default(),
+            // 水平分割方向 (原 settings 字段已移除, 使用默认值)
+            pane_split_direction_horizontal: PaneSplitDirectionHorizontal::default(),
+            // 垂直分割方向 (原 settings 字段已移除, 使用默认值)
+            pane_split_direction_vertical: PaneSplitDirectionVertical::default(),
+            // 居中布局 (原 settings 字段已移除, 使用默认值)
+            centered_layout: CenteredLayoutSettings::default(),
+            // 确认退出
+            confirm_quit: workspace.confirm_quit,
+            // 调用状态图标 (原 settings 字段已移除, 使用默认值)
+            show_call_status_icon: false,
+            // 自动保存 (原 settings 字段已移除, 使用默认值)
+            autosave: AutosaveSetting::default(),
+            // 启动恢复 (原 settings 字段已移除, 使用默认值)
+            restore_on_startup: RestoreOnStartupBehavior::default(),
+            // CLI 默认打开行为 (原 settings 字段已移除, 使用默认值)
+            cli_default_open_behavior: CliDefaultOpenBehavior::default(),
+            // 默认打开行为 (原 settings 字段已移除, 使用默认值)
+            default_open_behavior: DefaultOpenBehavior::default(),
+            // 文件重开恢复 (原 settings 字段已移除, 使用默认值)
+            restore_on_file_reopen: true,
+            // 拖放目标大小 (原 settings 字段已移除, 使用默认值)
+            drop_target_size: 20.0,
+            // 系统路径提示 (原 settings 字段已移除, 使用默认值)
+            use_system_path_prompts: false,
+            // 系统提示 (原 settings 字段已移除, 使用默认值)
+            use_system_prompts: false,
+            // 无障碍模式 (原 settings 字段已移除, 使用默认值)
+            accessible_mode: false,
+            // 命令别名 (原 settings 字段已移除, 使用空默认值)
+            command_aliases: HashMap::default(),
+            // 最大标签数 (原 settings 字段已移除, 使用默认值)
+            max_tabs: None,
+            // 关闭无标签窗口 (原 settings 字段已移除, 使用默认值)
+            when_closing_with_no_tabs: CloseWindowWhenNoItems::default(),
+            // 关闭窗口行为
+            on_last_window_closed: workspace.on_last_window_closed,
+            // 文本渲染模式
+            text_rendering_mode: workspace.text_rendering_mode,
+            // 停靠面板缩放 (原 settings 字段已移除, 使用默认值)
+            resize_all_panels_in_dock: Vec::new(),
+            // 文件删除关闭 (原 settings 字段已移除, 使用默认值)
+            close_on_file_delete: true,
+            // 切换面板关闭 (原 settings 字段已移除, 使用默认值)
+            close_panel_on_toggle: false,
+            // 系统窗口标签 (原 settings 字段已移除, 使用默认值)
+            use_system_window_tabs: false,
+            // 缩放填充 (原 settings 字段已移除, 使用默认值)
+            zoomed_padding: true,
+            // 窗口装饰
+            window_decorations: workspace.window_decorations.clone(),
+            // 鼠标跟随焦点
             focus_follows_mouse: FocusFollowsMouse {
-                enabled: workspace
-                    .focus_follows_mouse
-                    .unwrap()
-                    .enabled
-                    .unwrap_or(false),
-                debounce: Duration::from_millis(
-                    workspace
-                        .focus_follows_mouse
-                        .unwrap()
-                        .debounce_ms
-                        .unwrap_or(250),
-                ),
+                enabled: workspace.focus_follows_mouse.enabled,
+                // debounce_ms 字段已从 settings::FocusFollowsMouse 移除 (spec §16 Plan 16)
+                debounce: Duration::from_millis(250),
             },
         }
     }
 }
 
-/// Provides convenient access to whether "accessible mode" is enabled, mirroring
-/// [`theme::ActiveTheme`] for the active theme. Import this trait to call
-/// `cx.accessible_mode()`.
+/// 无障碍模式访问 trait
 pub trait AccessibleMode {
-    /// Returns whether accessible mode is enabled.
     fn accessible_mode(&self) -> bool;
 }
 
@@ -160,57 +181,42 @@ impl AccessibleMode for App {
     }
 }
 
-/// Observes changes to the accessible-mode setting, invoking `callback` with the
-/// new value whenever it changes. Mirrors the common
-/// `cx.observe_global::<SettingsStore>` pattern, but only fires when the value
-/// actually changes. The returned [`Subscription`] must be retained for the
-/// callback to keep firing.
+/// 观察无障碍模式变化
 pub fn observe_accessible_mode(
     cx: &mut App,
     mut callback: impl FnMut(bool, &mut App) + 'static,
 ) -> Subscription {
-    let mut last = cx.accessible_mode();
+    let mut last_accessible_mode = WorkspaceSettings::get_global(cx).accessible_mode;
     cx.observe_global::<SettingsStore>(move |cx| {
-        let current = cx.accessible_mode();
-        if current != last {
-            last = current;
-            callback(current, cx);
+        let accessible_mode = WorkspaceSettings::get_global(cx).accessible_mode;
+        if accessible_mode != last_accessible_mode {
+            last_accessible_mode = accessible_mode;
+            callback(accessible_mode, cx);
         }
     })
 }
 
-impl Settings for TabBarSettings {
-    fn from_settings(content: &settings::SettingsContent) -> Self {
-        let tab_bar = content.tab_bar.clone().unwrap();
-        TabBarSettings {
-            show: tab_bar.show.unwrap(),
-            show_nav_history_buttons: tab_bar.show_nav_history_buttons.unwrap(),
-            show_tab_bar_buttons: tab_bar.show_tab_bar_buttons.unwrap(),
-            show_pinned_tabs_in_separate_row: tab_bar.show_pinned_tabs_in_separate_row.unwrap(),
-        }
-    }
-}
-
+/// 状态栏设置 (spec §16 Plan 16)
 #[derive(Deserialize, RegisterSetting)]
 pub struct StatusBarSettings {
+    /// 是否显示状态栏
     pub show: bool,
-    pub show_active_file: bool,
-    pub active_language_button: bool,
-    pub cursor_position_button: bool,
-    pub line_endings_button: bool,
-    pub active_encoding_button: EncodingDisplayOptions,
+    /// 堆栈大小显示
+    pub stack_size: bool,
+    /// 工作目录显示
+    pub working_directory: bool,
+    /// 会话状态显示
+    pub session_status: bool,
 }
 
 impl Settings for StatusBarSettings {
     fn from_settings(content: &settings::SettingsContent) -> Self {
-        let status_bar = content.status_bar.clone().unwrap();
+        let status_bar = content.status_bar.clone().unwrap_or_default();
         StatusBarSettings {
-            show: status_bar.show.unwrap(),
-            show_active_file: status_bar.show_active_file.unwrap(),
-            active_language_button: status_bar.active_language_button.unwrap(),
-            cursor_position_button: status_bar.cursor_position_button.unwrap(),
-            line_endings_button: status_bar.line_endings_button.unwrap(),
-            active_encoding_button: status_bar.active_encoding_button.unwrap(),
+            show: true, // 状态栏默认显示
+            stack_size: status_bar.stack_size,
+            working_directory: status_bar.working_directory,
+            session_status: status_bar.session_status,
         }
     }
 }

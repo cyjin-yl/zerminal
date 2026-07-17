@@ -15,7 +15,8 @@ use menu::{SelectNext, SelectPrevious};
 
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use settings::{DefaultOpenBehavior, Settings};
+use settings::Settings;
+use crate::settings_stubs::DefaultOpenBehavior;
 use ui::{ButtonLike, Divider, DividerColor, KeyBinding, Vector, VectorName, prelude::*};
 use util::ResultExt;
 use zed_actions::{
@@ -310,6 +311,9 @@ impl WelcomePage {
                     let open_mode = match WorkspaceSettings::get_global(cx).default_open_behavior {
                         DefaultOpenBehavior::ExistingWindow => OpenMode::Activate,
                         DefaultOpenBehavior::NewWindow => OpenMode::NewWindow,
+                        DefaultOpenBehavior::ActivePane | DefaultOpenBehavior::FirstPane => {
+                            OpenMode::Activate
+                        }
                     };
                     self.workspace
                         .update(cx, |workspace, cx| {

@@ -18,9 +18,9 @@ use language::Capability;
 pub use language::HighlightedText;
 use project::{Project, ProjectEntryId, ProjectPath};
 pub use settings::{
-    ActivateOnClose, ClosePosition, RegisterSetting, Settings, SettingsLocation, ShowCloseButton,
-    ShowDiagnostics,
+    RegisterSetting, Settings, SettingsLocation, ShowCloseButton,
 };
+pub use crate::settings_stubs::{ActivateOnClose, ClosePosition, ShowDiagnostics};
 use smallvec::SmallVec;
 use std::{
     any::{Any, TypeId},
@@ -72,45 +72,30 @@ pub struct PreviewTabsSettings {
 }
 
 impl Settings for ItemSettings {
-    fn from_settings(content: &settings::SettingsContent) -> Self {
-        let tabs = content.tabs.as_ref().unwrap();
+    fn from_settings(_content: &settings::SettingsContent) -> Self {
+        // tabs, git 字段已从 SettingsContent 移除 (spec §16 Plan 16)
         Self {
-            git_status: tabs.git_status.unwrap()
-                && content
-                    .git
-                    .as_ref()
-                    .unwrap()
-                    .enabled
-                    .unwrap()
-                    .is_git_status_enabled(),
-            close_position: tabs.close_position.unwrap(),
-            activate_on_close: tabs.activate_on_close.unwrap(),
-            file_icons: tabs.file_icons.unwrap(),
-            show_diagnostics: tabs.show_diagnostics.unwrap(),
-            show_close_button: tabs.show_close_button.unwrap(),
+            git_status: true,
+            close_position: ClosePosition::default(),
+            activate_on_close: ActivateOnClose::default(),
+            file_icons: true,
+            show_diagnostics: ShowDiagnostics::default(),
+            show_close_button: ShowCloseButton::default(),
         }
     }
 }
 
 impl Settings for PreviewTabsSettings {
-    fn from_settings(content: &settings::SettingsContent) -> Self {
-        let preview_tabs = content.preview_tabs.as_ref().unwrap();
+    fn from_settings(_content: &settings::SettingsContent) -> Self {
+        // preview_tabs 字段已从 SettingsContent 移除 (spec §16 Plan 16)
         Self {
-            enabled: preview_tabs.enabled.unwrap(),
-            enable_preview_from_project_panel: preview_tabs
-                .enable_preview_from_project_panel
-                .unwrap(),
-            enable_preview_from_file_finder: preview_tabs.enable_preview_from_file_finder.unwrap(),
-            enable_preview_from_multibuffer: preview_tabs.enable_preview_from_multibuffer.unwrap(),
-            enable_preview_multibuffer_from_code_navigation: preview_tabs
-                .enable_preview_multibuffer_from_code_navigation
-                .unwrap(),
-            enable_preview_file_from_code_navigation: preview_tabs
-                .enable_preview_file_from_code_navigation
-                .unwrap(),
-            enable_keep_preview_on_code_navigation: preview_tabs
-                .enable_keep_preview_on_code_navigation
-                .unwrap(),
+            enabled: true,
+            enable_preview_from_project_panel: true,
+            enable_preview_from_file_finder: true,
+            enable_preview_from_multibuffer: true,
+            enable_preview_multibuffer_from_code_navigation: true,
+            enable_preview_file_from_code_navigation: true,
+            enable_keep_preview_on_code_navigation: false,
         }
     }
 }

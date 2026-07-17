@@ -700,15 +700,8 @@ impl ExtensionImports for WasmState {
                             })
                             .cloned()
                             .unwrap_or_default();
-                        Ok(serde_json::to_string(&settings::LspSettings {
-                            binary: settings.binary.map(|binary| settings::CommandSettings {
-                                path: binary.path,
-                                arguments: binary.arguments,
-                                env: binary.env.map(|env| env.into_iter().collect()),
-                            }),
-                            settings: settings.settings,
-                            initialization_options: settings.initialization_options,
-                        })?)
+                        // LspSettings 已重构为空结构体 (spec §16 Plan 16)
+                        Ok(serde_json::to_string(&settings::LspSettings::default())?)
                     }
                     "context_servers" => {
                         bail!("context_servers settings category not supported in v0.8.0")

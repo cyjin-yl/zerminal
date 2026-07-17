@@ -6,7 +6,7 @@ use gpui::{
     Window,
 };
 use project::search::SearchQuery;
-use settings::SeedQuerySetting;
+use crate::settings_stubs::SeedQuerySetting;
 
 use crate::{
     ItemHandle,

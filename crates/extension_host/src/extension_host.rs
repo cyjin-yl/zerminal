@@ -1443,12 +1443,15 @@ impl ExtensionStore {
                 language.path.as_path(),
             ]);
 
-            // Load semantic token rules if present in the language directory.
-            let rules_path = language_path.join(SemanticTokenRules::FILE_NAME);
-            if std::fs::exists(&rules_path).is_ok_and(|exists| exists)
-                && let Some(rules) = SemanticTokenRules::load(&rules_path).log_err()
-            {
-                semantic_token_rules_to_add.push((language_name.clone(), rules));
+            // 加载语义 token 规则 (spec §16 Plan 16 - SemanticTokenRules::FILE_NAME 和 ::load() 已移除)
+            const SEMANTIC_TOKEN_RULES_FILE: &str = "semantic_tokens.json";
+            let rules_path = language_path.join(SEMANTIC_TOKEN_RULES_FILE);
+            if std::fs::exists(&rules_path).is_ok_and(|exists| exists) {
+                if let Ok(content) = std::fs::read_to_string(&rules_path) {
+                    if let Ok(rules) = serde_json::from_str::<SemanticTokenRules>(&content) {
+                        semantic_token_rules_to_add.push((language_name.clone(), rules));
+                    }
+                }
             }
 
             self.proxy.register_language(

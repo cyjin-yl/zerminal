@@ -25,9 +25,8 @@ impl ActiveFileName {
 
 impl Render for ActiveFileName {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        if !StatusBarSettings::get_global(cx).show_active_file {
-            return Empty.into_any_element();
-        }
+        // show_active_file 字段已从 StatusBarSettings 移除 (spec §16 Plan 16)
+        // 活动文件名始终显示
 
         let Some(project_path) = self.project_path.clone() else {
             return Empty.into_any_element();
@@ -70,8 +69,7 @@ impl StatusItemView for ActiveFileName {
     }
 
     fn hide_setting(&self, _: &App) -> Option<HideStatusItem> {
-        Some(HideStatusItem::new(|settings| {
-            settings.status_bar.get_or_insert_default().show_active_file = Some(false);
-        }))
+        // show_active_file 字段已从 StatusBarSettings 移除 (spec §16 Plan 16)
+        None
     }
 }

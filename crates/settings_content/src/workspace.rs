@@ -95,6 +95,8 @@ pub enum ShowCloseButton {
     Always,
     /// Never show.
     Never,
+    /// Hidden (alias for Never, backward compat).
+    Hidden,
 }
 
 /// Status bar settings (spec §16 Plan 16)

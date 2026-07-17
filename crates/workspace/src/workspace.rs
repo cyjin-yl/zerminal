@@ -27,7 +27,8 @@ mod toast_layer;
 mod toolbar;
 pub mod welcome;
 pub mod workspace_error;
-mod workspace_settings;
+pub mod workspace_settings;
+mod settings_stubs;
 
 pub use dock::Panel;
 pub use multi_workspace::{
@@ -118,10 +119,7 @@ use remote::{
 use schemars::JsonSchema;
 use serde::Deserialize;
 use session::AppSession;
-use settings::{
-    CenteredPaddingSettings, DefaultOpenBehavior, Settings, SettingsLocation, SettingsStore,
-    update_settings_file,
-};
+use settings::{Settings, SettingsLocation, SettingsStore, update_settings_file};
 
 use sqlez::{
     bindable::{Bind, Column, StaticColumnCount},
@@ -762,7 +760,7 @@ pub fn init(app_state: Arc<AppState>, cx: &mut App) {
                 action.create_new_window.unwrap_or_else(|| {
                     matches!(
                         WorkspaceSettings::get_global(cx).default_open_behavior,
-                        DefaultOpenBehavior::NewWindow
+                        crate::settings_stubs::DefaultOpenBehavior::NewWindow
                     )
                 }),
                 cx,
@@ -1814,9 +1812,8 @@ impl Workspace {
         cx: &mut Context<Self>,
     ) {
         let fs = self.project().read(cx).fs();
-        settings::update_settings_file(fs.clone(), cx, move |content, _cx| {
-            content.workspace.bottom_dock_layout = Some(layout);
-        });
+        // bottom_dock_layout 字段已从 WorkspaceSettingsContent 移除 (spec §16 Plan 16)
+        // 底部停靠布局设置不再持久化
 
         cx.notify();
         self.serialize_workspace(window, cx);
@@ -6515,10 +6512,10 @@ impl Workspace {
 
     fn adjust_padding(padding: Option<f32>) -> f32 {
         padding
-            .unwrap_or(CenteredPaddingSettings::default().0)
+            .unwrap_or(crate::settings_stubs::CenteredPaddingSettings::default().top)
             .clamp(
-                CenteredPaddingSettings::MIN_PADDING,
-                CenteredPaddingSettings::MAX_PADDING,
+                crate::settings_stubs::CenteredPaddingSettings::default().top,
+                100.0,
             )
     }
 
@@ -7341,12 +7338,12 @@ impl Render for Workspace {
         let paddings = if centered_layout {
             let settings = WorkspaceSettings::get_global(cx).centered_layout;
             (
-                render_padding(Self::adjust_padding(
-                    settings.left_padding.map(|padding| padding.0),
-                )),
-                render_padding(Self::adjust_padding(
-                    settings.right_padding.map(|padding| padding.0),
-                )),
+                render_padding(Self::adjust_padding(Some(
+                    settings.left_padding,
+                ))),
+                render_padding(Self::adjust_padding(Some(
+                    settings.right_padding,
+                ))),
             )
         } else {
             (None, None)
@@ -7754,6 +7751,20 @@ impl Render for Workspace {
                                             window,
                                             cx,
                                         )),
+                                    // Stacked 和 SideBySide 布局回退到 Full (spec §16 Plan 16)
+                                    BottomDockLayout::Stacked | BottomDockLayout::SideBySide => {
+                                        // 回退到 Full 布局
+                                        div()
+                                            .flex()
+                                            .flex_col()
+                                            .h_full()
+                                            .children(self.render_dock(
+                                                DockPosition::Bottom,
+                                                &self.bottom_dock,
+                                                window,
+                                                cx,
+                                            ))
+                                    }
                                 }
                             })
                             .children(self.zoomed.as_ref().and_then(|view| {

@@ -1575,7 +1575,7 @@ impl Pane {
             // Close the window when there's no active items to close, if configured
             if WorkspaceSettings::get_global(cx)
                 .when_closing_with_no_tabs
-                .should_close()
+                .should_close(true)
             {
                 window.dispatch_action(Box::new(CloseWindow), cx);
             }
@@ -2130,6 +2130,8 @@ impl Pane {
                     self.activation_history.pop();
                     left_neighbour_index()
                 }
+                ActivateOnClose::Next => left_neighbour_index(),
+                ActivateOnClose::None => item_index.saturating_sub(1),
             };
 
             let should_activate = activate_pane || self.has_focus(window, cx);
@@ -2880,7 +2882,7 @@ impl Pane {
                         ShowCloseButton::Hover => {
                             IconButton::new("close tab", IconName::Close).visible_on_hover("")
                         }
-                        ShowCloseButton::Hidden => return this,
+                        ShowCloseButton::Hidden | ShowCloseButton::Never => return this,
                     }
                     .shape(IconButtonShape::Square)
                     .icon_color(Color::Muted)
