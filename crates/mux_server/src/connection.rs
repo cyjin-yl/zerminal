@@ -207,6 +207,9 @@ async fn handle_create_session(
     let session = crate::session::Session::new(id.clone(), req.name.clone(), req.cwd.clone());
     sessions.write().push(session);
 
+    // §16.12 记录 session 创建事件
+    zlog::info!("session created: id={} name={} cwd={}", id, req.name, req.cwd);
+
     Ok(ResponseBody::Session(SessionInfo {
         id,
         name: req.name.clone(),
@@ -244,6 +247,10 @@ async fn handle_kill_session(
     let idx = sessions_w.iter().position(|s| s.id == req.id);
     if let Some(idx) = idx {
         sessions_w.remove(idx);
+        // §16.12 记录 session 销毁事件
+        zlog::info!("session killed: id={}", req.id);
+    } else {
+        zlog::warn!("kill session not found: id={}", req.id);
     }
     Ok(ResponseBody::Error(String::new()))
 }
@@ -258,6 +265,9 @@ async fn handle_attach(
         .iter()
         .find(|s| s.id == req.session_id)
         .ok_or_else(|| anyhow::anyhow!("session not found: {}", req.session_id))?;
+
+    // §16.12 记录客户端 attach 事件
+    zlog::info!("client attached: session={} mode={:?}", req.session_id, req.mode);
 
     Ok(ResponseBody::Attach(AttachResponse {
         snapshot: Some(SessionSnapshot {
@@ -283,6 +293,8 @@ async fn handle_spawn_pane(
     _sessions: &Arc<parking_lot::RwLock<Vec<crate::session::Session>>>,
 ) -> anyhow::Result<ResponseBody> {
     let pane_id = nanoid::nanoid!();
+    // §16.12 记录 pane 创建事件
+    zlog::info!("pane spawned: id={}", pane_id);
     Ok(ResponseBody::PaneId(pane_id))
 }
 

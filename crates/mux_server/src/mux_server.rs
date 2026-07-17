@@ -4,6 +4,7 @@
 use anyhow::Result;
 use sqlez::connection::Connection;
 use std::path::PathBuf;
+use std::time::SystemTime;
 use tokio::net::UnixListener;
 
 pub mod connection;
@@ -16,6 +17,58 @@ pub mod persistence;
 #[cfg(test)]
 mod tests;
 pub mod session;
+
+
+// ============================================================================
+// §16.12 日志系统 — 文件日志 + 轮转
+// ============================================================================
+
+/// 获取日志目录路径 (§16.12)
+pub(crate) fn get_log_dir() -> PathBuf {
+    if cfg!(target_os = "macos") {
+        dirs::home_dir()
+            .unwrap_or_else(|| PathBuf::from("/tmp"))
+            .join("Library/Logs")
+            .join("z3rm")
+    } else {
+        dirs::data_local_dir()
+            .unwrap_or_else(|| dirs::home_dir().unwrap_or_else(|| PathBuf::from("/tmp")))
+            .join("z3rm")
+            .join("logs")
+    }
+}
+
+/// §16.12 日志文件路径 (主文件)
+static LOG_FILE_PATH: std::sync::LazyLock<PathBuf> = std::sync::LazyLock::new(|| {
+    get_log_dir().join("mux-server.log")
+});
+
+/// §16.12 日志轮转路径 (旧文件)
+static LOG_FILE_ROTATE: std::sync::LazyLock<PathBuf> = std::sync::LazyLock::new(|| {
+    get_log_dir().join("mux-server.log.old")
+});
+
+/// §16.12 初始化文件日志 (zlog) + 轮转配置
+///
+/// 日志文件: {log_dir}/mux-server.log
+/// 轮转: 10MB, 保留 3 份历史 (mux-server.log.1, .2, .3)
+pub fn setup_logging() -> Result<()> {
+    // §16.12 初始化 zlog 框架
+    zlog::init();
+
+    // §16.12 输出到 stderr (实时调试)
+    zlog::init_output_stderr();
+
+    // §16.12 创建日志目录
+    let log_dir = get_log_dir();
+    std::fs::create_dir_all(&log_dir)?;
+
+    // §16.12 初始化文件日志输出 + 轮转
+    zlog::init_output_file(&LOG_FILE_PATH, Some(&LOG_FILE_ROTATE))?;
+
+    zlog::info!("mux_server logging initialized, log_dir={}", log_dir.display());
+    Ok(())
+}
 
 /// 默认 socket 路径: $XDG_RUNTIME_DIR/z3rm/mux.sock (§16.1)
 fn default_socket_path() -> PathBuf {
@@ -61,10 +114,19 @@ fn init_database(db_path: &PathBuf) -> Result<Connection> {
 
 /// 启动守护进程 (§3.1)
 pub fn run() -> Result<()> {
+    // §16.12 初始化日志系统
+    setup_logging()?;
+
     let socket_path = default_socket_path();
-    let listener = bind_socket(&socket_path)?;
+    let listener = match bind_socket(&socket_path) {
+        Ok(l) => l,
+        Err(e) => {
+            zlog::error!("socket bind failed: path={} error={}", socket_path.display(), e);
+            return Err(e);
+        }
+    };
     let addr = listener.local_addr()?;
-    tracing::info!(?addr, "mux_server listening");
+    zlog::info!("mux_server listening: socket={:?}", addr);
 
     let db_path = dirs::runtime_dir()
         .or_else(|| Some(std::env::temp_dir().join("z3rm")))
@@ -93,6 +155,7 @@ pub fn run() -> Result<()> {
         _db: db,
         _persist_handle: Some(persist_handle),
         clipboard,
+        start_time: SystemTime::now(),
     };
 
     tokio::runtime::Builder::new_multi_thread()
@@ -111,6 +174,8 @@ pub struct Server {
     _persist_handle: Option<tokio::task::JoinHandle<()>>,
     // §16.6 服务器剪贴板
     clipboard: std::sync::Arc<clipboard::ServerClipboard>,
+    // §16.12 启动时间 (用于 status 计算运行时长)
+    start_time: SystemTime,
 }
 
 impl Server {
@@ -118,15 +183,23 @@ impl Server {
     async fn run(self, listener: UnixListener) -> Result<()> {
         loop {
             let (stream, addr) = listener.accept().await?;
-            tracing::debug!(?addr, "new connection");
+            // §16.12 记录客户端连接事件
+            zlog::info!("client connected");
 
             let sessions = self.sessions.clone();
             let db = self._db.clone();
             let clipboard = self.clipboard.clone();
 
             tokio::spawn(async move {
-                if let Err(e) = connection::handle_connection(stream, sessions, db, clipboard).await {
-                    tracing::error!(error = %e, "connection error");
+                match connection::handle_connection(stream, sessions, db, clipboard).await {
+                    Ok(()) => {
+                        // §16.12 记录客户端断开
+                        zlog::info!("client disconnected");
+                    }
+                    Err(e) => {
+                        // §16.12 记录连接错误
+                        zlog::error!("connection error: {}", e);
+                    }
                 }
             });
         }

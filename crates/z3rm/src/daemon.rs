@@ -7,6 +7,68 @@ use std::time::Duration;
 
 use mux::MuxDomain;
 
+// ============================================================================
+// §16.12 GPUI 通知 — daemon 连接丢失/错误提示
+// ============================================================================
+
+use gpui::{App, SharedString, Task};
+use ui::{Icon, IconName};
+
+/// §16.12 显示 "daemon 连接丢失" 通知 (warning toast)
+pub fn show_daemon_connection_lost(cx: &mut App) {
+    notifications::status_toast::StatusToast::new(
+        "Connection to mux_server lost. Reconnecting...",
+        cx,
+        |toast, _| {
+            toast
+                .icon(Icon::new(IconName::Warning).color(ui::Color::Warning))
+                .auto_dismiss(true)
+                .dismiss_button(true)
+        },
+    );
+}
+
+/// §16.12 显示 daemon 错误通知 (error toast)
+pub fn show_daemon_error(cx: &mut App, error: impl Into<SharedString>) {
+    notifications::status_toast::StatusToast::new(error, cx, |toast, _| {
+        toast
+            .icon(Icon::new(IconName::XCircle).color(ui::Color::Error))
+            .auto_dismiss(false)
+            .dismiss_button(true)
+    });
+}
+
+/// §16.12 daemon 连接监视器: 后台检测连接状态并自动重连。
+/// 当 MuxDomain 连接丢失时自动重连并显示 toast 通知。
+pub fn watch_daemon_connection(
+    _domain: std::sync::Arc<MuxDomain>,
+    cx: &mut App,
+) -> gpui::Task<()> {
+    cx.spawn(async move |cx| {
+        // §16.12 定期检查 daemon socket 是否存在
+        let socket_path = default_socket_path();
+        loop {
+            tokio::time::sleep(Duration::from_secs(30)).await;
+
+            // §16.12 检测 socket 是否仍然存在
+            if !socket_path.exists() {
+                // §16.12 连接丢失, 显示通知并尝试重连
+                let _ = cx.update(|cx| show_daemon_connection_lost(cx));
+
+                // §16.12 尝试重新连接 daemon
+                match ensure_daemon_running().await {
+                    Ok(_) => {
+                        tracing::info!("reconnected to daemon");
+                    }
+                    Err(e) => {
+                        let _ = cx.update(|cx| show_daemon_error(cx, format!("Failed to reconnect to daemon: {e}")));
+                    }
+                }
+            }
+        }
+    })
+}
+
 /// 默认 socket 路径: $XDG_RUNTIME_DIR/z3rm/mux.sock 或 /tmp/z3rm/mux.sock (§16.1)
 fn default_socket_path() -> PathBuf {
     if let Ok(runtime_dir) = std::env::var("XDG_RUNTIME_DIR") {

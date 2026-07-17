@@ -7470,6 +7470,7 @@ dependencies = [
  "dirs",
  "interprocess",
  "libc",
+ "mux",
  "mux_protocol",
  "nanoid",
  "parking_lot",
@@ -7478,9 +7479,12 @@ dependencies = [
  "regex",
  "serde",
  "sqlez",
+ "sysinfo 0.37.2",
  "tempfile",
  "tokio",
  "tracing",
+ "zlog",
+ "zlog_settings",
 ]
 
 [[package]]
