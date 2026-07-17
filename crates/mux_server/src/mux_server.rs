@@ -10,6 +10,7 @@ use tokio::net::UnixListener;
 pub mod connection;
 pub mod clipboard;
 pub mod grid_sync;
+pub mod coalescing;
 pub mod layout;
 pub mod pane;
 pub mod persistence;
@@ -179,6 +180,7 @@ pub struct Server {
 }
 
 impl Server {
+    /// §3.5 keep_alive=true: 守护进程保持运行直到显式关闭
     /// §9 监听连接并处理请求
     async fn run(self, listener: UnixListener) -> Result<()> {
         loop {
