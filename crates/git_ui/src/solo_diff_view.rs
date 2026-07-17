@@ -21,7 +21,8 @@ use project::{
     Project,
     git_store::{Repository, RepositoryId},
 };
-use settings::{Settings, SettingsStore, StatusStyle};
+use crate::git_panel_settings::StatusStyle;
+use settings::{Settings, SettingsStore};
 use std::{
     any::{Any, TypeId},
     ops::Range,

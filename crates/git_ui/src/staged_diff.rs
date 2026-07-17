@@ -744,7 +744,7 @@ mod tests {
     use language::Point;
     use project::{FakeFs, Fs as _};
     use serde_json::json;
-    use settings::{DiffViewStyle, SettingsStore};
+    use settings::SettingsStore;
     use std::path::Path;
     use unindent::Unindent as _;
     use util::{path, rel_path::rel_path};
@@ -756,11 +756,6 @@ mod tests {
         cx.update(|cx| {
             let store = SettingsStore::test(cx);
             cx.set_global(store);
-            cx.update_global::<SettingsStore, _>(|store, cx| {
-                store.update_user_settings(cx, |settings| {
-                    settings.editor.diff_view_style = Some(DiffViewStyle::Unified);
-                });
-            });
             theme_settings::init(theme::LoadThemes::JustBase, cx);
             editor::init(cx);
             crate::init(cx);

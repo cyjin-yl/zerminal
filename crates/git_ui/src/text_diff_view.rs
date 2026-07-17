@@ -474,7 +474,7 @@ mod tests {
     use language::Point;
     use project::{FakeFs, Project};
     use serde_json::json;
-    use settings::{DiffViewStyle, SettingsStore};
+    use settings::SettingsStore;
     use unindent::unindent;
     use util::{path, test::marked_text_ranges};
     use workspace::MultiWorkspace;
@@ -483,11 +483,6 @@ mod tests {
         cx.update(|cx| {
             let settings_store = SettingsStore::test(cx);
             cx.set_global(settings_store);
-            cx.update_global::<SettingsStore, _>(|store, cx| {
-                store.update_user_settings(cx, |settings| {
-                    settings.editor.diff_view_style = Some(DiffViewStyle::Unified);
-                });
-            });
             theme_settings::init(theme::LoadThemes::JustBase, cx);
         });
     }

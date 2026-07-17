@@ -25,7 +25,7 @@ use language::{
 use markdown::{Markdown, MarkdownElement};
 use multi_buffer::PathKey;
 use project::{Project, ProjectPath, WorktreeId, git_store::Repository};
-use settings::{DiffViewStyle, Settings};
+use settings::Settings;
 use std::{
     any::{Any, TypeId},
     collections::HashSet,
@@ -421,9 +421,6 @@ impl CommitView {
                                 buffer_diff.clone(),
                                 cx,
                             );
-                            if is_first_batch && editor.diff_view_style() == DiffViewStyle::Split {
-                                editor.split(window, cx);
-                            }
                         });
                     })?;
                     if batch_end < total {

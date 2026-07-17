@@ -1,21 +1,68 @@
-use editor::{EditorSettings, ui_scrollbar_settings_from_raw};
 use gpui::Pixels;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
-use settings::{
-    GitPanelClickBehavior, GitPanelGroupBy, GitPanelSortBy, RegisterSetting, Settings, StatusStyle,
-};
+use settings::{RegisterSetting, Settings};
 use ui::{
     px,
     scrollbars::{ScrollbarVisibility, ShowScrollbar},
 };
 use workspace::dock::DockPosition;
 
+/// 滚动条设置
 #[derive(Copy, Clone, Debug, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
 pub struct ScrollbarSettings {
     pub show: Option<ShowScrollbar>,
 }
 
+/// 状态样式 (spec §16 Plan 16)
+#[derive(Copy, Clone, Debug, Default, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum StatusStyle {
+    /// 使用图标显示状态
+    #[default]
+    Icon,
+    /// 使用标签颜色显示状态
+    LabelColor,
+}
+
+/// Git 面板排序方式 (spec §16 Plan 16)
+#[derive(Copy, Clone, Debug, Default, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum GitPanelSortBy {
+    /// 按路径排序
+    #[default]
+    Path,
+    /// 按名称排序
+    Name,
+}
+
+/// Git 面板分组方式 (spec §16 Plan 16)
+#[derive(Copy, Clone, Debug, Default, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum GitPanelGroupBy {
+    /// 不分组
+    #[default]
+    None,
+    /// 按状态分组
+    Status,
+    /// 按暂存状态分组
+    Staging,
+}
+
+/// Git 面板点击行为 (spec §16 Plan 16)
+#[derive(Copy, Clone, Debug, Default, Serialize, Deserialize, JsonSchema, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum GitPanelClickBehavior {
+    /// 点击打开文件差异
+    #[default]
+    FileDiff,
+    /// 点击查看文件
+    ViewFile,
+    /// 点击打开项目差异
+    ProjectDiff,
+}
+
+/// Git 面板设置 (spec §16 Plan 16)
 #[derive(Debug, Clone, PartialEq, RegisterSetting)]
 pub struct GitPanelSettings {
     pub button: bool,
@@ -41,49 +88,34 @@ pub struct GitPanelSettings {
 pub(crate) struct GitPanelScrollbarAccessor;
 
 impl ScrollbarVisibility for GitPanelScrollbarAccessor {
-    fn visibility(&self, cx: &ui::App) -> ShowScrollbar {
-        // TODO: This PR should have defined Editor's `scrollbar.axis`
-        // as an Option<ScrollbarAxis>, not a ScrollbarAxes as it would allow you to
-        // `.unwrap_or(EditorSettings::get_global(cx).scrollbar.show)`.
-        //
-        // Once this is fixed we can extend the GitPanelSettings with a `scrollbar.axis`
-        // so we can show each axis based on the settings.
-        //
-        // We should fix this. PR: https://github.com/zed-industries/zed/pull/19495
-        GitPanelSettings::get_global(cx)
-            .scrollbar
-            .show
-            .unwrap_or_else(|| EditorSettings::get_global(cx).scrollbar.show)
+    fn visibility(&self, _cx: &ui::App) -> ShowScrollbar {
+        // editor crate removed; default to showing scrollbar
+        ShowScrollbar::Always
     }
 }
 
 impl Settings for GitPanelSettings {
-    fn from_settings(content: &settings::SettingsContent) -> Self {
-        let git_panel = content.git_panel.clone().unwrap();
+    fn from_settings(_content: &settings::SettingsContent) -> Self {
+        // git_panel 字段已从 SettingsContent 中移除 (spec §16 Plan 16)
+        // 使用默认值
         Self {
-            button: git_panel.button.unwrap(),
-            dock: git_panel.dock.unwrap().into(),
-            default_width: px(git_panel.default_width.unwrap()),
-            status_style: git_panel.status_style.unwrap(),
-            file_icons: git_panel.file_icons.unwrap(),
-            folder_icons: git_panel.folder_icons.unwrap(),
-            scrollbar: ScrollbarSettings {
-                show: git_panel
-                    .scrollbar
-                    .unwrap()
-                    .show
-                    .map(ui_scrollbar_settings_from_raw),
-            },
-            fallback_branch_name: git_panel.fallback_branch_name.unwrap(),
-            sort_by: git_panel.sort_by.unwrap(),
-            group_by: git_panel.group_by.unwrap(),
-            collapse_untracked_diff: git_panel.collapse_untracked_diff.unwrap(),
-            tree_view: git_panel.tree_view.unwrap(),
-            diff_stats: git_panel.diff_stats.unwrap(),
-            show_count_badge: git_panel.show_count_badge.unwrap(),
-            starts_open: git_panel.starts_open.unwrap(),
-            commit_title_max_length: git_panel.commit_title_max_length.unwrap(),
-            entry_primary_click_action: git_panel.entry_primary_click_action.unwrap(),
+            button: true,
+            dock: DockPosition::Right,
+            default_width: px(240.),
+            status_style: StatusStyle::Icon,
+            file_icons: true,
+            folder_icons: true,
+            scrollbar: ScrollbarSettings { show: None },
+            fallback_branch_name: "main".to_string(),
+            sort_by: GitPanelSortBy::Path,
+            group_by: GitPanelGroupBy::None,
+            collapse_untracked_diff: true,
+            tree_view: false,
+            diff_stats: false,
+            show_count_badge: false,
+            starts_open: true,
+            commit_title_max_length: 40,
+            entry_primary_click_action: GitPanelClickBehavior::FileDiff,
         }
     }
 }

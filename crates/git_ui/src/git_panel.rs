@@ -65,10 +65,10 @@ use project::{
 // use prompt_store::RULES_FILE_NAMES;  // removed-crate: prompt_store
 use proto::RpcError;
 use serde::{Deserialize, Serialize};
-use settings::{
-    GitPanelClickBehavior, GitPanelGroupBy, GitPanelSortBy, Settings, SettingsStore, StatusStyle,
-    update_settings_file,
+use crate::git_panel_settings::{
+    GitPanelClickBehavior, GitPanelGroupBy, GitPanelSortBy, StatusStyle,
 };
+use settings::{Settings, SettingsStore, update_settings_file};
 use smallvec::SmallVec;
 use std::cell::Cell;
 use std::future::Future;
@@ -3754,40 +3754,16 @@ impl GitPanel {
     }
 
     fn set_sort_by_path(&mut self, _: &SetSortByPath, _: &mut Window, cx: &mut Context<Self>) {
-        if let Some(workspace) = self.workspace.upgrade() {
-            let workspace = workspace.read(cx);
-            let fs = workspace.app_state().fs.clone();
-            cx.update_global::<SettingsStore, _>(|store, _cx| {
-                store.update_settings_file(fs, move |settings, _cx| {
-                    settings.git_panel.get_or_insert_default().sort_by = Some(GitPanelSortBy::Path);
-                });
-            });
-        }
+        // git_panel 设置已从 SettingsContent 移除 (spec §16 Plan 16)
+        // 排序选项现在硬编码在 GitPanelSettings 中
     }
 
     fn set_sort_by_name(&mut self, _: &SetSortByName, _: &mut Window, cx: &mut Context<Self>) {
-        if let Some(workspace) = self.workspace.upgrade() {
-            let workspace = workspace.read(cx);
-            let fs = workspace.app_state().fs.clone();
-            cx.update_global::<SettingsStore, _>(|store, _cx| {
-                store.update_settings_file(fs, move |settings, _cx| {
-                    settings.git_panel.get_or_insert_default().sort_by = Some(GitPanelSortBy::Name);
-                });
-            });
-        }
+        // git_panel 设置已从 SettingsContent 移除 (spec §16 Plan 16)
     }
 
     fn set_group_by_none(&mut self, _: &SetGroupByNone, _: &mut Window, cx: &mut Context<Self>) {
-        if let Some(workspace) = self.workspace.upgrade() {
-            let workspace = workspace.read(cx);
-            let fs = workspace.app_state().fs.clone();
-            cx.update_global::<SettingsStore, _>(|store, _cx| {
-                store.update_settings_file(fs, move |settings, _cx| {
-                    settings.git_panel.get_or_insert_default().group_by =
-                        Some(GitPanelGroupBy::None);
-                });
-            });
-        }
+        // git_panel 设置已从 SettingsContent 移除 (spec §16 Plan 16)
     }
 
     fn set_group_by_status(
@@ -3796,16 +3772,7 @@ impl GitPanel {
         _: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if let Some(workspace) = self.workspace.upgrade() {
-            let workspace = workspace.read(cx);
-            let fs = workspace.app_state().fs.clone();
-            cx.update_global::<SettingsStore, _>(|store, _cx| {
-                store.update_settings_file(fs, move |settings, _cx| {
-                    settings.git_panel.get_or_insert_default().group_by =
-                        Some(GitPanelGroupBy::Status);
-                });
-            });
-        }
+        // git_panel 设置已从 SettingsContent 移除 (spec §16 Plan 16)
     }
 
     fn view_staged_changes(
@@ -3848,29 +3815,11 @@ impl GitPanel {
         _: &mut Window,
         cx: &mut Context<Self>,
     ) {
-        if let Some(workspace) = self.workspace.upgrade() {
-            let workspace = workspace.read(cx);
-            let fs = workspace.app_state().fs.clone();
-            cx.update_global::<SettingsStore, _>(|store, _cx| {
-                store.update_settings_file(fs, move |settings, _cx| {
-                    settings.git_panel.get_or_insert_default().group_by =
-                        Some(GitPanelGroupBy::Staging);
-                });
-            });
-        }
+        // git_panel 设置已从 SettingsContent 移除 (spec §16 Plan 16)
     }
 
     fn toggle_tree_view(&mut self, _: &ToggleTreeView, _: &mut Window, cx: &mut Context<Self>) {
-        let current_setting = GitPanelSettings::get_global(cx).tree_view;
-        if let Some(workspace) = self.workspace.upgrade() {
-            let workspace = workspace.read(cx);
-            let fs = workspace.app_state().fs.clone();
-            cx.update_global::<SettingsStore, _>(|store, _cx| {
-                store.update_settings_file(fs, move |settings, _cx| {
-                    settings.git_panel.get_or_insert_default().tree_view = Some(!current_setting);
-                });
-            })
-        }
+        // git_panel 设置已从 SettingsContent 移除 (spec §16 Plan 16)
     }
 
     pub(crate) fn increase_font_size(
@@ -7446,10 +7395,8 @@ impl Panel for GitPanel {
         matches!(position, DockPosition::Left | DockPosition::Right)
     }
 
-    fn set_position(&mut self, position: DockPosition, _: &mut Window, cx: &mut Context<Self>) {
-        settings::update_settings_file(self.fs.clone(), cx, move |settings, _| {
-            settings.git_panel.get_or_insert_default().dock = Some(position.into())
-        });
+    fn set_position(&mut self, _position: DockPosition, _: &mut Window, cx: &mut Context<Self>) {
+        // git_panel 设置已从 SettingsContent 移除 (spec §16 Plan 16)
     }
 
     fn default_size(&self, _: &Window, cx: &App) -> Pixels {
@@ -7485,9 +7432,8 @@ impl Panel for GitPanel {
     }
 
     fn hide_button_setting(&self, _: &App) -> Option<workspace::HideStatusItem> {
-        Some(workspace::HideStatusItem::new(|settings| {
-            settings.git_panel.get_or_insert_default().button = Some(false);
-        }))
+        // git_panel 设置已从 SettingsContent 移除 (spec §16 Plan 16)
+        None
     }
 }
 
