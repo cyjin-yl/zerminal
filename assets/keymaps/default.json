@@ -1,0 +1,28 @@
+// §16.7 Mux default keymap profile: global shortcuts without prefix key
+// spec §16.7, Plan 17 — default profile uses Ctrl+Shift modifiers
+[
+  {
+    "context": "Terminal",
+    "bindings": {
+      // Tab management
+      "ctrl-shift-t": "pane::newTab",
+      "ctrl-shift-w": "pane::closeTab",
+
+      // Pane splitting
+      "ctrl-shift-%": "pane::splitRight",
+      "ctrl-shift-\"": "pane::splitDown",
+
+      // Pane navigation
+      "ctrl-shift-left": "pane::focusLeft",
+      "ctrl-shift-right": "pane::focusRight",
+      "ctrl-shift-up": "pane::focusUp",
+      "ctrl-shift-down": "pane::focusDown",
+
+      // Mux session
+      "ctrl-shift-d": "mux::detach",
+
+      // Pane zoom
+      "ctrl-shift-z": "pane::zoomToggle"
+    }
+  }
+]

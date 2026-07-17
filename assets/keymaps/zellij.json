@@ -1,0 +1,55 @@
+// §16.7 Mux zellij keymap profile: Alt-prefix style bindings
+// spec §16.7, Plan 17 — zellij-compatible subset
+// NOTE: zellij uses Alt+key bindings directly (no separate prefix key)
+[
+  {
+    "context": "Terminal",
+    "bindings": {
+      // Tab management
+      "alt-shift-t": "pane::newTab",
+      "alt-shift-w": "pane::closeTab",
+      "alt-n": "pane::nextTab",
+      "alt-p": "pane::prevTab",
+
+      // Pane splitting
+      "alt-+": "pane::splitRight",
+      "alt-shift-+": "pane::splitDown",
+
+      // Pane navigation (directional)
+      "alt-left": "pane::focusLeft",
+      "alt-right": "pane::focusRight",
+      "alt-up": "pane::focusUp",
+      "alt-down": "pane::focusDown",
+
+      // Pane navigation (zellij hjkl)
+      "alt-h": "pane::focusLeft",
+      "alt-j": "pane::focusDown",
+      "alt-k": "pane::focusUp",
+      "alt-l": "pane::focusRight",
+      "alt-w": "pane::focusNextPane",
+
+      // Pane switching by number (zellij style)
+      "alt-1": "pane::focusPane0",
+      "alt-2": "pane::focusPane1",
+      "alt-3": "pane::focusPane2",
+      "alt-4": "pane::focusPane3",
+      "alt-5": "pane::focusPane4",
+      "alt-6": "pane::focusPane5",
+      "alt-7": "pane::focusPane6",
+      "alt-8": "pane::focusPane7",
+      "alt-9": "pane::focusPane8",
+
+      // Pane zoom
+      "alt-z": "pane::zoomToggle",
+
+      // Pane resizing (zellij style)
+      "alt-shift-left": "pane::resizeLeft",
+      "alt-shift-right": "pane::resizeRight",
+      "alt-shift-up": "pane::resizeUp",
+      "alt-shift-down": "pane::resizeDown",
+
+      // Mux session
+      "alt-d": "mux::detach"
+    }
+  }
+]

@@ -1,0 +1,55 @@
+// §16.7 Mux screen keymap profile: prefix key (Ctrl-a) + prefix-mode bindings
+// spec §16.7, Plan 17 — GNU screen-compatible subset (~80% of common operations)
+// NOTE: This is NOT 1:1 screen compatibility; it covers the most common operations.
+[
+  // Normal mode: prefix key triggers prefix mode with 500ms timeout
+  {
+    "context": "Terminal",
+    "bindings": {
+      "ctrl-a": ["mux::enterPrefixMode", { "timeout": 500 }]
+    }
+  },
+  // Prefix mode: after Ctrl-a, the next key is matched here
+  {
+    "context": "Terminal && PrefixMode",
+    "bindings": {
+      // Tab (window) management
+      "c": "pane::newTab",
+      "k": "pane::closeTab",
+      "n": "pane::nextTab",
+      "p": "pane::prevTab",
+
+      // Pane splitting
+      "S": "pane::splitRight",
+      "s": "pane::splitDown",
+
+      // Pane navigation (directional)
+      "left": "pane::focusLeft",
+      "right": "pane::focusRight",
+      "up": "pane::focusUp",
+      "down": "pane::focusDown",
+      "tab": "pane::focusNextPane",
+
+      // Pane switching by number
+      "0": "pane::focusPane0",
+      "1": "pane::focusPane1",
+      "2": "pane::focusPane2",
+      "3": "pane::focusPane3",
+      "4": "pane::focusPane4",
+      "5": "pane::focusPane5",
+      "6": "pane::focusPane6",
+      "7": "pane::focusPane7",
+      "8": "pane::focusPane8",
+      "9": "pane::focusPane9",
+
+      // Pane zoom (fullscreen toggle)
+      "F": "pane::zoomToggle",
+
+      // Mux session
+      "d": "mux::detach",
+
+      // Send literal Ctrl-a to PTY (double-tap escape)
+      "ctrl-a": "terminal::sendLiteral Ctrl-a"
+    }
+  }
+]

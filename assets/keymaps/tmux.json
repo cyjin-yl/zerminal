@@ -1,0 +1,49 @@
+// §16.7 Mux tmux keymap profile: prefix key (Ctrl-b) + prefix-mode bindings
+// spec §16.7, Plan 17 — tmux-compatible subset (~80% of common operations)
+// NOTE: This is NOT 1:1 tmux compatibility; it covers the most common operations.
+[
+  // Normal mode: prefix key triggers prefix mode with 500ms timeout
+  {
+    "context": "Terminal",
+    "bindings": {
+      "ctrl-b": ["mux::enterPrefixMode", { "timeout": 500 }]
+    }
+  },
+  // Prefix mode: after Ctrl-b, the next key is matched here
+  {
+    "context": "Terminal && PrefixMode",
+    "bindings": {
+      // Tab management
+      "c": "pane::newTab",
+      "n": "pane::nextTab",
+      "p": "pane::prevTab",
+
+      // Pane splitting
+      "%": "pane::splitRight",
+      "\"": "pane::splitDown",
+
+      // Pane navigation (directional)
+      "left": "pane::focusLeft",
+      "right": "pane::focusRight",
+      "up": "pane::focusUp",
+      "down": "pane::focusDown",
+
+      // Pane navigation (numbered)
+      "0": "pane::focusPane0",
+      "1": "pane::focusPane1",
+      "2": "pane::focusPane2",
+      "3": "pane::focusPane3",
+      "4": "pane::focusPane4",
+      "5": "pane::focusPane5",
+      "6": "pane::focusPane6",
+      "7": "pane::focusPane7",
+      "8": "pane::focusPane8",
+
+      // Mux session
+      "d": "mux::detach",
+
+      // Send literal Ctrl-b to PTY (double-tap escape)
+      "ctrl-b": "terminal::sendLiteral Ctrl-b"
+    }
+  }
+]

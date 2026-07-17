@@ -3,6 +3,7 @@
 
 mod daemon;
 mod zed;
+mod input;
 
 use std::sync::Arc;
 

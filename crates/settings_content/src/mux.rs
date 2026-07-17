@@ -18,7 +18,8 @@ pub struct MuxSettingsContent {
     /// Keep-alive interval in seconds.
     pub keep_alive_seconds: Option<u64>,
 
-    /// Keymap profile to use for terminal keybindings. Default: "default"
+    /// Keymap profile to use for terminal keybindings.
+    /// Available profiles: "default", "tmux", "zellij", "screen". Default: "default"
     pub keymap_profile: Option<String>,
 
     /// Tabbar position in the terminal UI. Default: "top"

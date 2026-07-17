@@ -1113,7 +1113,7 @@ fn mux_page() -> SettingsPage {
             SettingsPageItem::SectionHeader("UI"),
             SettingsPageItem::SettingItem(SettingItem {
                 title: "Keymap Profile",
-                description: "Keymap profile to use for terminal keybindings. Default: default",
+                description: "Keymap profile: default, tmux, vim, or wezterm",
                 field: Box::new(SettingField {
 
                     json_path: Some("mux.keymap_profile"),

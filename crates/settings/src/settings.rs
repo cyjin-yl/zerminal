@@ -6,6 +6,7 @@ mod keymap_file;
 mod settings_file;
 mod settings_store;
 mod vscode_import;
+pub mod mux_actions;
 
 pub use settings_macros::RegisterSetting;
 
@@ -172,6 +173,42 @@ pub const VIM_KEYMAP_PATH: &str = "keymaps/vim.json";
 pub fn vim_keymap() -> Cow<'static, str> {
     asset_str::<SettingsAssets>(VIM_KEYMAP_PATH)
 }
+
+// ============================================================================
+// §16.7 Mux keymap profile loading (spec §16.7 Plan 17)
+// ============================================================================
+
+
+/// §16.7 mux keymap profile 路径映射表。
+pub const MUX_KEYMAP_PROFILE_PATHS: [(&str, &str); 4] = [
+    ("default", "keymaps/default.json"),
+    ("tmux", "keymaps/tmux.json"),
+    ("zellij", "keymaps/zellij.json"),
+    ("screen", "keymaps/screen.json"),
+];
+
+/// §16.7 可用的 mux keymap profile 名称列表。
+pub const MUX_KEYMAP_PROFILE_NAMES: [&str; 4] =
+    ["default", "tmux", "zellij", "screen"];
+
+/// §16.7 根据 profile 名称获取对应的 keymap 文件路径。
+/// 未知名称回退到 "default"。
+pub fn mux_keymap_profile_path(profile: &str) -> &'static str {
+    for (name, path) in MUX_KEYMAP_PROFILE_PATHS {
+        if name == profile {
+            return path;
+        }
+    }
+    // 回退到 default profile
+    MUX_KEYMAP_PROFILE_PATHS[0].1
+}
+
+/// §16.7 加载指定的 mux keymap profile 内容。
+pub fn mux_keymap_profile_content(profile: &str) -> Cow<'static, str> {
+    let path = mux_keymap_profile_path(profile);
+    asset_str::<SettingsAssets>(path)
+}
+
 
 /// Specific keybinding overrides. Loaded after the base keymap so they win over
 /// conflicting base-keymap (and default `Editor`) bindings for the same chords,

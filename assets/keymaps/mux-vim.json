@@ -1,0 +1,59 @@
+// §16.7 Mux vim keymap profile: vim-style pane navigation with hjkl
+// spec §16.7, Plan 17 — vim-compatible pane movement
+// Uses Ctrl-w prefix for pane operations (vim terminal convention)
+[
+  // Normal mode: Ctrl-w enters pane command mode
+  {
+    "context": "Terminal",
+    "bindings": {
+      "ctrl-w": ["mux::enterPrefixMode", { "timeout_ms": 500 }]
+    }
+  },
+  // Prefix mode: after Ctrl-w, hjkl for pane navigation
+  {
+    "context": "Terminal && PrefixMode",
+    "bindings": {
+      // Pane navigation (vim hjkl)
+      "h": "pane::focusLeft",
+      "j": "pane::focusDown",
+      "k": "pane::focusUp",
+      "l": "pane::focusRight",
+
+      // Pane splitting (vim-style)
+      "_": "pane::splitDown",
+      "|": "pane::splitRight",
+
+      // Pane management
+      "n": "pane::newTab",
+      "c": "pane::closeTab",
+      "z": "pane::zoomToggle",
+      "=": "pane::resizeEqual",
+      "x": "pane::closeTab",
+
+      // Tab navigation
+      "gt": "pane::nextTab",
+      "gb": "pane::prevTab",
+
+      // Pane switching by number
+      "1": "pane::focusPane0",
+      "2": "pane::focusPane1",
+      "3": "pane::focusPane2",
+      "4": "pane::focusPane3",
+      "5": "pane::focusPane4",
+      "6": "pane::focusPane5",
+      "7": "pane::focusPane6",
+      "8": "pane::focusPane7",
+      "9": "pane::focusPane8",
+
+      // Mux session
+      "d": "mux::detach",
+
+      // Pane ordering
+      "w": "pane::focusNextPane",
+      "W": "pane::focusPrevPane",
+
+      // Send literal Ctrl-w to PTY (double-tap escape)
+      "ctrl-w": "terminal::sendKeystroke Ctrl-w"
+    }
+  }
+]

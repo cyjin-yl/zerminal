@@ -1,0 +1,47 @@
+// §16.7 Mux default keymap profile: global shortcuts without prefix key
+// spec §16.7, Plan 17 — default profile uses Ctrl+Shift modifiers
+[
+  {
+    "context": "Terminal",
+    "bindings": {
+      // Tab management
+      "ctrl-shift-t": "pane::newTab",
+      "ctrl-shift-w": "pane::closeTab",
+      "ctrl-shift-n": "pane::nextTab",
+      "ctrl-shift-p": "pane::prevTab",
+
+      // Pane splitting
+      "ctrl-shift-%": "pane::splitRight",
+      "ctrl-shift-_": "pane::splitDown",
+
+      // Pane navigation
+      "ctrl-shift-left": "pane::focusLeft",
+      "ctrl-shift-right": "pane::focusRight",
+      "ctrl-shift-up": "pane::focusUp",
+      "ctrl-shift-down": "pane::focusDown",
+
+      // Mux session
+      "ctrl-shift-d": "mux::detach",
+
+      // Pane zoom
+      "ctrl-shift-z": "pane::zoomToggle",
+
+      // Pane resizing
+      "ctrl-shift-h": "pane::resizeLeft",
+      "ctrl-shift-l": "pane::resizeRight",
+      "ctrl-shift-k": "pane::resizeUp",
+      "ctrl-shift-j": "pane::resizeDown",
+
+      // Pane switching by number (1-9)
+      "ctrl-shift-1": "pane::focusPane0",
+      "ctrl-shift-2": "pane::focusPane1",
+      "ctrl-shift-3": "pane::focusPane2",
+      "ctrl-shift-4": "pane::focusPane3",
+      "ctrl-shift-5": "pane::focusPane4",
+      "ctrl-shift-6": "pane::focusPane5",
+      "ctrl-shift-7": "pane::focusPane6",
+      "ctrl-shift-8": "pane::focusPane7",
+      "ctrl-shift-9": "pane::focusPane8"
+    }
+  }
+]

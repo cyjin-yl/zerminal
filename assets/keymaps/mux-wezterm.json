@@ -1,0 +1,54 @@
+// §16.7 Mux wezterm keymap profile: wezterm-compatible Alt+key bindings
+// spec §16.7, Plan 17 — wezterm-style Alt-prefix bindings
+// Matches wezterm's default key assignment patterns
+[
+  {
+    "context": "Terminal",
+    "bindings": {
+      // Tab management
+      "alt-shift-t": "pane::newTab",
+      "alt-shift-q": "pane::closeTab",
+      "alt-shift-n": "pane::nextTab",
+      "alt-shift-p": "pane::prevTab",
+
+      // Pane splitting (wezterm uses Alt+Shift+D for horizontal, Alt+Shift+K for vertical)
+      "alt-shift-d": "pane::splitRight",
+      "alt-shift-k": "pane::splitDown",
+
+      // Pane navigation (wezterm directional)
+      "alt-shift-left": "pane::focusLeft",
+      "alt-shift-right": "pane::focusRight",
+      "alt-shift-up": "pane::focusUp",
+      "alt-shift-down": "pane::focusDown",
+
+      // Pane navigation (wezterm hjkl)
+      "alt-h": "pane::focusLeft",
+      "alt-j": "pane::focusDown",
+      "alt-k": "pane::focusUp",
+      "alt-l": "pane::focusRight",
+
+      // Pane switching by number (wezterm style)
+      "alt-1": "pane::focusPane0",
+      "alt-2": "pane::focusPane1",
+      "alt-3": "pane::focusPane2",
+      "alt-4": "pane::focusPane3",
+      "alt-5": "pane::focusPane4",
+      "alt-6": "pane::focusPane5",
+      "alt-7": "pane::focusPane6",
+      "alt-8": "pane::focusPane7",
+      "alt-9": "pane::focusPane8",
+
+      // Pane zoom
+      "alt-z": "pane::zoomToggle",
+
+      // Pane resizing (wezterm style)
+      "alt-shift-left": "pane::resizeLeft",
+      "alt-shift-right": "pane::resizeRight",
+      "alt-shift-up": "pane::resizeUp",
+      "alt-shift-down": "pane::resizeDown",
+
+      // Mux session
+      "alt-shift-d": "mux::detach"
+    }
+  }
+]
