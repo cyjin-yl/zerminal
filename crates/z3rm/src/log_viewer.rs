@@ -289,13 +289,15 @@ impl LogViewer {
             .unwrap_or_default();
             last_file_size_load.store(file_size, Ordering::Relaxed);
 
-            let _ = viewer.update(cx, |this, cx| {
+            if let Err(e) = viewer.update(cx, |this, cx| {
                 this.entries = entries;
                 this.last_file_size.store(file_size, Ordering::Relaxed);
                 this.recompute_filtered_indices();
                 this.scroll_to_bottom(cx);
                 cx.notify();
-            });
+            }) {
+                tracing::debug!(error = ?e, "log viewer dropped, skipping update");
+            }
         })
         .detach();
 
@@ -569,10 +571,12 @@ impl LogViewer {
             .label_color(level_color)
             .on_click(move |_state, _window, cx| {
                 filters_clone.lock().toggle_level_inner(level);
-                let _ = viewer.update(cx, |v, cx| {
+                if let Err(e) = viewer.update(cx, |v, cx| {
                     v.recompute_filtered_indices();
                     cx.notify();
-                });
+                }) {
+                    tracing::debug!(error = ?e, "log viewer dropped, skipping checkbox update");
+                }
             })
     }
 }
