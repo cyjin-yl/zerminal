@@ -38,6 +38,10 @@ util.workspace = true
 tempfile.workspace = true
 rayon.workspace = true
 walkdir = "2.5"
+tokio.workspace = true
+mux.workspace = true
+mux_protocol.workspace = true
+dirs.workspace = true
 
 [dev-dependencies]
 serde_json.workspace = true

@@ -31,6 +31,8 @@ pub struct Session {
     pub panes: Arc<parking_lot::RwLock<HashMap<String, Pane>>>,
     /// §16.9 会话级同步滚动状态
     pub sync_scrollback: Arc<parking_lot::RwLock<SyncScrollbackState>>,
+    /// §3.3 已连接的窗口 ID 列表 (多窗口支持，Plan 32)
+    pub connected_windows: Arc<parking_lot::RwLock<Vec<String>>>,
 }
 
 /// 标签页 (§3.10 TabInfo)
@@ -51,6 +53,8 @@ pub struct AttachedClient {
     pub client_id: String,
     /// 连接模式: shared / steal / read_only
     pub mode: AttachMode,
+    /// §3.3 窗口 ID (多窗口支持，Plan 32)
+    pub window_id: Option<String>,
 }
 
 /// 连接模式 (§3.10 AttachRequest.AttachMode)
@@ -93,6 +97,7 @@ impl Session {
             attached_clients: Arc::new(parking_lot::RwLock::new(Vec::new())),
             panes: Arc::new(parking_lot::RwLock::new(HashMap::new())),
             sync_scrollback: Arc::new(parking_lot::RwLock::new(SyncScrollbackState::default())),
+            connected_windows: Arc::new(parking_lot::RwLock::new(Vec::new())),
         }
     }
 
@@ -118,7 +123,7 @@ impl Session {
     /// 添加附加客户端 (§3.10 AttachRequest)
     pub fn add_attached_client(&mut self, client_id: String, mode: AttachMode) {
         let clients = self.attached_clients.clone();
-        clients.write().push(AttachedClient { client_id, mode });
+        clients.write().push(AttachedClient { client_id, mode, window_id: None });
     }
 
     /// 移除附加客户端 (§3.10 DetachRequest)
@@ -157,5 +162,44 @@ impl Session {
         state.enabled = false;
         state.pane_id = None;
         state.scroll_offset = 0;
+    }
+
+    // ========================================================================
+    // §3.3 窗口管理方法 (多窗口支持，Plan 32)
+    // ========================================================================
+
+    /// §3.3 添加窗口到会话的已连接窗口列表
+    pub fn add_window(&self, window_id: String) {
+        let mut windows = self.connected_windows.write();
+        if !windows.contains(&window_id) {
+            windows.push(window_id);
+        }
+    }
+
+    /// §3.3 从会话移除窗口
+    pub fn remove_window(&self, window_id: &str) {
+        let mut windows = self.connected_windows.write();
+        windows.retain(|w| w != window_id);
+    }
+
+    /// §3.3 获取会话已连接的窗口 ID 列表
+    pub fn get_windows(&self) -> Vec<String> {
+        self.connected_windows.read().clone()
+    }
+
+    /// §3.3 获取已连接窗口数量
+    pub fn window_count(&self) -> usize {
+        self.connected_windows.read().len()
+    }
+
+    /// §3.3 检查窗口是否在会话中
+    pub fn has_window(&self, window_id: &str) -> bool {
+        self.connected_windows.read().contains(&window_id.to_string())
+    }
+
+    /// §3.3 广播布局变更到所有连接的窗口
+    /// 返回已连接的窗口 ID 列表，调用方负责发送通知
+    pub fn broadcast_layout_change(&self) -> Vec<String> {
+        self.connected_windows.read().clone()
     }
 }

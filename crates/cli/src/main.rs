@@ -153,6 +153,21 @@ struct Args {
     /// by having Zed act like netcat communicating over a Unix socket.
     #[arg(long, hide = true)]
     askpass: Option<String>,
+
+    /// §3.3 子命令 (多窗口支持，Plan 32)
+    #[command(subcommand)]
+    command: Option<Commands>,
+}
+
+/// §3.3 CLI 子命令
+#[derive(clap::Subcommand, Debug)]
+enum Commands {
+    /// §3.3 在指定会话中打开新窗口
+    NewWindow {
+        /// 目标会话 ID 或会话名称
+        #[arg(short, long)]
+        target: String,
+    },
 }
 
 /// Parses a path containing a position (e.g. `path:line:column`)
@@ -551,6 +566,13 @@ fn run() -> Result<()> {
         anyhow::bail!(msg.join("\n"));
     }
 
+    // §3.3 处理 new-window 子命令 (Plan 32)
+    if let Some(Commands::NewWindow { target }) = &args.command {
+        linux::handle_new_window(target, &app.path())?;
+        #[cfg(not(any(target_os = "linux", target_os = "freebsd")))]
+        anyhow::bail!("new-window command is not supported on this platform");
+        return Ok(());
+    }
     #[cfg(all(
         any(target_os = "linux", target_os = "macos"),
         not(feature = "no-bundled-uninstall")
@@ -886,7 +908,7 @@ mod linux {
     use anyhow::{Context as _, anyhow};
     use cli::FORCE_CLI_MODE_ENV_VAR_NAME;
     use fork::Fork;
-
+    use paths;
     use crate::{Detect, InstalledApp};
 
     struct App(PathBuf);
@@ -1016,6 +1038,63 @@ mod linux {
             }
             sock.connect_addr(sock_addr)
         }
+    }
+
+    /// §3.3 在指定会话中打开新窗口 (Plan 32)
+    pub fn handle_new_window(target: &str, app_path: &Path) -> anyhow::Result<()> {
+        // §3.3 连接到 mux_server
+        let rt = tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()?;
+        let result = rt.block_on(async {
+            let socket_path = dirs::runtime_dir()
+                .map(|d| d.join("z3rm/mux.sock"))
+                .unwrap_or_else(|| PathBuf::from("/tmp/z3rm-mux.sock"));
+
+            let mux = mux::connect_local(&socket_path).await?;
+
+            // §3.3 列出会话，查找目标会话
+            let sessions = mux.list_sessions().await?;
+            let session_id = sessions
+                .iter()
+                .find(|s| s.id == target || s.name == target)
+                .map(|s| s.id.clone())
+                .ok_or_else(|| anyhow::anyhow!("session '{}' not found", target))?;
+
+            // §3.3 创建新窗口
+            let window_id = mux.create_window(&session_id).await?;
+
+            println!("New window '{}' created in session '{}'", window_id, session_id);
+
+            // §3.3 启动新 GUI 窗口连接到该窗口 ID
+            let data_dir = paths::data_dir().clone();
+            let sock_path = data_dir.join(format!(
+                "z3rm-{}.sock",
+                *release_channel::RELEASE_CHANNEL_NAME
+            ));
+
+            // 使用 IPC 通知已运行的 GUI 打开新窗口
+            let sock = UnixDatagram::unbound()?;
+            if sock.connect(&sock_path).is_ok() {
+                let msg = format!(
+                    "z3rm-cli://new-window?session={}&window={}",
+                    session_id, window_id
+                );
+                sock.send(msg.as_bytes())?;
+            } else {
+                eprintln!(
+                    "Warning: could not connect to GUI socket at {}. Starting new window process.",
+                    sock_path.display()
+                );
+                // 启动新的 GUI 窗口进程
+                let mut cmd = std::process::Command::new(app_path);
+                cmd.arg("--new-window").arg(&session_id).arg(&window_id);
+                let _ = cmd.spawn();
+            }
+
+            anyhow::Ok(())
+        });
+        result
     }
 }
 

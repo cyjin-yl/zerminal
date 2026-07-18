@@ -47,6 +47,8 @@ pub struct MuxDomain {
     _io_handle: tokio::task::JoinHandle<()>,
     /// §9 响应路由任务的 handle。
     _routing_handle: tokio::task::JoinHandle<()>,
+    /// §3.3 窗口 ID (多窗口支持，Plan 32)
+    pub window_id: String,
 }
 
 /// §9 内部状态：请求 ID 计数器、待处理请求、通知通道、写通道。
@@ -120,10 +122,14 @@ impl MuxDomain {
         let routing_inner = inner.clone();
         let routing_handle = tokio::spawn(Self::response_router(routing_inner, response_rx));
 
+        // §3.3 生成窗口 ID (多窗口支持，Plan 32)
+        let window_id = format!("win-{}", std::process::id());
+
         Ok(MuxDomain {
             inner,
             _io_handle: io_handle,
             _routing_handle: routing_handle,
+            window_id,
         })
     }
 
@@ -403,6 +409,35 @@ impl MuxDomain {
     }
 
     // ========================================================================
+    // §3.3 窗口管理方法 (多窗口支持，Plan 32)
+    // ========================================================================
+
+    /// §3.3 连接到会话并注册窗口 ID。
+    pub async fn attach_with_window(&self, session_id: &str) -> Result<AttachResponse> {
+        let req = RequestBody::Attach(mux_protocol::AttachRequest {
+            session_id: session_id.to_string(),
+            mode: AttachMode::Shared as i32,
+            window_id: self.window_id.clone(),
+        });
+        let resp = self.send_request(req).await?;
+        match resp.body {
+            Some(ResponseBody::Attach(r)) => Ok(r),
+            _ => Err(anyhow::anyhow!("unexpected response type for attach")),
+        }
+    }
+
+    /// §3.3 在指定会话中创建新窗口，返回窗口 ID。
+    pub async fn create_window(&self, session_id: &str) -> Result<String> {
+        let req = RequestBody::NewWindow(mux_protocol::NewWindowRequest {
+            session_id: session_id.to_string(),
+        });
+        let resp = self.send_request(req).await?;
+        match resp.body {
+            Some(ResponseBody::NewWindow(r)) => Ok(r.window_id),
+            _ => Err(anyhow::anyhow!("unexpected response type for create_window")),
+        }
+    }
+    // ========================================================================
     // §9 Pane 生命周期方法（§3.10）
     // ========================================================================
 
@@ -556,6 +591,7 @@ impl MuxDomain {
         let req = RequestBody::Attach(mux_protocol::AttachRequest {
             session_id: session.to_string(),
             mode: mode as i32,
+            window_id: self.window_id.clone(),
         });
         let resp = self.send_request(req).await?;
         match resp.body {

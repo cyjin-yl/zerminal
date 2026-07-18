@@ -51,10 +51,24 @@ message KillSessionRequest {
     string id = 1;
 }
 
+// §3.3 在现有会话中创建新窗口 (Plan 32)
+message NewWindowRequest {
+    string session_id = 1;  // 目标会话 ID
+}
+
+// §3.3 新窗口创建响应
+message NewWindowResponse {
+    string window_id = 1;   // 新窗口 ID
+    SessionSnapshot snapshot = 2;  // 会话快照
+}
+
 // §3.10 连接会话；AttachMode 定义共享/抢占/只读三种连接模式。
+// §3.3 window_id 字段用于多窗口会话共享 (Plan 32)。
 message AttachRequest {
     string session_id = 1;
     AttachMode mode = 2;
+    // §3.3 窗口 ID (多窗口支持，Plan 32)
+    string window_id = 3;
 
     enum AttachMode {
         ATTACH_MODE_UNSPECIFIED = 0;
@@ -434,6 +448,8 @@ message Notification {
         ClipboardChanged clipboard_changed = 7;
         ExtensionChromeUpdate extension_chrome = 8;
         SyncScrollbackNotification sync_scrollback = 9;
+        WindowAdded window_added = 10;
+        WindowRemoved window_removed = 11;
     }
 }
 
@@ -473,6 +489,18 @@ message SessionLayoutChanged {
 // §16 剪贴板变更通知。
 message ClipboardChanged {}
 
+// §3.3 新窗口加入会话通知 (Plan 32)
+message WindowAdded {
+    string window_id = 1;
+    string session_id = 2;
+}
+
+// §3.3 窗口离开会话通知 (Plan 32)
+message WindowRemoved {
+    string window_id = 1;
+    string session_id = 2;
+}
+
 // === Request/Response envelope ===
 
 // §9 请求信封：携带 request_id 与具体请求体。
@@ -502,6 +530,7 @@ message Request {
         SetPaneTitleRequest set_pane_title = 22;
         InstallExtensionRequest install_extension = 23;
         SearchScrollbackRequest search_scrollback = 24;
+        NewWindowRequest new_window = 25;
     }
 }
 
@@ -522,5 +551,6 @@ message Response {
         GetClipboardResponse clipboard = 12;
         InstallExtensionResponse extension_installed = 13;
         SearchScrollbackResponse search_scrollback = 14;
+        NewWindowResponse new_window = 15;
     }
 }

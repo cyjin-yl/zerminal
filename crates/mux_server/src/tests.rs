@@ -492,3 +492,87 @@ fn test_status_output_format() {
     let lines: Vec<&str> = output.lines().collect();
     assert_eq!(lines.len(), 6);
 }
+
+// ============================================================================
+// §3.3 窗口管理测试 (多窗口支持，Plan 32)
+// ============================================================================
+
+use crate::session::Session;
+
+/// §3.3 测试窗口添加到会话
+#[test]
+fn test_session_add_window() {
+    let mut session = Session::new("sess-1".to_string(), "test".to_string(), "/tmp".to_string());
+    assert_eq!(session.window_count(), 0);
+
+    session.add_window("win-1".to_string());
+    assert_eq!(session.window_count(), 1);
+    assert!(session.has_window("win-1"));
+
+    session.add_window("win-2".to_string());
+    assert_eq!(session.window_count(), 2);
+    assert!(session.has_window("win-2"));
+}
+
+/// §3.3 测试重复窗口 ID 不重复添加
+#[test]
+fn test_session_deduplicate_windows() {
+    let mut session = Session::new("sess-2".to_string(), "test".to_string(), "/tmp".to_string());
+
+    session.add_window("win-1".to_string());
+    session.add_window("win-1".to_string()); // 重复
+    assert_eq!(session.window_count(), 1);
+}
+
+/// §3.3 测试从会话移除窗口
+#[test]
+fn test_session_remove_window() {
+    let mut session = Session::new("sess-3".to_string(), "test".to_string(), "/tmp".to_string());
+
+    session.add_window("win-1".to_string());
+    session.add_window("win-2".to_string());
+    assert_eq!(session.window_count(), 2);
+
+    session.remove_window("win-1");
+    assert_eq!(session.window_count(), 1);
+    assert!(!session.has_window("win-1"));
+    assert!(session.has_window("win-2"));
+}
+
+/// §3.3 测试获取窗口列表
+#[test]
+fn test_session_get_windows() {
+    let mut session = Session::new("sess-4".to_string(), "test".to_string(), "/tmp".to_string());
+
+    session.add_window("win-a".to_string());
+    session.add_window("win-b".to_string());
+
+    let windows = session.get_windows();
+    assert_eq!(windows.len(), 2);
+    assert!(windows.contains(&"win-a".to_string()));
+    assert!(windows.contains(&"win-b".to_string()));
+}
+
+/// §3.3 测试布局变更广播
+#[test]
+fn test_session_broadcast_layout_change() {
+    let mut session = Session::new("sess-5".to_string(), "test".to_string(), "/tmp".to_string());
+
+    session.add_window("win-1".to_string());
+    session.add_window("win-2".to_string());
+    session.add_window("win-3".to_string());
+
+    let targets = session.broadcast_layout_change();
+    assert_eq!(targets.len(), 3);
+    assert!(targets.contains(&"win-1".to_string()));
+    assert!(targets.contains(&"win-2".to_string()));
+    assert!(targets.contains(&"win-3".to_string()));
+}
+
+/// §3.3 测试新会话初始无窗口
+#[test]
+fn test_session_new_has_no_windows() {
+    let session = Session::new("sess-new".to_string(), "new".to_string(), "/tmp".to_string());
+    assert_eq!(session.window_count(), 0);
+    assert!(session.get_windows().is_empty());
+}

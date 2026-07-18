@@ -190,6 +190,7 @@ async fn dispatch_request(
                 )),
             });
         }
+        RequestBody::NewWindow(r) => handle_new_window(r, sessions, notification_tx).await?,
     };
 
     Ok(Response {
@@ -260,14 +261,30 @@ async fn handle_attach(
     req: &AttachRequest,
     sessions: &Arc<parking_lot::RwLock<Vec<crate::session::Session>>>,
 ) -> anyhow::Result<ResponseBody> {
-    let sessions_r = sessions.read();
-    let session = sessions_r
-        .iter()
+    let mut sessions_w = sessions.write();
+    let session = sessions_w
+        .iter_mut()
         .find(|s| s.id == req.session_id)
         .ok_or_else(|| anyhow::anyhow!("session not found: {}", req.session_id))?;
 
     // §16.12 记录客户端 attach 事件
     zlog::info!("client attached: session={} mode={:?}", req.session_id, req.mode);
+
+    // §3.3 将客户端注册到会话 (Plan 32)
+    let client_id = format!("client-{}", std::process::id());
+    let mode = match req.mode {
+        0 => crate::session::AttachMode::Shared,
+        1 => crate::session::AttachMode::Shared,
+        2 => crate::session::AttachMode::Steal,
+        3 => crate::session::AttachMode::ReadOnly,
+        _ => crate::session::AttachMode::Shared,
+    };
+    session.add_attached_client(client_id, mode);
+
+    // §3.3 将窗口 ID 注册到会话 (Plan 32)
+    if !req.window_id.is_empty() {
+        session.add_window(req.window_id.clone());
+    }
 
     Ok(ResponseBody::Attach(AttachResponse {
         snapshot: Some(SessionSnapshot {
@@ -285,6 +302,57 @@ async fn handle_detach(
     _sessions: &Arc<parking_lot::RwLock<Vec<crate::session::Session>>>,
 ) -> anyhow::Result<ResponseBody> {
     Ok(ResponseBody::Error(String::new()))
+}
+
+/// §3.3 在现有会话中创建新窗口 (Plan 32)
+async fn handle_new_window(
+    req: &NewWindowRequest,
+    sessions: &Arc<parking_lot::RwLock<Vec<crate::session::Session>>>,
+    notification_tx: &mpsc::UnboundedSender<Notification>,
+) -> anyhow::Result<ResponseBody> {
+    let mut sessions_w = sessions.write();
+    let session = sessions_w
+        .iter_mut()
+        .find(|s| s.id == req.session_id)
+        .ok_or_else(|| anyhow::anyhow!("session not found: {}", req.session_id))?;
+
+    // §3.3 生成新窗口 ID
+    let window_id = format!("win-{}", nanoid::nanoid!());
+
+    // §3.3 将窗口添加到会话
+    session.add_window(window_id.clone());
+
+    // §16.12 记录新窗口创建事件
+    zlog::info!(
+        "new window created: session={} window={}",
+        req.session_id,
+        window_id
+    );
+
+    // §3.3 广播 WindowAdded 通知到所有已连接窗口
+    let notify = Notification {
+        event: Some(
+            mux_protocol::proto::notification::Event::WindowAdded(
+                mux_protocol::WindowAdded {
+                    window_id: window_id.clone(),
+                    session_id: req.session_id.clone(),
+                },
+            ),
+        ),
+    };
+    let _ = notification_tx.send(notify);
+
+    // §3.3 返回新窗口信息与会话快照
+    Ok(ResponseBody::NewWindow(NewWindowResponse {
+        window_id,
+        snapshot: Some(SessionSnapshot {
+            session_id: session.id.clone(),
+            focused_pane_id: session.focused_pane.clone().unwrap_or_default(),
+            focused_tab_id: session.focused_tab.clone().unwrap_or_default(),
+            tabs: Vec::new(),
+            layout: Some(LayoutTree { root: None }),
+        }),
+    }))
 }
 
 /// §3.10 创建 pane
