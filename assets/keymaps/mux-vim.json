@@ -6,7 +6,10 @@
   {
     "context": "Terminal",
     "bindings": {
-      "ctrl-w": ["mux::enterPrefixMode", { "timeout_ms": 500 }]
+      "ctrl-w": ["mux::enterPrefixMode", { "timeout_ms": 500 }],
+
+      // §12 复制模式 (Plan 31)
+      "ctrl-shift-;": "terminal::EnterCopyMode"
     }
   },
   // Prefix mode: after Ctrl-w, hjkl for pane navigation

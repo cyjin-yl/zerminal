@@ -1,3 +1,4 @@
+mod copy_mode;
 mod persistence;
 pub mod terminal_element;
 pub mod terminal_panel;
@@ -108,6 +109,16 @@ pub struct RenameTerminal;
 #[action(namespace = terminal)]
 pub struct ToggleScrollLock;
 
+/// §12 进入复制模式 (Plan 31)
+#[derive(Clone, Debug, Default, Deserialize, JsonSchema, PartialEq, Action)]
+#[action(namespace = terminal)]
+pub struct EnterCopyMode;
+
+/// §12 退出复制模式 (Plan 31)
+#[derive(Clone, Debug, Default, Deserialize, JsonSchema, PartialEq, Action)]
+#[action(namespace = terminal)]
+pub struct ExitCopyMode;
+
 pub fn init(cx: &mut App) {
     terminal_panel::init(cx);
 
@@ -160,6 +171,8 @@ pub struct TerminalView {
     scrollback_offset: Option<usize>,
     scrollback_version: Option<(u64, u64)>,
     scroll_locked: bool,
+    // §12 复制模式状态 (Plan 31)
+    copy_mode_state: copy_mode::CopyModeState,
     self_handle: WeakEntity<Self>,
     rename_editor: Option<Entity<Editor>>,
     rename_editor_subscription: Option<Subscription>,
@@ -353,6 +366,7 @@ impl TerminalView {
             scrollback_offset: None,
             scrollback_version: None,
             scroll_locked: false,
+            copy_mode_state: Default::default(),
             self_handle: cx.entity().downgrade(),
             rename_editor: None,
             rename_editor_subscription: None,
@@ -942,6 +956,18 @@ impl TerminalView {
         self.do_toggle_scroll_lock(cx);
     }
 
+    /// §12 进入复制模式 (Plan 31)
+    fn enter_copy_mode(&mut self, _: &EnterCopyMode, _: &mut Window, cx: &mut Context<Self>) {
+        copy_mode::enter_copy_mode(&self.terminal, &mut self.copy_mode_state, cx);
+        cx.notify();
+    }
+
+    /// §12 退出复制模式 (Plan 31)
+    fn exit_copy_mode(&mut self, _: &ExitCopyMode, _: &mut Window, cx: &mut Context<Self>) {
+        copy_mode::exit_copy_mode(&self.terminal, &mut self.copy_mode_state, cx);
+        cx.notify();
+    }
+
     pub fn should_show_cursor(&self, focused: bool, cx: &mut Context<Self>) -> bool {
         // Hide cursor when in embedded mode and not focused (read-only output like Agent panel)
         if let TerminalMode::Embedded { .. } = &self.mode {
@@ -1398,6 +1424,25 @@ impl TerminalView {
         self.clear_bell(cx);
         self.pause_cursor_blinking(window, cx);
 
+        // §12 复制模式按键拦截 (Plan 31)
+        if self.copy_mode_state.active {
+            if copy_mode::dispatch_copy_mode_key(
+                &event.keystroke,
+                &mut self.copy_mode_state,
+                &self.terminal,
+                cx,
+            ) {
+                cx.stop_propagation();
+                cx.notify();
+                return;
+            }
+            // 未被拦截 → 转发到 vi_motion (不发送到 PTY)
+            self.terminal.update(cx, |term, _| term.vi_motion(&event.keystroke));
+            cx.notify();
+            cx.stop_propagation();
+            return;
+        }
+
         if self.process_keystroke(&event.keystroke, cx) {
             cx.stop_propagation();
         }
@@ -1476,6 +1521,8 @@ impl Render for TerminalView {
             .on_action(cx.listener(TerminalView::scroll_to_bottom))
             .on_action(cx.listener(TerminalView::toggle_vi_mode))
             .on_action(cx.listener(TerminalView::toggle_scroll_lock))
+            .on_action(cx.listener(TerminalView::enter_copy_mode))
+            .on_action(cx.listener(TerminalView::exit_copy_mode))
             .on_action(cx.listener(TerminalView::show_character_palette))
             .on_action(cx.listener(TerminalView::select_all))
             .on_action(cx.listener(TerminalView::rerun_task))
@@ -3279,5 +3326,23 @@ mod tests {
                 text
             );
         });
+    }
+
+    // §12 复制模式测试 (Plan 31)
+    #[test]
+    fn test_copy_mode_state_default() {
+        let state = copy_mode::CopyModeState::default();
+        assert!(!state.active, "copy mode should be inactive by default");
+        assert!(state.search_query.is_none(), "search_query should be None by default");
+    }
+
+    #[test]
+    fn test_copy_mode_state_enter_and_exit() {
+        let mut state = copy_mode::CopyModeState::default();
+        assert!(!state.active);
+        state.active = true;
+        assert!(state.active);
+        state.active = false;
+        assert!(!state.active);
     }
 }

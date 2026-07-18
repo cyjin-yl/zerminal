@@ -6,7 +6,10 @@
   {
     "context": "Terminal",
     "bindings": {
-      "ctrl-a": ["mux::enterPrefixMode", { "timeout": 500 }]
+      "ctrl-a": ["mux::enterPrefixMode", { "timeout": 500 }],
+
+      // §12 复制模式 (Plan 31)
+      "ctrl-shift-;": "terminal::EnterCopyMode"
     }
   },
   // Prefix mode: after Ctrl-a, the next key is matched here

@@ -22,7 +22,10 @@
       "ctrl-shift-d": "mux::detach",
 
       // Pane zoom
-      "ctrl-shift-z": "pane::zoomToggle"
+      "ctrl-shift-z": "pane::zoomToggle",
+
+      // §12 复制模式 (Plan 31)
+      "ctrl-shift-;": "terminal::EnterCopyMode",
     }
   }
 ]

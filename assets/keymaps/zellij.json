@@ -50,6 +50,9 @@
 
       // Mux session
       "alt-d": "mux::detach"
+
+      // §12 复制模式 (Plan 31)
+      "ctrl-shift-;": "terminal::EnterCopyMode"
     }
   }
 ]

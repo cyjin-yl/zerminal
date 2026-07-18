@@ -48,7 +48,10 @@
       "alt-shift-down": "pane::resizeDown",
 
       // Mux session
-      "alt-shift-d": "mux::detach"
+      "alt-shift-d": "mux::detach",
+
+      // §12 复制模式 (Plan 31)
+      "ctrl-shift-;": "terminal::EnterCopyMode"
     }
   }
 ]

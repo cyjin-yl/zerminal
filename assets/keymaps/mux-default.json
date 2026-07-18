@@ -40,8 +40,10 @@
       "ctrl-shift-5": "pane::focusPane4",
       "ctrl-shift-6": "pane::focusPane5",
       "ctrl-shift-7": "pane::focusPane6",
-      "ctrl-shift-8": "pane::focusPane7",
-      "ctrl-shift-9": "pane::focusPane8"
+      "ctrl-shift-9": "pane::focusPane8",
+
+      // §12 复制模式 (Plan 31)
+      "ctrl-shift-;": "terminal::EnterCopyMode",
     }
   }
 ]
