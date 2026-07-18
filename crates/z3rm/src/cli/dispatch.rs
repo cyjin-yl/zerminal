@@ -251,9 +251,10 @@ pub async fn run_cli_command(cmd: CliCommand) -> Result<()> {
         CliCommand::Attach { target } => {
             let target = super::target::parse_target(&target);
             let session_id = resolve_session_id(&domain, &target, &default_session).await?;
-            let _ = domain
+            domain
                 .attach(&session_id, mux::AttachMode::Shared)
-                .await;
+                .await
+                .context("failed to attach")?;
             eprintln!("attached to session {}", session_id);
         }
 

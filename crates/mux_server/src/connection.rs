@@ -500,7 +500,9 @@ async fn handle_close_pane(
 ) -> anyhow::Result<ResponseBody> {
     let mut sessions_w = sessions.write();
     for session in sessions_w.iter_mut() {
-        let _ = session.layout.remove_pane(&req.pane_id);
+        if let Err(e) = session.layout.remove_pane(&req.pane_id) {
+            tracing::error!(error = ?e, pane_id = %req.pane_id, "failed to remove pane from layout");
+        }
     }
     Ok(ResponseBody::Error(String::new()))
 }

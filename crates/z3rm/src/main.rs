@@ -48,8 +48,11 @@ fn build_application() -> Application {
 
 fn load_embedded_fonts(cx: &App) {
     let asset_source = cx.asset_source();
-    let font_paths = asset_source.list("fonts").unwrap();
-    let embedded_fonts = Mutex::new(Vec::new());
+    let Ok(font_paths) = asset_source.list("fonts") else {
+        tracing::warn!("embedded fonts directory not found, skipping font loading");
+        return;
+    };
+    let embedded_fonts = Arc::new(Mutex::new(Vec::new()));
     let executor = cx.background_executor();
 
     cx.foreground_executor().block_on(executor.scoped(|scope| {
@@ -58,16 +61,26 @@ fn load_embedded_fonts(cx: &App) {
                 continue;
             }
 
-            scope.spawn(async {
-                let font_bytes = asset_source.load(font_path).unwrap().unwrap();
-                embedded_fonts.lock().push(font_bytes);
+            let font_path = font_path.clone();
+            let embedded_fonts = embedded_fonts.clone();
+            scope.spawn(async move {
+                match asset_source.load(&font_path) {
+                    Ok(Some(bytes)) => {
+                        embedded_fonts.lock().push(bytes);
+                    }
+                    Ok(None) => {
+                        tracing::warn!(path = %font_path, "font file not found");
+                    }
+                    Err(e) => {
+                        tracing::error!(path = %font_path, error = ?e, "failed to load font");
+                    }
+                }
             });
         }
     }));
-
-    cx.text_system()
-        .add_fonts(embedded_fonts.into_inner())
-        .unwrap();
+    if let Err(e) = cx.text_system().add_fonts(embedded_fonts.lock().to_vec()) {
+        tracing::error!(error = ?e, "failed to add embedded fonts to text system");
+    }
 }
 
 // ============================================================================

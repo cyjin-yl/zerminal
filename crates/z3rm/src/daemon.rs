@@ -53,15 +53,16 @@ pub fn watch_daemon_connection(
             // §16.12 检测 socket 是否仍然存在
             if !socket_path.exists() {
                 // §16.12 连接丢失, 显示通知并尝试重连
-                let _ = cx.update(|cx| show_daemon_connection_lost(cx));
+                cx.update(|cx| show_daemon_connection_lost(cx));
 
                 // §16.12 尝试重新连接 daemon
                 match ensure_daemon_running().await {
                     Ok(_) => {
                         tracing::info!("reconnected to daemon");
                     }
-                    Err(e) => {
-                        let _ = cx.update(|cx| show_daemon_error(cx, format!("Failed to reconnect to daemon: {e}")));
+                    Err(reconnect_err) => {
+                        let msg = format!("Failed to reconnect to daemon: {reconnect_err}");
+                        cx.update(|cx| show_daemon_error(cx, msg));
                     }
                 }
             }

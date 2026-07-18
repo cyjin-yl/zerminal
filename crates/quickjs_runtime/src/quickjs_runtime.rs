@@ -216,8 +216,8 @@ impl QuickJsRuntime {
     }
 
     /// 创建新的 JS 执行上下文
-    pub fn create_context(&self) -> Context {
-        Context::full(&self.runtime).expect("创建 Context 失败")
+    pub fn create_context(&self) -> Result<Context> {
+        Context::full(&self.runtime).map_err(|e| anyhow!("创建 Context 失败: {e}"))
     }
 
     /// 获取 IO 令牌桶引用
@@ -270,7 +270,7 @@ impl QuickJsRuntime {
 
     /// 执行 JS 源码字符串，返回结果值
     pub fn eval_js(&self, source: &str) -> Result<String> {
-        let ctx = self.create_context();
+        let ctx = self.create_context()?;
         ctx.with(|ctx| {
             let result: String = ctx.eval(source)?;
             Ok(result)
@@ -349,7 +349,7 @@ impl ExtensionRunner {
         // 完整实现见 Plan 14 Task 3 (extension_host 重写)
         let runtime =
             QuickJsRuntime::new(self.memory_limit_mb, self.cpu_budget_ms).context("创建 Runtime 失败")?;
-        let ctx = runtime.create_context();
+        let ctx = runtime.create_context()?;
 
         ctx.with(|ctx| {
             // 执行扩展源码

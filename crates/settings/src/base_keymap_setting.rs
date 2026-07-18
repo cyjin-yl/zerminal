@@ -131,6 +131,6 @@ impl BaseKeymap {
 
 impl Settings for BaseKeymap {
     fn from_settings(s: &crate::settings_content::SettingsContent) -> Self {
-        s.base_keymap.unwrap().into()
+        s.base_keymap.unwrap_or_default().into()
     }
 }
