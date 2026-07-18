@@ -3,6 +3,7 @@ mod mappings;
 mod alacritty;
 mod pty_info;
 pub mod terminal_settings;
+pub mod kitty_graphics;
 
 #[cfg(not(windows))]
 use anyhow::Context as _;
@@ -523,6 +524,9 @@ pub struct Content {
     pub scrolled_to_top: bool,
     pub scrolled_to_bottom: bool,
     pub bottom_row_occupied: bool,
+    /// Kitty Graphics / OSC 1337 图像叠加层
+    /// 每项: (图像 ID, 起始行, 起始列, 宽(格), 高(格))
+    pub images: Vec<(kitty_graphics::ImageId, usize, usize, usize, usize)>,
 }
 
 #[derive(Debug, Clone, Eq, PartialEq)]
@@ -550,6 +554,7 @@ impl Default for Content {
             scrolled_to_top: false,
             scrolled_to_bottom: false,
             bottom_row_occupied: false,
+            images: Vec::new(),
         }
     }
 }
@@ -1028,6 +1033,7 @@ impl TerminalBuilder {
             event_loop_task: Task::ready(Ok(())),
             background_executor: background_executor.clone(),
             path_style,
+            image_cache: kitty_graphics::PaneImageCache::new(),
             #[cfg(any(test, feature = "test-support"))]
             input_log: Vec::new(),
             #[cfg(any(test, feature = "test-support"))]
@@ -1301,6 +1307,7 @@ impl TerminalBuilder {
                 event_loop_task: Task::ready(Ok(())),
                 background_executor,
                 path_style,
+                image_cache: kitty_graphics::PaneImageCache::new(),
                 #[cfg(any(test, feature = "test-support"))]
                 input_log: Vec::new(),
                 #[cfg(any(test, feature = "test-support"))]
@@ -1470,6 +1477,8 @@ pub struct Terminal {
     event_loop_task: Task<Result<(), anyhow::Error>>,
     background_executor: BackgroundExecutor,
     path_style: PathStyle,
+    /// 每 pane 图像缓存 (Kitty Graphics / OSC 1337)
+    image_cache: kitty_graphics::PaneImageCache,
     #[cfg(any(test, feature = "test-support"))]
     input_log: Vec<Vec<u8>>,
     #[cfg(any(test, feature = "test-support"))]
@@ -2953,6 +2962,59 @@ impl Terminal {
             self.activation_script.clone(),
             self.path_style,
         )
+    }
+
+    /// 加载图像到缓存
+    ///
+    /// §11.2 将解析后的图像数据存入 pane 缓存
+    pub fn load_image(&mut self, image: kitty_graphics::ParsedImage) -> kitty_graphics::ImageId {
+        self.image_cache.insert(image)
+    }
+
+    /// 获取图像缓存引用
+    pub fn image_cache(&self) -> &kitty_graphics::PaneImageCache {
+        &self.image_cache
+    }
+
+    /// 获取可变图像缓存引用
+    pub fn image_cache_mut(&mut self) -> &mut kitty_graphics::PaneImageCache {
+        &mut self.image_cache
+    }
+
+    /// 解析并加载 Kitty Graphics 协议数据
+    ///
+    /// §11.2 解析 Kitty Graphics DCS 序列并加载图像
+    pub fn parse_and_load_kitty_graphics(&mut self, payload: &str) -> Option<kitty_graphics::ImageId> {
+        if let Some((params, image)) = kitty_graphics::parse_kitty_graphics(payload) {
+            match params.action {
+                kitty_graphics::ImageAction::Send => {
+                    let id = self.image_cache.insert(image);
+                    Some(id)
+                }
+                kitty_graphics::ImageAction::Delete => {
+                    if params.identifier > 0 {
+                        self.image_cache.remove(kitty_graphics::ImageId(params.identifier as u64));
+                    } else {
+                        self.image_cache.clear();
+                    }
+                    None
+                }
+                kitty_graphics::ImageAction::Query => None,
+            }
+        } else {
+            None
+        }
+    }
+
+    /// 解析并加载 iTerm2 OSC 1337 数据
+    ///
+    /// §11.2 解析 iTerm2 OSC 1337 序列并加载图像
+    pub fn parse_and_load_osc1337(&mut self, payload: &str) -> Option<kitty_graphics::ImageId> {
+        if let Some(image) = kitty_graphics::parse_osc1337(payload) {
+            Some(self.image_cache.insert(image))
+        } else {
+            None
+        }
     }
 }
 

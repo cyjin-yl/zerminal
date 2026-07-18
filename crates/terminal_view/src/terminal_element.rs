@@ -13,8 +13,9 @@ use language::CursorShape as EditorCursorShape;
 use settings::Settings;
 use std::time::Instant;
 use terminal::{
-    Cell, Color, Content, CursorShape, IndexedCell, Modes, NamedColor, Point, Range, Terminal,
-    TerminalBounds, is_app_chosen_exact_color as terminal_is_app_chosen_exact_color,
+    Cell, Color, Content, CursorShape, IndexedCell, kitty_graphics, Modes, NamedColor, Point,
+    Range, Terminal, TerminalBounds,
+    is_app_chosen_exact_color as terminal_is_app_chosen_exact_color,
     is_default_background_color, terminal_settings::TerminalSettings,
 };
 use theme::{ActiveTheme, Theme};
@@ -45,6 +46,9 @@ pub struct LayoutState {
     block_below_cursor_element: Option<AnyElement>,
     base_text_style: TextStyle,
     content_mode: ContentMode,
+    /// Kitty Graphics / OSC 1337 图像叠加层
+    /// 每项: (起始行, 起始列, 宽(格), 高(格), 渲染图像)
+    images: Vec<(usize, usize, usize, usize, std::sync::Arc<gpui::RenderImage>)>,
 }
 
 /// Helper struct for converting terminal cursor points to displayed cursor points.
@@ -1320,6 +1324,13 @@ impl Element for TerminalElement {
                     block_below_cursor_element,
                     base_text_style: text_style,
                     content_mode,
+                    images: resolve_terminal_images(
+                        &self.terminal,
+                        &dimensions,
+                        display_offset,
+                        window,
+                        cx,
+                    ),
                 }
             },
         )
@@ -1430,6 +1441,31 @@ impl Element for TerminalElement {
                         batch.paint(origin, &layout.dimensions, window, cx);
                     }
                     let text_paint_time = text_paint_start.elapsed();
+
+                    // §11.2 渲染 Kitty Graphics / OSC 1337 图像
+                    for (row, col, w, h, render_image) in &layout.images {
+                        let cell_width = layout.dimensions.cell_width;
+                        let line_height = layout.dimensions.line_height;
+                        let image_bounds = Bounds {
+                            origin: point(
+                                origin.x + (*col as f32 * cell_width),
+                                origin.y + (*row as f32 * line_height),
+                            ),
+                            size: size(
+                                *w as f32 * cell_width,
+                                *h as f32 * line_height,
+                            ),
+                        };
+                        window
+                            .paint_image(
+                                image_bounds,
+                                gpui::Corners::all(px(0.)),
+                                render_image.clone(),
+                                0,
+                                false,
+                            )
+                            .log_err();
+                    }
 
                     if let Some(text_to_mark) = &marked_text_cloned
                         && !text_to_mark.is_empty()
@@ -1747,6 +1783,36 @@ pub fn convert_color(fg: &Color, theme: &Theme) -> Hsla {
         // 8 bit, indexed colors
         Color::Indexed(i) => terminal::get_color_at_index(*i as usize, theme),
     }
+}
+
+/// §11.2 将 Content 中的图像引用解析为 GPUI RenderImage
+fn resolve_terminal_images(
+    terminal: &Entity<Terminal>,
+    dimensions: &TerminalBounds,
+    display_offset: usize,
+    _window: &mut Window,
+    cx: &mut App,
+) -> Vec<(usize, usize, usize, usize, std::sync::Arc<gpui::RenderImage>)> {
+    let content = terminal.read(cx).last_content.clone();
+    let cache = terminal.read(cx).image_cache();
+
+    content
+        .images
+        .into_iter()
+        .filter_map(|(img_id, row, col, w, h)| {
+            // 检查图像是否在可见区域内
+            let visible_row_start = display_offset as i32;
+            let visible_row_end = visible_row_start + dimensions.num_lines() as i32;
+            if row as i32 + h as i32 <= visible_row_start || row as i32 >= visible_row_end {
+                return None;
+            }
+
+            // 从缓存中获取图像数据并解码
+            let parsed = cache.get(img_id)?;
+            let render_image = kitty_graphics::decode_to_render_image(&parsed.data)?;
+            Some((row, col, w, h, render_image))
+        })
+        .collect()
 }
 
 #[cfg(test)]
