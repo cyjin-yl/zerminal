@@ -289,7 +289,8 @@ impl SettingsStore {
     }
 
     pub fn new_with_semantic_tokens(cx: &mut App, default_settings: &str) -> Self {
-        let default_settings = Self::parse_default_settings(default_settings).unwrap();
+        let default_settings = Self::parse_default_settings(default_settings)
+            .expect("Failed to parse default settings. Default settings file is malformed.");
         Self::from_settings_content(cx, default_settings)
     }
 
